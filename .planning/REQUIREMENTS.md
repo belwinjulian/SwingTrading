@@ -155,81 +155,81 @@ Explicitly excluded. Documented to prevent scope creep.
 
 ## Traceability
 
-Empty initially — populated during roadmap creation by `gsd-roadmapper`.
+Populated by `gsd-roadmapper` on 2026-04-27.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | TBD | Pending |
-| FND-02 | TBD | Pending |
-| FND-03 | TBD | Pending |
-| FND-04 | TBD | Pending |
-| FND-05 | TBD | Pending |
-| DAT-01 | TBD | Pending |
-| DAT-02 | TBD | Pending |
-| DAT-03 | TBD | Pending |
-| DAT-04 | TBD | Pending |
-| DAT-05 | TBD | Pending |
-| DAT-06 | TBD | Pending |
-| DAT-07 | TBD | Pending |
-| DAT-08 | TBD | Pending |
-| DAT-09 | TBD | Pending |
-| IND-01 | TBD | Pending |
-| IND-02 | TBD | Pending |
-| IND-03 | TBD | Pending |
-| IND-04 | TBD | Pending |
-| IND-05 | TBD | Pending |
-| PAT-01 | TBD | Pending |
-| PAT-02 | TBD | Pending |
-| PAT-03 | TBD | Pending |
-| PAT-04 | TBD | Pending |
-| PAT-05 | TBD | Pending |
-| PAT-06 | TBD | Pending |
-| SIG-01 | TBD | Pending |
-| SIG-02 | TBD | Pending |
-| SIG-03 | TBD | Pending |
-| SIG-04 | TBD | Pending |
-| REG-01 | TBD | Pending |
-| REG-02 | TBD | Pending |
-| REG-03 | TBD | Pending |
-| REG-04 | TBD | Pending |
-| CMP-01 | TBD | Pending |
-| CMP-02 | TBD | Pending |
-| CMP-03 | TBD | Pending |
-| CMP-04 | TBD | Pending |
-| CMP-05 | TBD | Pending |
-| SIZ-01 | TBD | Pending |
-| SIZ-02 | TBD | Pending |
-| SIZ-03 | TBD | Pending |
-| SIZ-04 | TBD | Pending |
-| SIZ-05 | TBD | Pending |
-| CAT-01 | TBD | Pending |
-| CAT-02 | TBD | Pending |
-| CAT-03 | TBD | Pending |
-| CAT-04 | TBD | Pending |
-| OUT-01 | TBD | Pending |
-| OUT-02 | TBD | Pending |
-| OUT-03 | TBD | Pending |
-| OUT-04 | TBD | Pending |
-| OUT-05 | TBD | Pending |
-| OUT-06 | TBD | Pending |
-| BCK-01 | TBD | Pending |
-| BCK-02 | TBD | Pending |
-| BCK-03 | TBD | Pending |
-| BCK-04 | TBD | Pending |
-| BCK-05 | TBD | Pending |
-| BCK-06 | TBD | Pending |
-| BCK-07 | TBD | Pending |
-| OPS-01 | TBD | Pending |
-| OPS-02 | TBD | Pending |
-| OPS-03 | TBD | Pending |
-| OPS-04 | TBD | Pending |
-| OPS-05 | TBD | Pending |
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| FND-04 | Phase 5 | Pending |
+| FND-05 | Phase 4 | Pending |
+| DAT-01 | Phase 2 | Pending |
+| DAT-02 | Phase 2 | Pending |
+| DAT-03 | Phase 2 | Pending |
+| DAT-04 | Phase 3 | Pending |
+| DAT-05 | Phase 6 | Pending |
+| DAT-06 | Phase 2 | Pending |
+| DAT-07 | Phase 2 | Pending |
+| DAT-08 | Phase 2 | Pending |
+| DAT-09 | Phase 2 | Pending |
+| IND-01 | Phase 3 | Pending |
+| IND-02 | Phase 3 | Pending |
+| IND-03 | Phase 3 | Pending |
+| IND-04 | Phase 3 | Pending |
+| IND-05 | Phase 3 | Pending |
+| PAT-01 | Phase 6 | Pending |
+| PAT-02 | Phase 6 | Pending |
+| PAT-03 | Phase 6 | Pending |
+| PAT-04 | Phase 6 | Pending |
+| PAT-05 | Phase 6 | Pending |
+| PAT-06 | Phase 6 | Pending |
+| SIG-01 | Phase 4 | Pending |
+| SIG-02 | Phase 6 | Pending |
+| SIG-03 | Phase 6 | Pending |
+| SIG-04 | Phase 4 | Pending |
+| REG-01 | Phase 3 | Pending |
+| REG-02 | Phase 3 | Pending |
+| REG-03 | Phase 3 | Pending |
+| REG-04 | Phase 3 | Pending |
+| CMP-01 | Phase 6 | Pending |
+| CMP-02 | Phase 6 | Pending |
+| CMP-03 | Phase 6 | Pending |
+| CMP-04 | Phase 6 | Pending |
+| CMP-05 | Phase 6 | Pending |
+| SIZ-01 | Phase 7 | Pending |
+| SIZ-02 | Phase 7 | Pending |
+| SIZ-03 | Phase 7 | Pending |
+| SIZ-04 | Phase 7 | Pending |
+| SIZ-05 | Phase 7 | Pending |
+| CAT-01 | Phase 6 | Pending |
+| CAT-02 | Phase 6 | Pending |
+| CAT-03 | Phase 6 | Pending |
+| CAT-04 | Phase 6 | Pending |
+| OUT-01 | Phase 4 | Pending |
+| OUT-02 | Phase 4 | Pending |
+| OUT-03 | Phase 4 | Pending |
+| OUT-04 | Phase 7 | Pending |
+| OUT-05 | Phase 7 | Pending |
+| OUT-06 | Phase 7 | Pending |
+| BCK-01 | Phase 5 | Pending |
+| BCK-02 | Phase 5 | Pending |
+| BCK-03 | Phase 5 | Pending |
+| BCK-04 | Phase 5 | Pending |
+| BCK-05 | Phase 5 | Pending |
+| BCK-06 | Phase 5 | Pending |
+| BCK-07 | Phase 5 | Pending |
+| OPS-01 | Phase 8 | Pending |
+| OPS-02 | Phase 8 | Pending |
+| OPS-03 | Phase 8 | Pending |
+| OPS-04 | Phase 8 | Pending |
+| OPS-05 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 64 total
-- Mapped to phases: 0 (filled by roadmapper)
-- Unmapped: 64 ⚠️ (will be 0 after roadmap creation)
+- Mapped to phases: 64 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-27*
-*Last updated: 2026-04-27 after initial definition*
+*Last updated: 2026-04-27 — traceability populated by `gsd-roadmapper`*
