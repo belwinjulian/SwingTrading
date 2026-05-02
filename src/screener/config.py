@@ -3,7 +3,14 @@
 Loads from `.env` at the repo root; values can be overridden by environment
 variables. Phase 1 ships the seven fields the v1 stack will consume; later
 phases extend the Settings class additively.
+
+Settings are constructed lazily via :func:`get_settings` so that importing
+``screener.config`` does not eagerly read ``.env`` or trigger pydantic
+validation. Tests can override env vars and call ``get_settings.cache_clear()``
+to force re-evaluation.
 """
+
+from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -30,4 +37,12 @@ class Settings(BaseSettings):
     ACCOUNT_EQUITY: float = 100_000.0
 
 
-settings = Settings()
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Return the process-wide :class:`Settings` instance (cached).
+
+    Defers ``.env`` reads and pydantic validation until first call. In tests,
+    use ``get_settings.cache_clear()`` after monkey-patching env vars to force
+    re-evaluation.
+    """
+    return Settings()
