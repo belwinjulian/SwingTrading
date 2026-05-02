@@ -2,45 +2,47 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-last_updated: "2026-05-02T12:00:00.000Z"
+status: executing
+last_updated: "2026-05-02T12:51:14.519Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
 
-**Last updated:** 2026-05-02 (Phase 1 execution: Waves 1–2 complete; Wave 3 next)
+**Last updated:** 2026-05-02 (Phase 1 execution: Waves 1–3 complete; Wave 4 [01-05] remaining)
 
 ## Project Reference
 
 - **Project:** Momentum Swing Screener
 - **Core value:** Every evening, the user opens one report and gets a small, ranked list of high-quality long candidates with playbook-specific trade plans they can execute the next morning — reliable enough to size real positions on once paper-trade validation confirms it works.
-- **Current focus:** Phase 1 (Repo Skeleton & CI Hygiene) — Waves 1+2 merged & post-merge tests pass; Wave 3 (Makefile + preregistration) starting.
+- **Current focus:** Phase 1 (Repo Skeleton & CI Hygiene) — Waves 1–3 merged; Wave 4 (CI workflow + branch protection) is the only remaining plan.
 - **Out of scope (v1):** ML/LightGBM, Streamlit dashboard, FinBERT/Reddit sentiment, intraday/pre-market scanning, broker API, paid data feeds, PySpark, dbt+duckdb, hosted demo, options data, alt-data.
 - **Audience:** Belwin (data engineer; personal-trading first; portfolio-credible second).
 
 ## Current Position
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** Phase 1 — Repo Skeleton & CI Hygiene (executing; Waves 1–2 of 4 merged)
-- **Plan:** 3/5 complete (01-01 ✓, 01-02 ✓, 01-03 ✓); Wave 3 (01-04) starting; Wave 4 (01-05, checkpoint) remaining
-- **Status:** Executing Phase 1 — post-merge test gate passed (5/5 tests, 100% coverage)
-- **Progress:** [██░░░░░░] 0/8 phases complete; 3/5 Phase 1 plans complete
+- **Phase:** Phase 1 — Repo Skeleton & CI Hygiene (executing; Waves 1–3 of 4 merged)
+- **Plan:** 4/5 complete (01-01 ✓, 01-02 ✓, 01-03 ✓, 01-04 ✓); Wave 4 (01-05, checkpoint) remaining
+- **Status:** Executing Phase 1 — Wave 3 (Makefile DAG + pre-registration doc) shipped; FND-02 satisfied
+- **Progress:** [████████░░] 80%
 
 ## Performance Metrics
 
 | Metric | Value | Notes |
 |--------|-------|-------|
 | Phases planned | 1 / 8 | Phase 1 plans created (5); Phases 2–8 still TBD |
-| Plans complete | 3 / 5 | 01-01, 01-02, 01-03 merged; Wave 3 (01-04) + Wave 4 (01-05) remaining |
+| Plans complete | 4 / 5 | 01-01, 01-02, 01-03, 01-04 done; Wave 4 (01-05, CI + branch protection) remaining |
 | Requirements mapped | 64 / 64 | 100% coverage |
-| Requirements completed | 0 / 64 | None shipped yet |
+| Requirements completed | 1 / 64 | FND-02 (Makefile DAG end-to-end) shipped in 01-04 |
 | Last test coverage | n/a | No code yet |
 | Last lint pass | n/a | No code yet |
+| Phase 01 P04 | 2min | 2 tasks | 2 files |
 
 ## Roadmap Snapshot
 
@@ -110,7 +112,7 @@ None.
 
 - **Activity:** `/gsd-plan-phase 1` — research skipped (CONTEXT.md already locked D-01..D-16; greenfield repo had nothing for pattern-mapper to extract). Spawned `gsd-planner` (5 plans across 4 waves), `gsd-plan-checker` (verification passed). One non-blocking warning (D-16 widened the `backtest` ALLOWED set) was tightened in-place: `backtest` is now `{"persistence"}` only, per D-16 verbatim.
 - **Outcome:** 5 plans committed. Phase 1 ready to execute.
-- **Resume file:** `.planning/phases/01-repo-skeleton-ci-hygiene/01-01-pyproject-and-lockfile-PLAN.md` (Wave 1 entry point).
+- **Resume file:** None
 
 ### Next Session
 

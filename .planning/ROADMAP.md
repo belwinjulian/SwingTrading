@@ -51,7 +51,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 
 **Estimated Complexity:** S
 
-**Plans:** 5 plans
+**Plans:** 4/5 plans executed
 
 Plans:
 
@@ -63,7 +63,7 @@ Plans:
 - [x] 01-03-tests-scaffolding-PLAN.md — tests/test_architecture.py (hand-rolled AST DAG enforcement per D-16) + tests/test_cli_smoke.py (D-14 surface) + conftest.py
 
 **Wave 3** *(blocked on 01-02)*
-- [ ] 01-04-makefile-and-preregistration-doc-PLAN.md — Makefile DAG wired to typer subcommands + docs/strategy_v1_preregistration.md placeholder with literal token (FND-02, FND-05 placeholder)
+- [x] 01-04-makefile-and-preregistration-doc-PLAN.md — Makefile DAG wired to typer subcommands + docs/strategy_v1_preregistration.md placeholder with literal token (FND-02, FND-05 placeholder)
 
 **Wave 4** *(blocked on Waves 1–3 completion; final gate)*
 - [ ] 01-05-ci-and-precommit-PLAN.md — .github/workflows/ci.yml (D-05/D-06/D-09), .pre-commit-config.yaml (D-07), docs/branch_protection.md + apply protection (D-08; **autonomous: false** — user runs the `gh api` admin call)
@@ -212,7 +212,7 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Repo Skeleton & CI Hygiene | 0/5 | Ready to execute | - |
+| 1. Repo Skeleton & CI Hygiene | 4/5 | In Progress|  |
 | 2. Data Foundation | 0/? | Not started | - |
 | 3. Indicator Panel & Regime | 0/? | Not started | - |
 | 4. Trend Template, Composite Skeleton & First Report | 0/? | Not started | - |
