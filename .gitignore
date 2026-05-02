@@ -29,9 +29,11 @@ htmlcov/
 .env.local
 
 # Output directories (populated by later phases; never committed in v1)
-data/
-reports/
-runs.jsonl
+# NOTE: anchored to repo root with leading "/" so source-layer dirs like
+# `src/screener/data/` are NOT ignored.
+/data/
+/reports/
+/runs.jsonl
 
 # IDE
 .vscode/
