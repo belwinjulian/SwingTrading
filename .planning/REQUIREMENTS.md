@@ -11,7 +11,7 @@ Each requirement is user-centric, atomic, and testable. Maps to exactly one road
 
 - [ ] **FND-01**: Repo skeleton runs on `uv` with `pyproject.toml` pinning the v1 stack (pandas, pandas-ta-classic, yfinance, vectorbt, edgartools, finnhub-python, fredapi, pydantic-settings, pandera, structlog, typer)
 - [x] **FND-02**: `make data && make rank && make report && make backtest` runs end-to-end locally with no manual steps after setup
-- [ ] **FND-03**: CI runs ruff, mypy (strict on `signals/` and `indicators/`), and pytest on every PR
+- [x] **FND-03**: CI runs ruff, mypy (strict on `signals/` and `indicators/`), and pytest on every PR
 - [ ] **FND-04**: `tests/test_backtest_no_lookahead.py` exists, is mutation-tested (removing `.shift(1)` causes failure), and is a CI-blocking gate on every PR touching `signals/` or `backtest/`
 - [ ] **FND-05**: `docs/strategy_v1_preregistration.md` records the v1 composite-score weights with a git hash before any backtest result is reported
 
@@ -161,7 +161,7 @@ Populated by `gsd-roadmapper` on 2026-04-27.
 |-------------|-------|--------|
 | FND-01 | Phase 1 | Pending |
 | FND-02 | Phase 1 | Complete |
-| FND-03 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Complete |
 | FND-04 | Phase 5 | Pending |
 | FND-05 | Phase 4 | Pending |
 | DAT-01 | Phase 2 | Pending |

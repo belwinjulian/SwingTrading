@@ -24,7 +24,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 
 ## Phases
 
-- [ ] **Phase 1: Repo Skeleton & CI Hygiene** — uv-managed pyproject, typer CLI skeleton, Makefile targets, ruff/mypy/pytest CI, pre-registration doc placeholder
+- [x] **Phase 1: Repo Skeleton & CI Hygiene** — uv-managed pyproject, typer CLI skeleton, Makefile targets, ruff/mypy/pytest CI, pre-registration doc placeholder (completed 2026-05-02)
 - [ ] **Phase 2: Data Foundation** — Russell 1000 universe with weekly snapshots, yfinance OHLCV cache with Stooq fallback, retry/health-check infrastructure, pandera schemas at I/O boundaries
 - [ ] **Phase 3: Indicator Panel & Regime** — SMA/ATR/ADR%/RS-percentile panel, macro data layer, three-state regime gate with continuous regime_score
 - [ ] **Phase 4: Trend Template, Composite Skeleton & First Report** — Minervini 8-condition gate, composite skeleton (weights pre-registered), ATR-based sizing, first daily markdown report
@@ -51,7 +51,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 
 **Estimated Complexity:** S
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 
@@ -66,7 +66,7 @@ Plans:
 - [x] 01-04-makefile-and-preregistration-doc-PLAN.md — Makefile DAG wired to typer subcommands + docs/strategy_v1_preregistration.md placeholder with literal token (FND-02, FND-05 placeholder)
 
 **Wave 4** *(blocked on Waves 1–3 completion; final gate)*
-- [ ] 01-05-ci-and-precommit-PLAN.md — .github/workflows/ci.yml (D-05/D-06/D-09), .pre-commit-config.yaml (D-07), docs/branch_protection.md + apply protection (D-08; **autonomous: false** — user runs the `gh api` admin call)
+- [x] 01-05-ci-and-precommit-PLAN.md — .github/workflows/ci.yml (D-05/D-06/D-09), .pre-commit-config.yaml (D-07), docs/branch_protection.md + apply protection (D-08; **autonomous: false** — user runs the `gh api` admin call)
 
 Cross-cutting constraints (truths shared by ≥ 2 plans):
 - All scaffolding ships D-01..D-16 verbatim — `pandas-ta-classic` (never bare `pandas-ta`), `==3.11.*`, `hatchling` build backend, `screener.cli:app` console script.
@@ -212,7 +212,7 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Repo Skeleton & CI Hygiene | 4/5 | In Progress|  |
+| 1. Repo Skeleton & CI Hygiene | 5/5 | Complete   | 2026-05-02 |
 | 2. Data Foundation | 0/? | Not started | - |
 | 3. Indicator Panel & Regime | 0/? | Not started | - |
 | 4. Trend Template, Composite Skeleton & First Report | 0/? | Not started | - |
