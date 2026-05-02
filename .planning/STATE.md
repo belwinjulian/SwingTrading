@@ -14,32 +14,32 @@ progress:
 
 # Project State
 
-**Last updated:** 2026-05-02 (Phase 1: all 5 plans shipped + branch protection live on `main` via UI ruleset)
+**Last updated:** 2026-05-02 (Phase 1 verified PASSED 4/4 must-haves; ready for Phase 2 — Data Foundation)
 
 ## Project Reference
 
 - **Project:** Momentum Swing Screener
 - **Core value:** Every evening, the user opens one report and gets a small, ranked list of high-quality long candidates with playbook-specific trade plans they can execute the next morning — reliable enough to size real positions on once paper-trade validation confirms it works.
-- **Current focus:** Phase 1 (Repo Skeleton & CI Hygiene) — all 4 waves shipped; branch protection applied on `main` via ruleset 'main' (UI). Phase ready for verification.
+- **Current focus:** Phase 1 verified PASSED — pivot to Phase 2 (Data Foundation: Russell 1000 universe, yfinance OHLCV cache, Stooq fallback, pandera schemas). Recommended next: `/gsd-discuss-phase 2`.
 - **Out of scope (v1):** ML/LightGBM, Streamlit dashboard, FinBERT/Reddit sentiment, intraday/pre-market scanning, broker API, paid data feeds, PySpark, dbt+duckdb, hosted demo, options data, alt-data.
 - **Audience:** Belwin (data engineer; personal-trading first; portfolio-credible second).
 
 ## Current Position
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** Phase 1 — Repo Skeleton & CI Hygiene (all 5 plans complete; branch protection live)
-- **Plan:** 5/5 complete (01-01 ✓, 01-02 ✓, 01-03 ✓, 01-04 ✓, 01-05 ✓ — including branch-protection apply)
-- **Status:** Phase 1 ready for verification (post-merge gates → code review → verifier)
+- **Phase:** Phase 1 ✓ COMPLETE (verified 4/4 must-haves) → next: Phase 2 (Data Foundation)
+- **Plan:** 5/5 plans shipped, code review (4 warnings/0 blockers), verifier passed
+- **Status:** Phase 1 complete; awaiting `/gsd-discuss-phase 2` or `/gsd-plan-phase 2`
 - **Progress:** [██████████] 100%
 
 ## Performance Metrics
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Phases planned | 1 / 8 | Phase 1 plans created (5); Phases 2–8 still TBD |
-| Plans complete | 5 / 5 | 01-01..01-05 all shipped; branch protection live on `main` |
+| Phases complete | 1 / 8 | Phase 1 ✓ verified PASSED 2026-05-02 |
+| Plans complete | 5 / 5 (Phase 1) | 01-01..01-05 all shipped; branch protection live on `main` |
 | Requirements mapped | 64 / 64 | 100% coverage |
-| Requirements completed | 3 / 64 | FND-01 (uv-managed pyproject + lockfile), FND-02 (Makefile DAG end-to-end), FND-03 (CI runs ruff/mypy/pytest with required-status-check enforcement on main) |
+| Requirements completed | 3 / 64 | FND-01 (uv pyproject + lockfile), FND-02 (Makefile DAG), FND-03 (CI ruff/mypy/pytest + branch protection) |
 | Last test coverage | 100% (trivial; empty math modules) | `pytest -m "not slow"` 5 passed; coverage gate trivially met until Phase 3 |
 | Last lint pass | clean | `uv run ruff check .` and `uv run pre-commit run --all-files` exit 0 (post 01-05 auto-fixes) |
 | Phase 01 P04 | 2min | 2 tasks | 2 files |
@@ -49,7 +49,7 @@ progress:
 
 | # | Phase | Status | REQ-IDs |
 |---|-------|--------|---------|
-| 1 | Repo Skeleton & CI Hygiene | All 5 plans shipped; awaiting user gh-api branch-protection apply | FND-01, FND-02, FND-03 |
+| 1 | Repo Skeleton & CI Hygiene | ✓ Complete (verified 2026-05-02; 4/4 must-haves) | FND-01, FND-02, FND-03 |
 | 2 | Data Foundation | Not started | DAT-01..03, DAT-06..09 |
 | 3 | Indicator Panel & Regime | Not started | DAT-04, IND-01..05, REG-01..04 |
 | 4 | Trend Template, Composite Skeleton & First Report | Not started | FND-05, SIG-01, SIG-04, OUT-01..03 |
