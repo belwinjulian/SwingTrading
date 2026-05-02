@@ -51,7 +51,27 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 
 **Estimated Complexity:** S
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+
+**Wave 1**
+- [ ] 01-01-pyproject-and-lockfile-PLAN.md — pyproject.toml (D-01..D-04, D-10..D-12), uv.lock, .gitignore, LICENSE, README skeleton, .env.example (FND-01)
+
+**Wave 2** *(blocked on Wave 1 completion; 01-02 and 01-03 run in parallel — zero file overlap)*
+- [ ] 01-02-source-tree-scaffolding-PLAN.md — src/screener/ layered DAG with module-docstring stubs, real Settings + structlog config + full v1 typer surface (D-13..D-15)
+- [ ] 01-03-tests-scaffolding-PLAN.md — tests/test_architecture.py (hand-rolled AST DAG enforcement per D-16) + tests/test_cli_smoke.py (D-14 surface) + conftest.py
+
+**Wave 3** *(blocked on 01-02)*
+- [ ] 01-04-makefile-and-preregistration-doc-PLAN.md — Makefile DAG wired to typer subcommands + docs/strategy_v1_preregistration.md placeholder with literal token (FND-02, FND-05 placeholder)
+
+**Wave 4** *(blocked on Waves 1–3 completion; final gate)*
+- [ ] 01-05-ci-and-precommit-PLAN.md — .github/workflows/ci.yml (D-05/D-06/D-09), .pre-commit-config.yaml (D-07), docs/branch_protection.md + apply protection (D-08; **autonomous: false** — user runs the `gh api` admin call)
+
+Cross-cutting constraints (truths shared by ≥ 2 plans):
+- All scaffolding ships D-01..D-16 verbatim — `pandas-ta-classic` (never bare `pandas-ta`), `==3.11.*`, `hatchling` build backend, `screener.cli:app` console script.
+- `backtest/` import contract is the strongest invariant in the architecture test (D-16): `persistence` + stdlib only — no `data`, no `config`, no `obs`, no network.
+- Phase 1 ships only seams and stubs; no real signal/indicator/backtest logic. CI's coverage gate (`--cov-fail-under=80`) is trivially satisfied here and becomes binding from Phase 3.
 
 ### Phase 2: Data Foundation
 
@@ -192,7 +212,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Repo Skeleton & CI Hygiene | 0/? | Not started | - |
+| 1. Repo Skeleton & CI Hygiene | 0/5 | Ready to execute | - |
 | 2. Data Foundation | 0/? | Not started | - |
 | 3. Indicator Panel & Regime | 0/? | Not started | - |
 | 4. Trend Template, Composite Skeleton & First Report | 0/? | Not started | - |
