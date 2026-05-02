@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtualenv
+.venv/
+
+# uv
+# (uv.lock IS committed; .venv is not)
+
+# Test / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+
+# Secrets and local env
+.env
+.env.local
+
+# Output directories (populated by later phases; never committed in v1)
+data/
+reports/
+runs.jsonl
+
+# IDE
+.vscode/
+.idea/
