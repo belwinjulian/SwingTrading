@@ -108,4 +108,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-27 after initialization*
+*Last updated: 2026-05-02 — Phase 1 (Repo Skeleton & CI Hygiene) complete; FND-01/02/03 shipped; Phase 2 (Data Foundation) next.*
