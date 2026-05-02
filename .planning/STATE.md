@@ -2,41 +2,41 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-05-02T00:00:00.000Z"
+status: in_progress
+last_updated: "2026-05-02T12:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
+  completed_plans: 3
 ---
 
 # Project State
 
-**Last updated:** 2026-05-02 (Phase 1 plans created; ready for `/gsd-execute-phase 1`)
+**Last updated:** 2026-05-02 (Phase 1 execution: Waves 1–2 complete; Wave 3 next)
 
 ## Project Reference
 
 - **Project:** Momentum Swing Screener
 - **Core value:** Every evening, the user opens one report and gets a small, ranked list of high-quality long candidates with playbook-specific trade plans they can execute the next morning — reliable enough to size real positions on once paper-trade validation confirms it works.
-- **Current focus:** Phase 1 (Repo Skeleton & CI Hygiene) — context gathered, awaiting `/gsd-plan-phase 1`.
+- **Current focus:** Phase 1 (Repo Skeleton & CI Hygiene) — Waves 1+2 merged & post-merge tests pass; Wave 3 (Makefile + preregistration) starting.
 - **Out of scope (v1):** ML/LightGBM, Streamlit dashboard, FinBERT/Reddit sentiment, intraday/pre-market scanning, broker API, paid data feeds, PySpark, dbt+duckdb, hosted demo, options data, alt-data.
 - **Audience:** Belwin (data engineer; personal-trading first; portfolio-credible second).
 
 ## Current Position
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** Phase 1 — Repo Skeleton & CI Hygiene (5 plans committed; planning complete)
-- **Plan:** 5 plans across 4 waves; ready to execute
-- **Status:** Ready to run `/gsd-execute-phase 1`
-- **Progress:** [░░░░░░░░] 0/8 phases complete; 0/5 Phase 1 plans complete
+- **Phase:** Phase 1 — Repo Skeleton & CI Hygiene (executing; Waves 1–2 of 4 merged)
+- **Plan:** 3/5 complete (01-01 ✓, 01-02 ✓, 01-03 ✓); Wave 3 (01-04) starting; Wave 4 (01-05, checkpoint) remaining
+- **Status:** Executing Phase 1 — post-merge test gate passed (5/5 tests, 100% coverage)
+- **Progress:** [██░░░░░░] 0/8 phases complete; 3/5 Phase 1 plans complete
 
 ## Performance Metrics
 
 | Metric | Value | Notes |
 |--------|-------|-------|
 | Phases planned | 1 / 8 | Phase 1 plans created (5); Phases 2–8 still TBD |
-| Plans complete | 0 / 5 | Phase 1 plans staged; execution pending |
+| Plans complete | 3 / 5 | 01-01, 01-02, 01-03 merged; Wave 3 (01-04) + Wave 4 (01-05) remaining |
 | Requirements mapped | 64 / 64 | 100% coverage |
 | Requirements completed | 0 / 64 | None shipped yet |
 | Last test coverage | n/a | No code yet |

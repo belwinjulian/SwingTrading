@@ -56,11 +56,11 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 Plans:
 
 **Wave 1**
-- [ ] 01-01-pyproject-and-lockfile-PLAN.md — pyproject.toml (D-01..D-04, D-10..D-12), uv.lock, .gitignore, LICENSE, README skeleton, .env.example (FND-01)
+- [x] 01-01-pyproject-and-lockfile-PLAN.md — pyproject.toml (D-01..D-04, D-10..D-12), uv.lock, .gitignore, LICENSE, README skeleton, .env.example (FND-01)
 
 **Wave 2** *(blocked on Wave 1 completion; 01-02 and 01-03 run in parallel — zero file overlap)*
-- [ ] 01-02-source-tree-scaffolding-PLAN.md — src/screener/ layered DAG with module-docstring stubs, real Settings + structlog config + full v1 typer surface (D-13..D-15)
-- [ ] 01-03-tests-scaffolding-PLAN.md — tests/test_architecture.py (hand-rolled AST DAG enforcement per D-16) + tests/test_cli_smoke.py (D-14 surface) + conftest.py
+- [x] 01-02-source-tree-scaffolding-PLAN.md — src/screener/ layered DAG with module-docstring stubs, real Settings + structlog config + full v1 typer surface (D-13..D-15)
+- [x] 01-03-tests-scaffolding-PLAN.md — tests/test_architecture.py (hand-rolled AST DAG enforcement per D-16) + tests/test_cli_smoke.py (D-14 surface) + conftest.py
 
 **Wave 3** *(blocked on 01-02)*
 - [ ] 01-04-makefile-and-preregistration-doc-PLAN.md — Makefile DAG wired to typer subcommands + docs/strategy_v1_preregistration.md placeholder with literal token (FND-02, FND-05 placeholder)
