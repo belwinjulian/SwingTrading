@@ -41,4 +41,4 @@ repos:
         # Restrict the hook to the strict-scope directories from D-10 so
         # pre-commit doesn't waste time on data/, publishers/, etc. (those
         # are loosened via [[tool.mypy.overrides]] anyway).
-        files: ^src/screener/(indicators|signals|regime\.py|sizing\.py)
+        files: ^src/screener/(indicators/|signals/|regime\.py$|sizing\.py$)
