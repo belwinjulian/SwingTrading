@@ -94,11 +94,7 @@ def _internal_imports(tree: ast.AST) -> set[str]:
 
 def _iter_source_files(src_root: Path) -> list[Path]:
     """Yield every src/screener/**/*.py file (excluding __pycache__)."""
-    return sorted(
-        p
-        for p in src_root.rglob("*.py")
-        if "__pycache__" not in p.parts and p.is_file()
-    )
+    return sorted(p for p in src_root.rglob("*.py") if "__pycache__" not in p.parts and p.is_file())
 
 
 def test_layer_import_contract(src_screener: Path) -> None:
@@ -126,7 +122,7 @@ def test_layer_import_contract(src_screener: Path) -> None:
             continue
         imports = _internal_imports(tree)
         # `cli` is the only module allowed to import anything — and we skip it.
-        # Every other layer must satisfy: imports ⊆ allowed ∪ {layer itself}.
+        # Every other layer must satisfy: imports are a subset of allowed plus {layer itself}.
         forbidden = {imp for imp in imports if imp not in allowed and imp != layer}
         if forbidden:
             violations.append(
@@ -142,8 +138,18 @@ def test_backtest_does_not_import_data_layer(src_screener: Path) -> None:
     bt_dir = src_screener / "backtest"
     if not bt_dir.exists():
         pytest.skip("backtest/ directory not present (Phase 1 stub may be empty)")
-    forbidden_internal = {"data", "config", "obs", "publishers", "catalysts", "ml",
-                          "indicators", "signals", "regime", "sizing"}
+    forbidden_internal = {
+        "data",
+        "config",
+        "obs",
+        "publishers",
+        "catalysts",
+        "ml",
+        "indicators",
+        "signals",
+        "regime",
+        "sizing",
+    }
     for path in _iter_source_files(bt_dir):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         imports = _internal_imports(tree)

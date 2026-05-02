@@ -40,8 +40,7 @@ def test_each_subcommand_exits_zero_with_stub_log() -> None:
     for name in D14_SUBCOMMANDS:
         result = runner.invoke(app, [name])
         assert result.exit_code == 0, (
-            f"`screener {name}` exited {result.exit_code}; expected 0. "
-            f"stdout: {result.stdout}"
+            f"`screener {name}` exited {result.exit_code}; expected 0. stdout: {result.stdout}"
         )
         # Each invocation should emit at least one JSON log line containing
         # the subcommand name and the literal "[stub]" marker.

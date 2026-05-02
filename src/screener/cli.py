@@ -28,13 +28,13 @@ def _stub(command: str) -> None:
 
 @app.command("refresh-universe")
 def refresh_universe() -> None:
-    """Refresh the Russell 1000 universe (Wikipedia + iShares IWB CSV); writes weekly Parquet snapshot."""
+    """Refresh the Russell 1000 universe (Wikipedia + iShares IWB); weekly Parquet snapshot."""
     _stub("refresh-universe")
 
 
 @app.command("refresh-ohlcv")
 def refresh_ohlcv() -> None:
-    """Refresh OHLCV via yfinance (with Stooq fallback); incrementally append per-ticker Parquet."""
+    """Refresh OHLCV via yfinance (Stooq fallback); incremental per-ticker Parquet append."""
     _stub("refresh-ohlcv")
 
 
@@ -46,13 +46,13 @@ def refresh_macro() -> None:
 
 @app.command("refresh-fundamentals")
 def refresh_fundamentals() -> None:
-    """Refresh fundamentals (Finnhub earnings calendar + EPS); 45-day post-quarter-end lag enforced."""
+    """Refresh fundamentals (Finnhub earnings + EPS); 45-day post-quarter-end lag enforced."""
     _stub("refresh-fundamentals")
 
 
 @app.command("score")
 def score() -> None:
-    """Compute composite scores + playbook tags over the universe; write data/snapshots/YYYY-MM-DD.parquet."""
+    """Compute composite scores + playbook tags; write data/snapshots/YYYY-MM-DD.parquet."""
     _stub("score")
 
 
@@ -76,5 +76,5 @@ def backtest() -> None:
 
 @app.command("backtest-audit")
 def backtest_audit() -> None:
-    """Run the forensic checklist (no-look-ahead, weight-pre-registration hash, universe snapshot date)."""
+    """Run forensic checks (no-look-ahead, weight-preregistration hash, universe snapshot)."""
     _stub("backtest-audit")

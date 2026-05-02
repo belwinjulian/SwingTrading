@@ -1,0 +1,36 @@
+# Pre-commit hooks per D-07: ruff format + ruff check + mypy on staged files.
+# Pytest is NOT here (CI-only) to keep the local commit loop fast.
+#
+# Install once: `uvx pre-commit install`
+# Run manually:  `uvx pre-commit run --all-files`
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff-format
+      - id: ruff
+        args: [--fix]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.20.0
+    hooks:
+      - id: mypy
+        name: mypy (math modules — strict scope per D-10)
+        args:
+          - --no-incremental
+          - --config-file=pyproject.toml
+        # mypy needs deps to resolve types; provide the runtime + dev set.
+        additional_dependencies:
+          - pandas>=2.2,<3
+          - numpy>=2,<3
+          - pydantic-settings>=2.14,<3
+          - pandera>=0.31.1,<0.32
+          - structlog>=25.5,<26
+          - typer>=0.25,<0.26
+          - pandas-stubs
+          - types-requests
+        # Restrict the hook to the strict-scope directories from D-10 so
+        # pre-commit doesn't waste time on data/, publishers/, etc. (those
+        # are loosened via [[tool.mypy.overrides]] anyway).
+        files: ^src/screener/(indicators|signals|regime\.py|sizing\.py)
