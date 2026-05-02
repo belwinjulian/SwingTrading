@@ -187,6 +187,14 @@ Web-UI fallback documented in `docs/branch_protection.md`.
 - Phase 1 success criteria 1, 2, 4 already met by Plans 01-01..01-04. Success criterion 3 (CI gates merges) is met *after* the user runs the gh api command above.
 - Phase 2 (Data Foundation) can begin once branch protection is live. **Phase 2 reminder:** when API keys (FINNHUB_API_KEY, FRED_API_KEY, EDGAR_IDENTITY) land in CI, add them as GitHub Actions `secrets:` and reference via `${{ secrets.X }}` — never `echo` them. The current workflow has `permissions: contents: read` and uses no secrets, which is correct for Phase 1.
 
+## Branch Protection Apply (Human Action) — DONE
+
+**Applied:** 2026-05-02 by belwinjulian via the GitHub web UI.
+**Ruleset name:** `main`
+**Method:** GitHub UI (Settings → Branches → Add ruleset). The `gh api` route stayed unused because `gh` is not installed locally; the documented command remains in `docs/branch_protection.md` for the next admin (or for re-application on a forked repo).
+**Verification:** Visually confirmed in repo settings; first pull request opened against `main` after this point will be the runtime gate verifying `lint`/`typecheck`/`test` are required (the GitHub status-check name dropdown only registers checks after the workflow runs at least once, so the first PR's CI run is also the registration of those check names).
+**Coverage:** Plan 01-05 success criteria 8 + 9 (branch-protection enforcement) now satisfied.
+
 ---
 *Phase: 01-repo-skeleton-ci-hygiene*
-*Completed: 2026-05-02 (autonomous portion); awaiting user `gh api` apply for branch protection*
+*Completed: 2026-05-02 — all five plans shipped, branch protection live on `main`.*

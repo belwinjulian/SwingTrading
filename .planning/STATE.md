@@ -14,22 +14,22 @@ progress:
 
 # Project State
 
-**Last updated:** 2026-05-02 (Phase 1 execution: all 5 plans shipped; awaiting one-time user `gh api` apply for branch protection on `main`)
+**Last updated:** 2026-05-02 (Phase 1: all 5 plans shipped + branch protection live on `main` via UI ruleset)
 
 ## Project Reference
 
 - **Project:** Momentum Swing Screener
 - **Core value:** Every evening, the user opens one report and gets a small, ranked list of high-quality long candidates with playbook-specific trade plans they can execute the next morning — reliable enough to size real positions on once paper-trade validation confirms it works.
-- **Current focus:** Phase 1 (Repo Skeleton & CI Hygiene) — all 4 waves shipped; only the user's one-time `gh api` branch-protection apply remains to fully close FND-03's binding-gate semantics.
+- **Current focus:** Phase 1 (Repo Skeleton & CI Hygiene) — all 4 waves shipped; branch protection applied on `main` via ruleset 'main' (UI). Phase ready for verification.
 - **Out of scope (v1):** ML/LightGBM, Streamlit dashboard, FinBERT/Reddit sentiment, intraday/pre-market scanning, broker API, paid data feeds, PySpark, dbt+duckdb, hosted demo, options data, alt-data.
 - **Audience:** Belwin (data engineer; personal-trading first; portfolio-credible second).
 
 ## Current Position
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** Phase 1 — Repo Skeleton & CI Hygiene (all 4 waves shipped; Wave 4 doc-portion committed, branch-protection apply pending user)
-- **Plan:** 5/5 complete (01-01 ✓, 01-02 ✓, 01-03 ✓, 01-04 ✓, 01-05 ✓ doc-portion + checkpoint)
-- **Status:** Phase 1 autonomous work done; awaiting user `gh api` apply per `docs/branch_protection.md`
+- **Phase:** Phase 1 — Repo Skeleton & CI Hygiene (all 5 plans complete; branch protection live)
+- **Plan:** 5/5 complete (01-01 ✓, 01-02 ✓, 01-03 ✓, 01-04 ✓, 01-05 ✓ — including branch-protection apply)
+- **Status:** Phase 1 ready for verification (post-merge gates → code review → verifier)
 - **Progress:** [██████████] 100%
 
 ## Performance Metrics
@@ -37,9 +37,9 @@ progress:
 | Metric | Value | Notes |
 |--------|-------|-------|
 | Phases planned | 1 / 8 | Phase 1 plans created (5); Phases 2–8 still TBD |
-| Plans complete | 5 / 5 | 01-01..01-05 all shipped; 01-05 branch-protection apply pending user |
+| Plans complete | 5 / 5 | 01-01..01-05 all shipped; branch protection live on `main` |
 | Requirements mapped | 64 / 64 | 100% coverage |
-| Requirements completed | 2 / 64 | FND-02 (Makefile DAG end-to-end, 01-04); FND-03 (CI runs ruff/mypy/pytest, 01-05 — branch-protection enforcement awaits user apply) |
+| Requirements completed | 3 / 64 | FND-01 (uv-managed pyproject + lockfile), FND-02 (Makefile DAG end-to-end), FND-03 (CI runs ruff/mypy/pytest with required-status-check enforcement on main) |
 | Last test coverage | 100% (trivial; empty math modules) | `pytest -m "not slow"` 5 passed; coverage gate trivially met until Phase 3 |
 | Last lint pass | clean | `uv run ruff check .` and `uv run pre-commit run --all-files` exit 0 (post 01-05 auto-fixes) |
 | Phase 01 P04 | 2min | 2 tasks | 2 files |
