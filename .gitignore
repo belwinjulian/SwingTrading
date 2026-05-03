@@ -28,10 +28,19 @@ htmlcov/
 .env
 .env.local
 
-# Output directories (populated by later phases; never committed in v1)
-# NOTE: anchored to repo root with leading "/" so source-layer dirs like
-# `src/screener/data/` are NOT ignored.
-/data/
+# Output directories — selective carve-out for committed audit artifacts.
+# Anchored to repo root so source-layer dirs (src/screener/data/) are NOT
+# ignored. Universe Parquet snapshots and per-ticker splits ledgers ARE
+# committed (small, audit-relevant); per-ticker prices.parquet stays local.
+# Phase 1 originally said `/data/`; Phase 2 (D-19 reconciled with D-06 per
+# Amendment 2026-05-02) carves out two committed paths.
+/data/*
+!/data/universe/
+!/data/universe/.gitkeep
+!/data/ohlcv/
+/data/ohlcv/**/prices.parquet
+!/data/ohlcv/**/splits.parquet
+!/data/ohlcv/**/.gitkeep
 /reports/
 /runs.jsonl
 
