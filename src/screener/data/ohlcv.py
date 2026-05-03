@@ -14,6 +14,7 @@ Structured-log event names (Open Question 7 resolution):
 
 from __future__ import annotations
 
+import logging
 import random
 import time
 from datetime import date, timedelta
@@ -40,6 +41,11 @@ from screener.persistence import (
 )
 
 log = structlog.get_logger(__name__)
+# before_sleep_log requires a stdlib logger (not structlog); tenacity calls
+# logger.log(level_int, msg) which is incompatible with structlog's
+# make_filtering_bound_logger. Passing a stdlib logger here is the canonical
+# tenacity pattern; structlog still handles all other events in this module.
+_stdlib_log = logging.getLogger(__name__)
 
 
 # --- yfinance fetch with tenacity + four-invariant gate (D-08, D-10) -------
@@ -49,7 +55,7 @@ log = structlog.get_logger(__name__)
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=2, max=60),
     retry=retry_if_exception_type((StaleOrEmptyError, ConnectionError, TimeoutError)),
-    before_sleep=before_sleep_log(log, "warning"),
+    before_sleep=before_sleep_log(_stdlib_log, logging.WARNING),
     reraise=True,
 )
 def fetch_ohlcv(ticker: str, start: str | date, today: date) -> pd.DataFrame:

@@ -13,6 +13,7 @@ screener.* layer. tests/test_architecture.py enforces this.
 from __future__ import annotations
 
 import io
+import logging
 from datetime import date, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     pass
 
 log = structlog.get_logger(__name__)
+_stdlib_log = logging.getLogger(__name__)
 
 
 # --- iShares feed constants (verified live 2026-05-02) ---------------------
@@ -141,7 +143,7 @@ def get_cached_session() -> requests_cache.CachedSession:
     retry=retry_if_exception_type(
         (requests.HTTPError, requests.ConnectionError, requests.Timeout, ConnectionError, TimeoutError)
     ),
-    before_sleep=before_sleep_log(log, "warning"),
+    before_sleep=before_sleep_log(_stdlib_log, logging.WARNING),
     reraise=True,
 )
 def fetch_ishares_iwb_csv(session: requests.Session | None = None) -> bytes:
