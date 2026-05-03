@@ -90,7 +90,29 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 
 **Estimated Complexity:** L
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+
+**Wave 1** *(no cross-plan file overlap; runs in parallel)*
+- [ ] 02-01-PLAN.md - persistence schemas (OhlcvPanelSchema/UniverseSchema/SplitsSchema), atomic-write primitive, write/read helpers, 10 conftest fixtures, 9 schema/atomic-write tests (DAT-09, DAT-08, DAT-03)
+- [ ] 02-02-PLAN.md - Settings additions (8 D-20 fields), pandas-datareader dep, mypy strict-files extension to persistence.py, .env.example mirror, .gitignore carve-out per Amendment 2026-05-02 + .gitkeep anchors
+
+**Wave 2** *(blocked on 02-01, 02-02)*
+- [ ] 02-03-PLAN.md - data/universe.py (iShares IWB CSV fetcher + parser, ALLOWLIST normalizer per D-03 amended, sanity_check, ISO-week-Monday snapshot writer) + first wiring of data/__init__.py barrel; 8 unit tests covering DAT-01/DAT-02/DAT-06
+
+**Wave 3** *(blocked on 02-01, 02-02, 02-03; data/__init__.py overlaps 02-03 so this serializes)*
+- [ ] 02-04-PLAN.md - data/ohlcv.py (yfinance + tenacity wrapper + 4-invariant gate + sentinel refetch + circuit-breaker + splits ledger) + data/stooq.py (pandas-datareader adapter) + extension of data/__init__.py with ohlcv/stooq re-exports; 12 unit tests + 2 deferred golden-file tests covering DAT-03/DAT-06/DAT-07/DAT-08
+
+**Wave 4** *(blocked on 02-03, 02-04; final stitching)*
+- [ ] 02-05-PLAN.md - cli.py refresh-universe and refresh-ohlcv bodies (95% health gate via UNIVERSE_HEALTH_THRESHOLD; --force / --ticker flags), 2 health-gate integration tests + amended stub-iteration test, README "Data layer" section with survivorship disclosure (DAT-07 final wiring)
+
+Cross-cutting truths (shared by 2+ plans):
+- Every per-ticker write goes through persistence.atomic-write idiom (tempfile in target.parent + os.replace) per D-11.
+- Every external fetch is wrapped in tenacity stop_after_attempt(5) + wait_exponential(multiplier=1, min=2, max=60) per D-10.
+- Every structured event uses the names + field schemas finalized in RESEARCH.md Open Question 7 (fetch_start, fetch_success, fetch_fail, breaker_tripped, health_check_passed, health_check_failed, snapshot_written).
+- Every Phase 2 schema is a pandera DataFrameModel with strict=True + coerce=False; eager (lazy=False) at write boundary, lazy (lazy=True) at read boundary per D-15/D-16.
+- The 9-subcommand D-14 surface is LOCKED; refresh-universe and refresh-ohlcv get real bodies, no new subcommands added.
 
 ### Phase 3: Indicator Panel & Regime
 
