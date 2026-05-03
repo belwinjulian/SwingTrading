@@ -95,8 +95,8 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 Plans:
 
 **Wave 1** *(no cross-plan file overlap; runs in parallel)*
-- [ ] 02-01-PLAN.md - persistence schemas (OhlcvPanelSchema/UniverseSchema/SplitsSchema), atomic-write primitive, write/read helpers, 10 conftest fixtures, 9 schema/atomic-write tests (DAT-09, DAT-08, DAT-03)
-- [ ] 02-02-PLAN.md - Settings additions (8 D-20 fields), pandas-datareader dep, mypy strict-files extension to persistence.py, .env.example mirror, .gitignore carve-out per Amendment 2026-05-02 + .gitkeep anchors
+- [x] 02-01-PLAN.md - persistence schemas (OhlcvPanelSchema/UniverseSchema/SplitsSchema), atomic-write primitive, write/read helpers, 10 conftest fixtures, 9 schema/atomic-write tests (DAT-09, DAT-08, DAT-03)
+- [x] 02-02-PLAN.md - Settings additions (8 D-20 fields), pandas-datareader dep, mypy strict-files extension to persistence.py, .env.example mirror, .gitignore carve-out per Amendment 2026-05-02 + .gitkeep anchors
 
 **Wave 2** *(blocked on 02-01, 02-02)*
 - [ ] 02-03-PLAN.md - data/universe.py (iShares IWB CSV fetcher + parser, ALLOWLIST normalizer per D-03 amended, sanity_check, ISO-week-Monday snapshot writer) + first wiring of data/__init__.py barrel; 8 unit tests covering DAT-01/DAT-02/DAT-06
