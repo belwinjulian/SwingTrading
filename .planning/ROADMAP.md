@@ -25,7 +25,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 ## Phases
 
 - [x] **Phase 1: Repo Skeleton & CI Hygiene** — uv-managed pyproject, typer CLI skeleton, Makefile targets, ruff/mypy/pytest CI, pre-registration doc placeholder (completed 2026-05-02)
-- [ ] **Phase 2: Data Foundation** — Russell 1000 universe with weekly snapshots, yfinance OHLCV cache with Stooq fallback, retry/health-check infrastructure, pandera schemas at I/O boundaries
+- [x] **Phase 2: Data Foundation** — Russell 1000 universe with weekly snapshots, yfinance OHLCV cache with Stooq fallback, retry/health-check infrastructure, pandera schemas at I/O boundaries (completed 2026-05-03)
 - [ ] **Phase 3: Indicator Panel & Regime** — SMA/ATR/ADR%/RS-percentile panel, macro data layer, three-state regime gate with continuous regime_score
 - [ ] **Phase 4: Trend Template, Composite Skeleton & First Report** — Minervini 8-condition gate, composite skeleton (weights pre-registered), ATR-based sizing, first daily markdown report
 - [ ] **Phase 5: Backtest Harness & No-Look-Ahead Gate** — vectorbt walk-forward harness, CI-blocking no-look-ahead test, slippage tiers, forensic audit CLI, per-playbook + per-regime breakdowns
@@ -99,13 +99,13 @@ Plans:
 - [x] 02-02-PLAN.md - Settings additions (8 D-20 fields), pandas-datareader dep, mypy strict-files extension to persistence.py, .env.example mirror, .gitignore carve-out per Amendment 2026-05-02 + .gitkeep anchors
 
 **Wave 2** *(blocked on 02-01, 02-02)*
-- [ ] 02-03-PLAN.md - data/universe.py (iShares IWB CSV fetcher + parser, ALLOWLIST normalizer per D-03 amended, sanity_check, ISO-week-Monday snapshot writer) + first wiring of data/__init__.py barrel; 8 unit tests covering DAT-01/DAT-02/DAT-06
+- [x] 02-03-PLAN.md - data/universe.py (iShares IWB CSV fetcher + parser, ALLOWLIST normalizer per D-03 amended, sanity_check, ISO-week-Monday snapshot writer) + first wiring of data/__init__.py barrel; 8 unit tests covering DAT-01/DAT-02/DAT-06
 
 **Wave 3** *(blocked on 02-01, 02-02, 02-03; data/__init__.py overlaps 02-03 so this serializes)*
-- [ ] 02-04-PLAN.md - data/ohlcv.py (yfinance + tenacity wrapper + 4-invariant gate + sentinel refetch + circuit-breaker + splits ledger) + data/stooq.py (pandas-datareader adapter) + extension of data/__init__.py with ohlcv/stooq re-exports; 12 unit tests + 2 deferred golden-file tests covering DAT-03/DAT-06/DAT-07/DAT-08
+- [x] 02-04-PLAN.md - data/ohlcv.py (yfinance + tenacity wrapper + 4-invariant gate + sentinel refetch + circuit-breaker + splits ledger) + data/stooq.py (pandas-datareader adapter) + extension of data/__init__.py with ohlcv/stooq re-exports; 12 unit tests + 2 deferred golden-file tests covering DAT-03/DAT-06/DAT-07/DAT-08
 
 **Wave 4** *(blocked on 02-03, 02-04; final stitching)*
-- [ ] 02-05-PLAN.md - cli.py refresh-universe and refresh-ohlcv bodies (95% health gate via UNIVERSE_HEALTH_THRESHOLD; --force / --ticker flags), 2 health-gate integration tests + amended stub-iteration test, README "Data layer" section with survivorship disclosure (DAT-07 final wiring)
+- [x] 02-05-PLAN.md - cli.py refresh-universe and refresh-ohlcv bodies (95% health gate via UNIVERSE_HEALTH_THRESHOLD; --force / --ticker flags), 2 health-gate integration tests + amended stub-iteration test, README "Data layer" section with survivorship disclosure (DAT-07 final wiring)
 
 Cross-cutting truths (shared by 2+ plans):
 - Every per-ticker write goes through persistence.atomic-write idiom (tempfile in target.parent + os.replace) per D-11.
@@ -235,7 +235,7 @@ Cross-cutting truths (shared by 2+ plans):
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Repo Skeleton & CI Hygiene | 5/5 | Complete   | 2026-05-02 |
-| 2. Data Foundation | 0/? | Not started | - |
+| 2. Data Foundation | 5/5 | Complete | 2026-05-03 |
 | 3. Indicator Panel & Regime | 0/? | Not started | - |
 | 4. Trend Template, Composite Skeleton & First Report | 0/? | Not started | - |
 | 5. Backtest Harness & No-Look-Ahead Gate | 0/? | Not started | - |
