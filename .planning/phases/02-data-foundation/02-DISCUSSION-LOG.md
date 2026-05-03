@@ -261,3 +261,35 @@ The user did not call these out explicitly; the planner finalizes standard answe
 - Industry-level granularity → Phase 6 decides
 - Wikipedia universe leg → dropped (D-01); REQUIREMENTS.md DAT-01 to be edited at next milestone summary
 - Initial-backfill resumability → not needed; atomic per-ticker writes preserve progress, incremental append picks up where it left off
+
+---
+
+## Amendment 2026-05-02 (post-research)
+
+**Source:** `/gsd-plan-phase 2` research pass (gsd-phase-researcher) surfaced two contradictions between locked decisions and live ground truth. Both resolved before planning began. Recorded here so the original decision text in CONTEXT.md retains its provenance and the amendment is auditable.
+
+### D-03 amended: regex replaced with allowlist
+
+- **Original D-03 text:** `regex \.([A-Z])$ → -\1` plus a "tiny known-divergence allowlist" — assumed iShares ships dot-notation share classes (`BRK.B`, `BF.B`).
+- **Live verification (2026-05-02):** the IWB CSV ships concatenated share-class tickers — `BRKB`, `BFB`, `BFA` — with NO separator. The regex matches zero rows in the live feed.
+- **Amended rule:** `ALLOWLIST = {"BRKB": "BRK-B", "BFB": "BF-B", "BFA": "BF-A"}` — explicit map, pass-through default. A sanity assertion logs (does not fail) any new ticker matching `^[A-Z]{4,5}[A-Z]$` not in the allowlist, surfacing it for quarterly review at IWB rebalance.
+- **Why allowlist over regex:** the regex was already going to need an exception list; switching to allowlist-only removes the no-op regex pass and makes additions explicit. Lossless against the live feed; round-trip auditable via the `ticker_raw` column.
+- **Authority:** user accepted the recommendation in the planning gate question.
+
+### D-06 vs D-19 reconciled: co-location wins, .gitignore carves out splits
+
+- **Original conflict:** D-06 locked `data/ohlcv/<TICKER>/{prices,splits}.parquet` (co-located). D-19 said "commit `data/splits/*.parquet`" — implying a separate `data/splits/` top-level dir.
+- **Resolution:** keep D-06's per-ticker co-location. The .gitignore for v1 reads:
+
+```
+data/*
+!data/universe/
+!data/universe/.gitkeep
+!data/ohlcv/
+data/ohlcv/**/prices.parquet
+!data/ohlcv/**/splits.parquet
+!data/ohlcv/**/.gitkeep
+```
+
+- **Why co-location wins:** D-06 affects code shape (per-ticker reader API, atomic write paths). D-19 was a commit-policy expression that did not anticipate the layout. Reconciling at the .gitignore layer keeps both intents satisfied without churning code paths.
+- **Authority:** user accepted the recommendation in the planning gate question.
