@@ -277,6 +277,8 @@ def run_with_breaker(tickers: list[str], today: date) -> tuple[int, int, list[st
             try:
                 df = stooq_module.fetch_ohlcv(ticker, settings.OHLCV_BACKFILL_START, today)
                 write_ohlcv_atomic(ticker, df)
+                splits_df = fetch_splits(ticker)
+                write_splits_atomic(ticker, splits_df)
                 stooq_ok += 1
                 log.info("fetch_success", ticker=ticker, source="stooq", n_bars=len(df))
             except Exception as e:
