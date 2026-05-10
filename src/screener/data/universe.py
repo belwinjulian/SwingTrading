@@ -33,7 +33,6 @@ from tenacity import (
 from screener.config import get_settings
 from screener.persistence import (
     GICS_SECTORS,
-    UniverseSchema,
     write_universe_atomic,
 )
 

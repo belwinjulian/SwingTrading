@@ -58,6 +58,13 @@ class Settings(BaseSettings):
     REGIME_VIX_CORRECTION: float = 30.0
     REGIME_VIX_CONFIRMED: float = 20.0
 
+    # Phase 4 (D-07/D-08, CONTEXT.md "Claude's Discretion") — report + trend-template gate config
+    SNAPSHOT_DIR: Path = Path("data/snapshots")
+    REPORT_DIR: Path = Path("reports")
+    REPORT_TOP_N: int = 15
+    TREND_TEMPLATE_PASS_RATE_WARN: float = 0.25
+    TREND_TEMPLATE_PASS_RATE_HARD_FAIL: float = 0.25
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

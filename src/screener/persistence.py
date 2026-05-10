@@ -25,6 +25,7 @@ surface together for clearer downstream debugging.
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -217,6 +218,42 @@ class RsSnapshotSchema(pa.DataFrameModel):
         coerce = False
 
 
+class RankingSnapshotSchema(pa.DataFrameModel):
+    """Daily ranking snapshot — full universe with composite scores and ranks.
+
+    Written by publishers/snapshot.py via persistence.write_snapshot_atomic.
+    Used by Phase 5 backtest harness for no-look-ahead reproduction.
+    Schema enforced eagerly at the write boundary (D-16 validation policy).
+    """
+
+    ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
+    rank: Series[pd.Int64Dtype] = pa.Field(ge=1, nullable=True)
+    composite_score: Series[float] = pa.Field(ge=0.0, le=110.0, nullable=True)
+    rs_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=True)
+    trend_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=True)
+    volume_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=True)
+    pattern_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=False)
+    earnings_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=False)
+    catalyst_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=False)
+    passes_trend_template: Series[bool] = pa.Field(nullable=False)
+    trend_template_score: Series[pd.Int64Dtype] = pa.Field(ge=0, le=8, nullable=True)
+    rs_rating: Series[pd.Int64Dtype] = pa.Field(ge=1, le=99, nullable=True)
+    dryup_ratio: Series[float] = pa.Field(nullable=True)
+    pivot_distance_atr: Series[float] = pa.Field(nullable=True)
+    pivot_zone: Series[str] = pa.Field(
+        isin=["in-zone", "chase, skip", "unknown"], nullable=False
+    )
+    regime_state: Series[str] = pa.Field(
+        isin=["Confirmed Uptrend", "Uptrend Under Pressure", "Correction"],
+        nullable=False,
+    )
+    regime_score: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=False)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
 # --- Validation helpers (D-16) -----------------------------------------------
 
 
@@ -272,6 +309,18 @@ def _assert_safe_ticker(ticker: str) -> None:
         raise ValueError(f"Unsafe ticker for path construction: {ticker!r}")
 
 
+def _assert_safe_snapshot_date(snapshot_date: str) -> None:
+    """Path-traversal defense: snapshot_date must match strict YYYY-MM-DD.
+
+    T-4-01 mitigation: refuse anything other than `YYYY-MM-DD` before path
+    construction. Mirrors _assert_safe_ticker's raise-on-bad-input shape.
+    """
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", snapshot_date):
+        raise ValueError(
+            f"Unsafe snapshot_date for path construction: {snapshot_date!r}"
+        )
+
+
 def _ohlcv_dir() -> Path:
     """Resolve the OHLCV cache directory, with a hard-coded fallback for the
     Wave-1 race against 02-02 (which adds OHLCV_CACHE_DIR to Settings).
@@ -299,6 +348,12 @@ def _rs_snapshot_dir() -> Path:
     """Resolve the RS snapshot directory, with a hard-coded fallback for cross-wave safety."""
     s: Any = get_settings()
     return Path(getattr(s, "RS_SNAPSHOT_DIR", "data/rs_snapshots"))
+
+
+def _snapshot_dir() -> Path:
+    """Resolve the daily ranking-snapshot directory, with cross-wave fallback."""
+    s: Any = get_settings()
+    return Path(getattr(s, "SNAPSHOT_DIR", "data/snapshots"))
 
 
 # --- Public writers (eager validation + atomic write) ------------------------
@@ -357,6 +412,25 @@ def write_rs_snapshot_atomic(df: pd.DataFrame, snapshot_date: str) -> Path:
     _write_parquet_atomic(validated, target)
     log.info(
         "rs_snapshot_written",
+        path=str(target),
+        n_rows=len(validated),
+        snapshot_date=snapshot_date,
+    )
+    return target
+
+
+def write_snapshot_atomic(df: pd.DataFrame, snapshot_date: str) -> Path:
+    """Validate + atomically write a ranking snapshot to data/snapshots/<date>.parquet.
+
+    Eager validation (D-16): a malformed row aborts loud at the write boundary
+    rather than corrupting the audit trail Phase 5 backtest depends on.
+    """
+    _assert_safe_snapshot_date(snapshot_date)
+    validated = validate_at_write(RankingSnapshotSchema, df)
+    target = _snapshot_dir() / f"{snapshot_date}.parquet"
+    _write_parquet_atomic(validated, target)
+    log.info(
+        "snapshot_written",
         path=str(target),
         n_rows=len(validated),
         snapshot_date=snapshot_date,

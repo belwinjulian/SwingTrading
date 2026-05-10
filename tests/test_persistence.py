@@ -49,6 +49,31 @@ def _make_panel(close_vals: list[float], open_vals: list[float] | None = None) -
     )
 
 
+def _make_ranking_snapshot_df() -> pd.DataFrame:
+    """Minimal valid frame for RankingSnapshotSchema."""
+    return pd.DataFrame(
+        {
+            "ticker": ["AAA", "BBB"],
+            "rank": pd.array([1, 2], dtype=pd.Int64Dtype()),
+            "composite_score": [48.7, 46.2],
+            "rs_component": [0.95, 0.92],
+            "trend_component": [1.0, 0.875],
+            "volume_component": [0.91, 0.78],
+            "pattern_component": [0.0, 0.0],
+            "earnings_component": [0.0, 0.0],
+            "catalyst_component": [0.0, 0.0],
+            "passes_trend_template": [True, True],
+            "trend_template_score": pd.array([8, 7], dtype=pd.Int64Dtype()),
+            "rs_rating": pd.array([95, 92], dtype=pd.Int64Dtype()),
+            "dryup_ratio": [0.7, 0.8],
+            "pivot_distance_atr": [0.42, 0.71],
+            "pivot_zone": ["in-zone", "in-zone"],
+            "regime_state": ["Confirmed Uptrend", "Confirmed Uptrend"],
+            "regime_score": [0.82, 0.82],
+        }
+    )
+
+
 def _make_universe_row(sector: str) -> pd.DataFrame:
     return pd.DataFrame(
         {
@@ -199,3 +224,30 @@ def test_read_panel_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert panel.index.names == ["ticker", "date"]
     assert sorted(panel.index.get_level_values("ticker").unique().tolist()) == ["AAA", "BBB"]
     assert len(panel) == 20
+
+
+# --- Phase 4 Wave 0: RankingSnapshotSchema + _assert_safe_snapshot_date -------
+
+
+def test_ranking_snapshot_schema_accepts_valid_frame() -> None:
+    from screener.persistence import RankingSnapshotSchema, validate_at_write
+    df = _make_ranking_snapshot_df()
+    validated = validate_at_write(RankingSnapshotSchema, df)
+    assert len(validated) == 2
+
+
+def test_ranking_snapshot_rejects_bad_pivot_zone() -> None:
+    from screener.persistence import RankingSnapshotSchema, validate_at_write
+    df = _make_ranking_snapshot_df()
+    df["pivot_zone"] = ["BOGUS", "BOGUS"]
+    with pytest.raises(pa.errors.SchemaError):
+        validate_at_write(RankingSnapshotSchema, df)
+
+
+def test_assert_safe_snapshot_date_rejects_traversal() -> None:
+    from screener.persistence import _assert_safe_snapshot_date
+    _assert_safe_snapshot_date("2026-05-10")  # silent pass
+    with pytest.raises(ValueError, match="Unsafe snapshot_date"):
+        _assert_safe_snapshot_date("../etc/passwd")
+    with pytest.raises(ValueError, match="Unsafe snapshot_date"):
+        _assert_safe_snapshot_date("2026-5-10")  # not zero-padded
