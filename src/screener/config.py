@@ -48,6 +48,16 @@ class Settings(BaseSettings):
     OHLCV_FETCH_SLEEP_MIN_S: float = 0.5
     OHLCV_FETCH_SLEEP_MAX_S: float = 1.5
 
+    # Phase 3 (D-12) — macro + RS snapshot paths and regime thresholds
+    MACRO_CACHE_DIR: Path = Path("data/macro")
+    RS_SNAPSHOT_DIR: Path = Path("data/rs_snapshots")
+    MACRO_BACKFILL_START: str = "2005-01-01"
+    REGIME_BREADTH_THRESHOLD: float = 0.60
+    REGIME_DIST_DAYS_PRESSURE: int = 5
+    REGIME_DIST_DAYS_CORRECTION: int = 9
+    REGIME_VIX_CORRECTION: float = 30.0
+    REGIME_VIX_CONFIRMED: float = 20.0
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

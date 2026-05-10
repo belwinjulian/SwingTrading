@@ -256,3 +256,10 @@ def synthetic_stooq_descending_df() -> pd.DataFrame:
         index=idx,
     )
     return df.sort_index(ascending=False)
+
+
+# --- Phase 3 indicator + regime fixtures -----------------------------------
+# Populated by Plans 03-03, 03-04, 03-05. This section header is a Wave 0
+# anchor; downstream plans add fixtures (synthetic_short_history_panel,
+# synthetic_multi_ticker_panel, synthetic_spy_2008q4, synthetic_vix_panic)
+# without re-touching the prior phase blocks.
