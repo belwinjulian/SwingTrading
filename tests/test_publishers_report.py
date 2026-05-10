@@ -183,10 +183,6 @@ def test_report_atomic_write_crash_no_residue(
     )
 
     # Force os.replace to raise mid-write.
-    import os as _os
-
-    original_replace = _os.replace
-
     def _raise(*args: object, **kwargs: object) -> None:
         raise OSError("simulated crash")
 
