@@ -4,37 +4,38 @@ milestone: v1.0
 milestone_name: milestone
 status: ready_to_execute
 stopped_at: null
-last_updated: "2026-05-10T12:30:00.000Z"
+last_updated: "2026-05-10T20:00:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 10
-  percent: 38
+  completed_plans: 15
+  percent: 50
 ---
 
 # Project State
 
-**Last updated:** 2026-05-10 (Phase 3 planned — 5 plans across 3 waves, verifier passed iteration 2/3, all 10 REQ-IDs covered)
+**Last updated:** 2026-05-10 (Phase 3 COMPLETE — all 5 plans shipped, 72 tests green; regime module + IND-02 CI gate + REG-04 golden-file tests)
 
 ## Project Reference
 
 - **Project:** Momentum Swing Screener
 - **Core value:** Every evening, the user opens one report and gets a small, ranked list of high-quality long candidates with playbook-specific trade plans they can execute the next morning — reliable enough to size real positions on once paper-trade validation confirms it works.
-- **Current focus:** Phase 03 — indicator-panel-&-regime
+- **Current focus:** Phase 04 — trend-template-composite-skeleton-first-report
 - **Out of scope (v1):** ML/LightGBM, Streamlit dashboard, FinBERT/Reddit sentiment, intraday/pre-market scanning, broker API, paid data feeds, PySpark, dbt+duckdb, hosted demo, options data, alt-data.
 - **Audience:** Belwin (data engineer; personal-trading first; portfolio-credible second).
 
 ## Current Position
 
 Phase: 02 (data-foundation) — COMPLETE
-Phase: 03 (indicator-panel-&-regime) — PLANNED (5 plans, 3 waves)
+Phase: 03 (indicator-panel-&-regime) — COMPLETE (all 5 plans, 2026-05-10)
+Phase: 04 (trend-template-composite-skeleton-first-report) — NOT STARTED
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** 3
-- **Plan:** 0 / 5 executed
-- **Status:** Ready to execute
-- **Progress:** [███████░░░] 70%
+- **Phase:** 4 (next)
+- **Plan:** 15 / 15 executed (through Phase 3)
+- **Status:** Ready for Phase 4
+- **Progress:** [██████████░░░░░] 50%
 
 ### Phase 3 Plan Summary
 
@@ -50,11 +51,11 @@ Phase: 03 (indicator-panel-&-regime) — PLANNED (5 plans, 3 waves)
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Phases complete | 2 / 8 | Phase 1 ✓ 2026-05-02; Phase 2 ✓ 2026-05-03 |
-| Plans complete | 10 / 10 (Phases 1+2) | 01-01..01-05, 02-01..02-05 all shipped |
+| Phases complete | 3 / 8 | Phase 1 ✓ 2026-05-02; Phase 2 ✓ 2026-05-03; Phase 3 ✓ 2026-05-10 |
+| Plans complete | 15 / 15 (Phases 1+2+3) | 01-01..01-05, 02-01..02-05, 03-01..03-05 all shipped |
 | Requirements mapped | 64 / 64 | 100% coverage |
-| Requirements completed | 10 / 64 | FND-01, FND-02, FND-03, DAT-01, DAT-02, DAT-03, DAT-06, DAT-07, DAT-08, DAT-09 |
-| Last test run | 39 passed, 2 skipped | `pytest -m "not slow and not integration"` 2026-05-03 |
+| Requirements completed | 21 / 64 | FND-01..03, DAT-01..04, DAT-06..09, IND-01..05, REG-01..04 |
+| Last test run | 72 passed, 2 skipped | `pytest -m "not slow and not integration"` 2026-05-10 |
 | Last lint pass | clean | ruff + mypy passing |
 | Phase 01 P04 | 2min | 2 tasks | 2 files |
 | Phase 01 P05 | 3min | 2 tasks | 6 files |
@@ -66,7 +67,7 @@ Phase: 03 (indicator-panel-&-regime) — PLANNED (5 plans, 3 waves)
 |---|-------|--------|---------|
 | 1 | Repo Skeleton & CI Hygiene | ✓ Complete (verified 2026-05-02; 4/4 must-haves) | FND-01, FND-02, FND-03 |
 | 2 | Data Foundation | ✓ Complete (verified 2026-05-03; 7/7 must-haves) | DAT-01..03, DAT-06..09 |
-| 3 | Indicator Panel & Regime | Planned (5 plans, 0/5 executed) | DAT-04, IND-01..05, REG-01..04 |
+| 3 | Indicator Panel & Regime | ✓ Complete (2026-05-10; 5/5 plans; 72 tests green) | DAT-04, IND-01..05, REG-01..04 |
 | 4 | Trend Template, Composite Skeleton & First Report | Not started | FND-05, SIG-01, SIG-04, OUT-01..03 |
 | 5 | Backtest Harness & No-Look-Ahead Gate | Not started | FND-04, BCK-01..07 |
 | 6 | Pattern Detection, Full Signal Stack & Playbook Tagging | Not started | DAT-05, PAT-01..06, SIG-02, SIG-03, CMP-01..05, CAT-01..04 |

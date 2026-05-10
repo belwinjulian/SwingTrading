@@ -26,7 +26,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 
 - [x] **Phase 1: Repo Skeleton & CI Hygiene** — uv-managed pyproject, typer CLI skeleton, Makefile targets, ruff/mypy/pytest CI, pre-registration doc placeholder (completed 2026-05-02)
 - [x] **Phase 2: Data Foundation** — Russell 1000 universe with weekly snapshots, yfinance OHLCV cache with Stooq fallback, retry/health-check infrastructure, pandera schemas at I/O boundaries (completed 2026-05-03)
-- [ ] **Phase 3: Indicator Panel & Regime** — SMA/ATR/ADR%/RS-percentile panel, macro data layer, three-state regime gate with continuous regime_score
+- [x] **Phase 3: Indicator Panel & Regime** — SMA/ATR/ADR%/RS-percentile panel, macro data layer, three-state regime gate with continuous regime_score (completed 2026-05-10)
 - [ ] **Phase 4: Trend Template, Composite Skeleton & First Report** — Minervini 8-condition gate, composite skeleton (weights pre-registered), ATR-based sizing, first daily markdown report
 - [ ] **Phase 5: Backtest Harness & No-Look-Ahead Gate** — vectorbt walk-forward harness, CI-blocking no-look-ahead test, slippage tiers, forensic audit CLI, per-playbook + per-regime breakdowns
 - [ ] **Phase 6: Pattern Detection, Full Signal Stack & Playbook Tagging** — VCP + continuation-flag + post-gap-continuation detectors, Qullamaggie Setup A scan, CANSLIM C+L+M overlay, composite playbook tagger, catalyst flags
@@ -131,20 +131,20 @@ Cross-cutting truths (shared by 2+ plans):
 
 **Estimated Complexity:** M
 
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 
 Plans:
 
 **Wave 1**
-- [ ] 03-01-settings-and-schemas-PLAN.md — Settings D-12 fields + 5 pandera schemas (MacroOhlcvSchema, VixSchema, YieldsSchema, NyadMacroSchema, RsSnapshotSchema) + 4 persistence helpers (write_rs_snapshot_atomic, write_macro_atomic, read_*) (DAT-04, IND-03)
+- [x] 03-01-settings-and-schemas-PLAN.md — Settings D-12 fields + 5 pandera schemas (MacroOhlcvSchema, VixSchema, YieldsSchema, NyadMacroSchema, RsSnapshotSchema) + 4 persistence helpers (write_rs_snapshot_atomic, write_macro_atomic, read_*) (DAT-04, IND-03)
 
 **Wave 2** *(blocked on 03-01; 03-02 and 03-03 run in parallel — zero file overlap)*
-- [ ] 03-02-macro-data-layer-PLAN.md — data/macro.py with 5 fetchers (SPY/QQQ/^VIX/$NYAD/FRED yields) + R1000 breadth fallback per D-05 + refresh-macro CLI body + make macro target (DAT-04)
-- [ ] 03-03-indicator-panel-PLAN.md — indicators/{trend,volatility,volume,relative_strength}.py pure functions + build_panel orchestrator (IND-01, IND-03, IND-04, IND-05)
+- [x] 03-02-macro-data-layer-PLAN.md — data/macro.py with 5 fetchers (SPY/QQQ/^VIX/$NYAD/FRED yields) + R1000 breadth fallback per D-05 + refresh-macro CLI body + make macro target (DAT-04)
+- [x] 03-03-indicator-panel-PLAN.md — indicators/{trend,volatility,volume,relative_strength}.py pure functions + build_panel orchestrator (IND-01, IND-03, IND-04, IND-05)
 
 **Wave 3** *(blocked on 03-02 + 03-03; final stitching)*
-- [ ] 03-04-regime-module-PLAN.md — regime.py with _classify_state + _compute_distribution_days + _regime_score + compute_for_date + build_history (REG-01, REG-02, REG-03)
-- [ ] 03-05-ci-gate-and-golden-tests-PLAN.md — IND-02 SMA-not-EMA grep step in ci.yml + mutation test + 3 REG-04 golden-file tests (2008-Q4, 2020-Q1, 2022-H1) (IND-02, REG-04)
+- [x] 03-04-regime-module-PLAN.md — regime.py with _classify_state + _compute_distribution_days + _regime_score + compute_for_date + build_history (REG-01, REG-02, REG-03)
+- [x] 03-05-ci-gate-and-golden-tests-PLAN.md — IND-02 SMA-not-EMA grep step in ci.yml + mutation test + 3 REG-04 golden-file tests (2008-Q4, 2020-Q1, 2022-H1) (IND-02, REG-04)
 
 ### Phase 4: Trend Template, Composite Skeleton & First Report
 
