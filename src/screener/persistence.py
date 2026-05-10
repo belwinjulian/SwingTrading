@@ -198,11 +198,19 @@ class RsSnapshotSchema(pa.DataFrameModel):
     """One row per ticker, taken on a single trading date.
     rs_rating is nullable Int64 — pd.Int64Dtype, NOT int (RESEARCH Pitfall 9):
     int cannot hold NaN, but tickers with < 252d history must produce NaN.
+    The custom check enforces the exact dtype because pandera coerce=False does
+    not distinguish int64 from Int64 at the type-annotation level alone.
     """
 
     ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
     rs_raw: Series[float] = pa.Field(nullable=True)
     rs_rating: Series[pd.Int64Dtype] = pa.Field(nullable=True)
+
+    @pa.check("rs_rating", name="rs_rating_must_be_nullable_int64")
+    @classmethod
+    def _rs_rating_dtype(cls, series: pd.Series) -> bool:  # type: ignore[type-arg]
+        """Enforce pd.Int64Dtype (nullable) — not int64 (Pitfall 9)."""
+        return series.dtype == pd.Int64Dtype()
 
     class Config:
         strict = True

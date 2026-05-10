@@ -145,6 +145,15 @@ def test_atomic_write_crash_no_partial(tmp_path: Path, monkeypatch: pytest.Monke
     assert leftover == [], f"No tmp residue should remain; found {leftover}"
 
 
+def test_write_parquet_atomic_auto_creates_new_dirs(tmp_path: Path) -> None:
+    """Pitfall 10: target.parent.mkdir(parents=True, exist_ok=True) covers
+    data/macro/ and data/rs_snapshots/ on first run."""
+    nested = tmp_path / "macro" / "deep" / "tree" / "spy.parquet"
+    df = pd.DataFrame({"a": [1, 2, 3]})
+    _write_parquet_atomic(df, nested)
+    assert nested.exists()
+
+
 # --- DAT-08: empty splits round-trip ----------------------------------------
 
 
