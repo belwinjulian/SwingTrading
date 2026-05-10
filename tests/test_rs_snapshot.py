@@ -150,3 +150,55 @@ def test_macro_dir_resolves_from_settings() -> None:
 def test_rs_snapshot_dir_resolves_from_settings() -> None:
     """_rs_snapshot_dir() returns the D-12 default path."""
     assert _rs_snapshot_dir() == Path("data/rs_snapshots")
+
+
+def test_snapshot_atomic_write_crash_no_residue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A mid-write crash leaves no partial Parquet and no .tmp residue
+    — mirrors test_rs_snapshot_atomic_write for write_snapshot_atomic."""
+    snapshot_dir = tmp_path / "snapshots"
+    monkeypatch.setattr(
+        "screener.persistence._snapshot_dir", lambda: snapshot_dir
+    )
+
+    from screener.persistence import write_snapshot_atomic
+
+    # Build a minimal valid frame for RankingSnapshotSchema.
+    df = pd.DataFrame(
+        {
+            "ticker": ["AAA"],
+            "rank": pd.array([1], dtype=pd.Int64Dtype()),
+            "composite_score": [50.0],
+            "rs_component": [0.5],
+            "trend_component": [0.5],
+            "volume_component": [0.5],
+            "pattern_component": [0.0],
+            "earnings_component": [0.0],
+            "catalyst_component": [0.0],
+            "passes_trend_template": [True],
+            "trend_template_score": pd.array([5], dtype=pd.Int64Dtype()),
+            "rs_rating": pd.array([90], dtype=pd.Int64Dtype()),
+            "dryup_ratio": [0.6],
+            "pivot_distance_atr": [0.5],
+            "pivot_zone": ["in-zone"],
+            "regime_state": ["Confirmed Uptrend"],
+            "regime_score": [0.8],
+        }
+    )
+
+    def _raise(self: pd.DataFrame, *args: object, **kwargs: object) -> None:
+        raise OSError("simulated mid-write crash")
+
+    monkeypatch.setattr(pd.DataFrame, "to_parquet", _raise)
+    with pytest.raises(OSError):
+        write_snapshot_atomic(df, "2026-05-10")
+
+    target = snapshot_dir / "2026-05-10.parquet"
+    assert not target.exists(), (
+        "snapshot must not exist after a mid-write crash"
+    )
+    leftover = list(snapshot_dir.glob(".2026-05-10.parquet.*.tmp"))
+    assert leftover == [], (
+        f"No tmp residue should remain; found {leftover}"
+    )
