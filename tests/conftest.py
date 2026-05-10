@@ -311,3 +311,42 @@ def synthetic_multi_ticker_panel() -> pd.DataFrame:
             index=idx,
         ))
     return pd.concat(frames).sort_index()
+
+
+# --- Phase 3 regime fixtures (Plan 03-04) ------------------------------------
+
+
+@pytest.fixture(scope="session")
+def synthetic_spy_with_dist_days() -> pd.DataFrame:
+    """SPY OHLCV with exactly 4 strict-IBD distribution days in the last 25
+    sessions — used by test_distribution_day_idiom.
+
+    Distribution day = close down >0.2% AND volume > prev_volume.
+    """
+    n = 50
+    idx = pd.bdate_range(end=pd.Timestamp("2026-04-30"), periods=n)
+    close = np.full(n, 100.0)
+    volume = np.full(n, 1_000_000, dtype="int64")
+
+    # Inject 4 distribution days at indices 30, 35, 40, 45 (within last 25 sessions
+    # of index n-1=49; window covers indices 25..49).
+    for i in (30, 35, 40, 45):
+        close[i] = close[i - 1] * 0.99   # 1% drop > 0.2%
+        volume[i] = int(volume[i - 1] * 1.5)  # higher volume
+    return pd.DataFrame(
+        {
+            "open": close, "high": close * 1.01, "low": close * 0.98,
+            "close": close, "volume": volume,
+        },
+        index=pd.DatetimeIndex(idx, name="date"),
+    )
+
+
+@pytest.fixture(scope="session")
+def synthetic_vix_calm() -> pd.DataFrame:
+    """VIX series with close always at 15 (calm market — Confirmed Uptrend territory)."""
+    idx = pd.bdate_range(end=pd.Timestamp("2026-04-30"), periods=50)
+    return pd.DataFrame(
+        {"close": [15.0] * 50},
+        index=pd.DatetimeIndex(idx, name="date"),
+    )
