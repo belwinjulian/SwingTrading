@@ -168,7 +168,7 @@ Plans:
 - [x] 04-02-PLAN.md — Trend Template signal: signals/minervini.py with all 8 conditions (SMA only, NaN-safe, per-ticker shift) + 5 unit tests (SIG-01)
 - [x] 04-03-PLAN.md — Composite skeleton: signals/composite.py with DEFAULT_WEIGHTS Final dict + PHASE_4_ZEROED frozenset + weights-iterating score() + 7 tests (SIG-04, FND-05 source-of-truth)
 - [x] 04-04-PLAN.md — Publishers: pipeline.py (run_pipeline + apply_regime_gate D-03 + validate_run D-07/D-08) + snapshot.py (thin wrapper) + report.py (render_report + write_report + pivot zone Literal + breakdown format) + 15 tests (OUT-01, OUT-02, OUT-03)
-- [ ] 04-05-PLAN.md — Wiring + freeze: cli.py score/report bodies + scripts/check_preregistration.py + docs/strategy_v1_preregistration.md fill + ci.yml step + tests; final task is the D-10 two-commit freeze ceremony (FND-05, OUT-01)
+- [x] 04-05-PLAN.md — Wiring + freeze: cli.py score/report bodies + scripts/check_preregistration.py + docs/strategy_v1_preregistration.md fill + ci.yml step + tests; final task is the D-10 two-commit freeze ceremony (FND-05, OUT-01)
 
 ### Phase 5: Backtest Harness & No-Look-Ahead Gate
 
