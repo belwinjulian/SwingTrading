@@ -164,7 +164,7 @@ Plans:
 **Estimated Complexity:** M
 
 **Plans:** 5 plans in 4 waves
-- [ ] 04-01-PLAN.md — Wave 0 foundation: high_52w/low_52w in indicators/trend.py + Settings (5 fields) + persistence (RankingSnapshotSchema + write_snapshot_atomic) + conftest fixtures + .gitignore for data/snapshots/ (SIG-01, OUT-03)
+- [x] 04-01-PLAN.md — Wave 0 foundation: high_52w/low_52w in indicators/trend.py + Settings (5 fields) + persistence (RankingSnapshotSchema + write_snapshot_atomic) + conftest fixtures + .gitignore for data/snapshots/ (SIG-01, OUT-03)
 - [ ] 04-02-PLAN.md — Trend Template signal: signals/minervini.py with all 8 conditions (SMA only, NaN-safe, per-ticker shift) + 5 unit tests (SIG-01)
 - [ ] 04-03-PLAN.md — Composite skeleton: signals/composite.py with DEFAULT_WEIGHTS Final dict + PHASE_4_ZEROED frozenset + weights-iterating score() + 7 tests (SIG-04, FND-05 source-of-truth)
 - [ ] 04-04-PLAN.md — Publishers: pipeline.py (run_pipeline + apply_regime_gate D-03 + validate_run D-07/D-08) + snapshot.py (thin wrapper) + report.py (render_report + write_report + pivot zone Literal + breakdown format) + 15 tests (OUT-01, OUT-02, OUT-03)
