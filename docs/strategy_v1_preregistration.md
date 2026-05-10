@@ -2,9 +2,9 @@
 
 **Status:** Frozen on 2026-05-10
 
-**Frozen at git hash:** <PLACEHOLDER_TO_BE_REPLACED_BY_NEXT_COMMIT>
+**Frozen at git hash:** 7ea58d3418864d9233e74e32820b8d75c0d2fab1
 
-Frozen at commit: <PLACEHOLDER_TO_BE_REPLACED_BY_NEXT_COMMIT>
+Frozen at commit: 7ea58d3418864d9233e74e32820b8d75c0d2fab1
 
 This document pre-registers the v1 composite-score weights BEFORE any backtest result is reported. Pre-registration is a discipline against the canonical pitfall of in-sample weight optimization (PITFALLS.md #5) and multiple-testing blindness (#13). Once frozen, the weights below cannot be tuned against backtest data; v2 ML weight tuning waits for the paper-trade journal (Phase 7).
 
