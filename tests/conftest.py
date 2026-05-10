@@ -365,6 +365,7 @@ def synthetic_panel_for_trend_template(synthetic_multi_ticker_panel: pd.DataFram
     values at the tail are non-NaN for all 5 tickers (260 > 252).
     Used by tests/test_signals_minervini.py.
     """
+    from screener.indicators.relative_strength import rs_panel
     from screener.indicators.trend import (
         high_52w_panel,
         low_52w_panel,
@@ -372,7 +373,6 @@ def synthetic_panel_for_trend_template(synthetic_multi_ticker_panel: pd.DataFram
     )
     from screener.indicators.volatility import adr_pct_panel, atr_panel
     from screener.indicators.volume import dryup_ratio_panel, obv_panel
-    from screener.indicators.relative_strength import rs_panel
 
     panel = synthetic_multi_ticker_panel.copy()
     panel = sma_panel(panel, lengths=(10, 20, 50, 150, 200))
@@ -400,8 +400,8 @@ def synthetic_scored_panel(synthetic_panel_for_trend_template: pd.DataFrame) -> 
     are lazy (inside the fixture body) so collection-time does not fail when
     these modules do not yet exist (Plans 04-02/04-03 land them).
     """
-    from screener.signals.minervini import passes_trend_template  # noqa: PLC0415
-    from screener.signals.composite import score, DEFAULT_WEIGHTS  # noqa: PLC0415
+    from screener.signals.composite import DEFAULT_WEIGHTS, score
+    from screener.signals.minervini import passes_trend_template
 
     panel = passes_trend_template(synthetic_panel_for_trend_template)
     panel = score(panel, DEFAULT_WEIGHTS)
@@ -448,7 +448,7 @@ def synthetic_high_pass_rate_panel(
     NOTE: Import from screener.signals.minervini is lazy so collection-time
     does not fail when the module does not yet exist (Plan 04-02 lands it).
     """
-    from screener.signals.minervini import passes_trend_template  # noqa: PLC0415
+    from screener.signals.minervini import passes_trend_template
 
     panel = passes_trend_template(synthetic_panel_for_trend_template)
     # The fixture's pass rate depends on the synthetic data construction
