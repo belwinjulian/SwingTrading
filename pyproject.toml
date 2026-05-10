@@ -99,7 +99,7 @@ module = "screener.ml.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = ["yfinance", "yfinance.*", "vectorbt", "vectorbt.*", "pandas_ta", "pandas_ta.*", "finnhub", "finnhub.*", "fredapi", "edgar", "edgar.*", "requests_cache", "tenacity", "tenacity.*", "pandas_datareader", "pandas_datareader.*"]
+module = ["yfinance", "yfinance.*", "vectorbt", "vectorbt.*", "pandas_ta", "pandas_ta.*", "pandas_ta_classic", "pandas_ta_classic.*", "finnhub", "finnhub.*", "fredapi", "edgar", "edgar.*", "requests_cache", "tenacity", "tenacity.*", "pandas_datareader", "pandas_datareader.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

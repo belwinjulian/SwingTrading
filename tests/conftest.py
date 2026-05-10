@@ -263,3 +263,51 @@ def synthetic_stooq_descending_df() -> pd.DataFrame:
 # anchor; downstream plans add fixtures (synthetic_short_history_panel,
 # synthetic_multi_ticker_panel, synthetic_spy_2008q4, synthetic_vix_panic)
 # without re-touching the prior phase blocks.
+
+
+@pytest.fixture(scope="session")
+def synthetic_short_history_panel() -> pd.DataFrame:
+    """50-bar single-ticker panel — exercises SMA200 NaN warmup path (D-08).
+    Ticker = SHORT; close starts at 100, drifts up by 0.1/day."""
+    n = 50
+    idx = pd.MultiIndex.from_product(
+        [["SHORT"], pd.bdate_range(end=pd.Timestamp("2026-04-30"), periods=n)],
+        names=["ticker", "date"],
+    )
+    close = np.linspace(100.0, 100.0 + 0.1 * (n - 1), n)
+    return pd.DataFrame(
+        {
+            "open": close,
+            "high": close * 1.01,
+            "low": close * 0.99,
+            "close": close,
+            "volume": np.full(n, 1_000_000, dtype="int64"),
+        },
+        index=idx,
+    )
+
+
+@pytest.fixture(scope="session")
+def synthetic_multi_ticker_panel() -> pd.DataFrame:
+    """5 tickers x 260 business days (>252d so RS rating is defined for all).
+    Tickers: AAA, BBB, CCC, DDD, EEE — distinct returns trajectories."""
+    tickers = ["AAA", "BBB", "CCC", "DDD", "EEE"]
+    n = 260
+    dates = pd.bdate_range(end=pd.Timestamp("2026-04-30"), periods=n)
+    frames = []
+    for i, t in enumerate(tickers):
+        # Each ticker has a different drift — produces distinguishable RS values.
+        drift = 0.001 * (i + 1)
+        close = 100.0 * np.cumprod(1.0 + np.full(n, drift))
+        idx = pd.MultiIndex.from_product([[t], dates], names=["ticker", "date"])
+        frames.append(pd.DataFrame(
+            {
+                "open": close,
+                "high": close * 1.01,
+                "low": close * 0.99,
+                "close": close,
+                "volume": np.full(n, 1_000_000, dtype="int64"),
+            },
+            index=idx,
+        ))
+    return pd.concat(frames).sort_index()
