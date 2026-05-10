@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from unittest import mock
 
 import pandas as pd
 import pytest
@@ -30,10 +29,9 @@ D14_SUBCOMMANDS = [
     "backtest-audit",
 ]
 
-# Phase-2-stub-only subset for the [stub] log-line iteration (refresh-universe
-# and refresh-ohlcv now do real work and no longer emit [stub]).
+# Phase-2-stub-only subset for the [stub] log-line iteration (refresh-universe,
+# refresh-ohlcv, and refresh-macro now do real work and no longer emit [stub]).
 PHASE_1_STUBS = [
-    "refresh-macro",
     "refresh-fundamentals",
     "score",
     "report",
@@ -126,7 +124,8 @@ def test_health_gate_below_95_fails_run(
     runner = CliRunner()
     result = runner.invoke(app, ["refresh-ohlcv"])
     assert result.exit_code != 0, (
-        f"Expected non-zero exit on below-threshold gate; got {result.exit_code}. stdout: {result.stdout}"
+        f"Expected non-zero exit on below-threshold gate; got {result.exit_code}."
+        f" stdout: {result.stdout}"
     )
     events = _parse_json_events(result.stdout)
     failed_event = [ev for ev in events if ev.get("event") == "health_check_failed"]

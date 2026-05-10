@@ -131,7 +131,7 @@ def _incremental_start(existing: pd.DataFrame, settings_start: str) -> str | Non
         return settings_start
     last = pd.Timestamp(existing.index.max()).normalize()
     next_start = last + pd.Timedelta(days=1)
-    if next_start > pd.Timestamp.utcnow().normalize():
+    if next_start > pd.Timestamp.now().normalize():
         return None  # nothing to do — cache is current
     return next_start.strftime("%Y-%m-%d")
 

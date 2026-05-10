@@ -4,7 +4,7 @@
 # Phase 1: every command logs a structured [stub] line and exits 0.
 # Later phases fill in the bodies without changing this contract (FND-02).
 
-.PHONY: help setup data rank report backtest backtest-audit journal lint typecheck test all clean
+.PHONY: help setup data macro rank report backtest backtest-audit journal lint typecheck test all clean
 
 help:  ## List available targets with descriptions
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -18,6 +18,9 @@ data:  ## Refresh universe, OHLCV, macro, and fundamentals (Phase 1: stub no-ops
 	uv run screener refresh-ohlcv
 	uv run screener refresh-macro
 	uv run screener refresh-fundamentals
+
+macro:  ## Refresh macro inputs only (SPY, QQQ, ^VIX, NYSE A/D, FRED yields)
+	uv run screener refresh-macro
 
 rank:  ## Compute composite scores + playbook tags over the universe (Phase 1: stub)
 	uv run screener score

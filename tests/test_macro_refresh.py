@@ -17,7 +17,6 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
-import structlog
 from structlog.testing import capture_logs
 
 from screener.data import macro as macro_module
@@ -62,9 +61,11 @@ def test_yf_invariants_applied() -> None:
 
 def test_yf_empty_raises_stale() -> None:
     empty = pd.DataFrame({"Close": []}, index=pd.DatetimeIndex([]))
-    with mock.patch("screener.data.macro.yf.download", return_value=empty):
-        with pytest.raises(StaleOrEmptyError, match="empty"):
-            macro_module._fetch_yf_macro("SPY", "2024-01-01", REF_DATE)
+    with (
+        mock.patch("screener.data.macro.yf.download", return_value=empty),
+        pytest.raises(StaleOrEmptyError, match="empty"),
+    ):
+        macro_module._fetch_yf_macro("SPY", "2024-01-01", REF_DATE)
 
 
 def test_refresh_spy_writes_macro_parquet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -91,15 +92,18 @@ def test_nyad_fallback_to_r1000_proxy(tmp_path: Path, monkeypatch: pytest.Monkey
     """Stooq raises (RESEARCH Pitfall 1) → falls back to _compute_breadth_fallback."""
     macro_dir = tmp_path / "macro"
     monkeypatch.setattr("screener.persistence._macro_dir", lambda: macro_dir)
-    with mock.patch(
-        "screener.data.macro.stooq_module.fetch_ohlcv",
-        side_effect=StaleOrEmptyError("ParserError"),
-    ), mock.patch(
-        "screener.data.macro._compute_breadth_fallback",
-        return_value=_synthetic_breadth_df(),
+    with (
+        mock.patch(
+            "screener.data.macro.stooq_module.fetch_ohlcv",
+            side_effect=StaleOrEmptyError("ParserError"),
+        ),
+        mock.patch(
+            "screener.data.macro._compute_breadth_fallback",
+            return_value=_synthetic_breadth_df(),
+        ),
+        capture_logs() as logs,
     ):
-        with capture_logs() as logs:
-            macro_module.refresh_nyad(force=True, today=REF_DATE)
+        macro_module.refresh_nyad(force=True, today=REF_DATE)
     sources = [e.get("source") for e in logs if e.get("event") == "nyad_source"]
     assert "r1000_proxy" in sources, f"expected r1000_proxy event; got logs={logs}"
 
@@ -117,14 +121,17 @@ def test_nyad_fallback_on_thin_stooq(tmp_path: Path, monkeypatch: pytest.MonkeyP
          "volume": np.full(n, 1_000_000, dtype="int64")},
         index=pd.DatetimeIndex(idx, name="date"),
     )
-    with mock.patch(
-        "screener.data.macro.stooq_module.fetch_ohlcv", return_value=thin
-    ), mock.patch(
-        "screener.data.macro._compute_breadth_fallback",
-        return_value=_synthetic_breadth_df(),
+    with (
+        mock.patch(
+            "screener.data.macro.stooq_module.fetch_ohlcv", return_value=thin
+        ),
+        mock.patch(
+            "screener.data.macro._compute_breadth_fallback",
+            return_value=_synthetic_breadth_df(),
+        ),
+        capture_logs() as logs,
     ):
-        with capture_logs() as logs:
-            macro_module.refresh_nyad(force=True, today=REF_DATE)
+        macro_module.refresh_nyad(force=True, today=REF_DATE)
     sources = [e.get("source") for e in logs if e.get("event") == "nyad_source"]
     assert "r1000_proxy" in sources
 
@@ -133,8 +140,11 @@ def test_yields_parquet_columns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     """refresh_yields writes a Parquet with exactly {dgs2, dgs10, t10y2y} columns."""
     macro_dir = tmp_path / "macro"
     monkeypatch.setattr("screener.persistence._macro_dir", lambda: macro_dir)
+    # Patch get_settings on the macro module directly (macro.py uses
+    # `from screener.config import get_settings`, so patching screener.config
+    # does not affect the local binding; we must patch the macro module's copy).
     monkeypatch.setattr(
-        "screener.config.get_settings",
+        "screener.data.macro.get_settings",
         lambda: type("S", (), {
             "FRED_API_KEY": "TEST_KEY",
             "MACRO_BACKFILL_START": "2024-01-01",
@@ -157,7 +167,7 @@ def test_yields_skipped_without_key(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     macro_dir = tmp_path / "macro"
     monkeypatch.setattr("screener.persistence._macro_dir", lambda: macro_dir)
     monkeypatch.setattr(
-        "screener.config.get_settings",
+        "screener.data.macro.get_settings",
         lambda: type("S", (), {
             "FRED_API_KEY": "",
             "MACRO_BACKFILL_START": "2024-01-01",
@@ -171,7 +181,9 @@ def test_yields_skipped_without_key(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert path.exists()
 
 
-def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_no_secret_in_logs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     """T-3-02: FRED_API_KEY must NEVER appear in any captured log event from
     macro.py OR cli.py during a refresh-macro invocation.
 
@@ -188,8 +200,11 @@ def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capl
     macro_dir = tmp_path / "macro"
     monkeypatch.setattr("screener.persistence._macro_dir", lambda: macro_dir)
     secret = "SECRET_FAKE_KEY_12345"
+    # Patch get_settings on the macro module directly — macro.py uses
+    # `from screener.config import get_settings` so patching screener.config
+    # does not affect macro.py's local binding.
     monkeypatch.setattr(
-        "screener.config.get_settings",
+        "screener.data.macro.get_settings",
         lambda: type("S", (), {
             "FRED_API_KEY": secret,
             "MACRO_BACKFILL_START": "2024-01-01",
@@ -198,10 +213,18 @@ def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capl
     )
 
     # Stub the four happy-path series (so the run reaches refresh_yields).
-    monkeypatch.setattr("screener.data.macro.refresh_spy", lambda force, today: macro_dir / "spy.parquet")
-    monkeypatch.setattr("screener.data.macro.refresh_qqq", lambda force, today: macro_dir / "qqq.parquet")
-    monkeypatch.setattr("screener.data.macro.refresh_vix", lambda force, today: macro_dir / "vix.parquet")
-    monkeypatch.setattr("screener.data.macro.refresh_nyad", lambda force, today: macro_dir / "nyad.parquet")
+    monkeypatch.setattr(
+        "screener.data.macro.refresh_spy", lambda force, today: macro_dir / "spy.parquet"
+    )
+    monkeypatch.setattr(
+        "screener.data.macro.refresh_qqq", lambda force, today: macro_dir / "qqq.parquet"
+    )
+    monkeypatch.setattr(
+        "screener.data.macro.refresh_vix", lambda force, today: macro_dir / "vix.parquet"
+    )
+    monkeypatch.setattr(
+        "screener.data.macro.refresh_nyad", lambda force, today: macro_dir / "nyad.parquet"
+    )
 
     # FRED raises an exception whose stringified form embeds the secret
     # in the URL querystring — exactly the leak vector T-3-02 guards against.
@@ -217,10 +240,12 @@ def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capl
     fake_fred_instance.get_series.side_effect = FredError(leaky_url)
 
     runner = CliRunner()
-    with mock.patch("screener.data.macro.Fred", return_value=fake_fred_instance):
-        with caplog.at_level(logging.DEBUG):  # root logger; captures every record
-            with capture_logs() as structlog_events:
-                result = runner.invoke(cli_app, ["refresh-macro"])
+    with (
+        mock.patch("screener.data.macro.Fred", return_value=fake_fred_instance),
+        caplog.at_level(logging.DEBUG),  # root logger; captures every record
+        capture_logs() as structlog_events,
+    ):
+        result = runner.invoke(cli_app, ["refresh-macro"])
 
     # Refresh must have failed (non-zero exit).
     assert result.exit_code != 0, "expected non-zero exit when FRED raises"
@@ -272,7 +297,9 @@ def test_refresh_spy_appends_only_new_bars(tmp_path: Path, monkeypatch: pytest.M
     with mock.patch("screener.data.macro.yf.download", side_effect=_mock_yf_first):
         path1 = macro_module.refresh_spy(force=False, today=date(2025, 5, 21))
     loaded1 = pd.read_parquet(path1)
-    assert len(loaded1) == first_n, f"expected first run to write {first_n} bars; got {len(loaded1)}"
+    assert len(loaded1) == first_n, (
+        f"expected first run to write {first_n} bars; got {len(loaded1)}"
+    )
     last_first = loaded1.index.max()
 
     # Second run — yfinance returns ONLY the next bar (1 row).
@@ -296,8 +323,12 @@ def test_refresh_spy_appends_only_new_bars(tmp_path: Path, monkeypatch: pytest.M
         path2 = macro_module.refresh_spy(force=False, today=date(2025, 5, 22))
     loaded2 = pd.read_parquet(path2)
 
-    assert len(loaded2) == first_n + 1, f"expected {first_n + 1} bars after append; got {len(loaded2)}"
-    assert loaded2.index.max() == next_day, f"expected last date {next_day}; got {loaded2.index.max()}"
+    assert len(loaded2) == first_n + 1, (
+        f"expected {first_n + 1} bars after append; got {len(loaded2)}"
+    )
+    assert loaded2.index.max() == next_day, (
+        f"expected last date {next_day}; got {loaded2.index.max()}"
+    )
 
     # Critical assertion: the SECOND yf.download call's start arg is
     # next_day_str, NOT MACRO_BACKFILL_START. captured_starts[1] is the
