@@ -208,7 +208,7 @@ class RsSnapshotSchema(pa.DataFrameModel):
 
     @pa.check("rs_rating", name="rs_rating_must_be_nullable_int64")
     @classmethod
-    def _rs_rating_dtype(cls, series: pd.Series) -> bool:  # type: ignore[type-arg]
+    def _rs_rating_dtype(cls, series: pd.Series) -> bool:
         """Enforce pd.Int64Dtype (nullable) — not int64 (Pitfall 9)."""
         return series.dtype == pd.Int64Dtype()
 
