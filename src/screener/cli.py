@@ -25,10 +25,7 @@ from screener.data.ohlcv import (
     fetch_splits,
     run_with_breaker,
 )
-from screener.data.universe import (
-    iso_week_monday,
-    refresh_universe as refresh_universe_impl,
-)
+from screener.data.universe import refresh_universe as refresh_universe_impl
 from screener.obs import configure as configure_logging
 from screener.persistence import (
     read_universe,
@@ -92,10 +89,10 @@ def _latest_universe_snapshot() -> Path | None:
 def refresh_ohlcv(
     ticker: Annotated[
         str | None,
-        typer.Option("--ticker", help="Single-ticker debug fetch; bypasses universe loop and gate."),
+        typer.Option("--ticker", help="Single-ticker debug fetch; bypasses universe loop."),
     ] = None,
 ) -> None:
-    """Refresh per-ticker OHLCV via yfinance (Stooq fallback); incremental Parquet append (DAT-03, DAT-07)."""
+    """Refresh per-ticker OHLCV via yfinance (Stooq fallback); incremental Parquet append."""
     configure_logging()
     settings = get_settings()
     today = date.today()
@@ -159,9 +156,37 @@ def refresh_ohlcv(
 
 
 @app.command("refresh-macro")
-def refresh_macro() -> None:
-    """Refresh macro inputs (SPY, ^IXIC, ^VIX, NYSE A/D, FRED yields)."""
-    _stub("refresh-macro")
+def refresh_macro(
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Re-fetch from MACRO_BACKFILL_START even if cache exists."),
+    ] = False,
+) -> None:
+    """Refresh macro inputs (SPY, QQQ, ^VIX, NYSE A/D, FRED yields). DAT-04."""
+    configure_logging()
+    today = date.today()
+    try:
+        from screener.data.macro import (
+            refresh_nyad,
+            refresh_qqq,
+            refresh_spy,
+            refresh_vix,
+            refresh_yields,
+        )
+
+        refresh_spy(force=force, today=today)
+        refresh_qqq(force=force, today=today)
+        refresh_vix(force=force, today=today)
+        refresh_nyad(force=force, today=today)
+        refresh_yields(force=force, today=today)
+        log.info("refresh_macro_ok")
+    except Exception as e:
+        # T-3-02 mitigation: FRED exceptions may include the request URL with
+        # `?api_key=...` in their stringified form. Log only error_type (never
+        # the exception string). Re-raise via typer.Exit so the traceback goes
+        # to stderr (outside structured-log sinks), not to any log aggregator.
+        log.error("refresh_macro_failed", error_type=type(e).__name__)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("refresh-fundamentals")
