@@ -46,3 +46,39 @@ def sma_panel(
 
         out[col] = panel.groupby(level="ticker")["close"].apply(_apply_sma)
     return out
+
+
+def high_52w_panel(panel: pd.DataFrame, length: int = 252) -> pd.DataFrame:
+    """Append high_52w column — per-ticker rolling max of `high` over `length` bars.
+
+    NaN warmup for the first `length-1` bars per ticker (Phase 3 D-08 NaN policy).
+    Pitfall 2: groupby(level="ticker") prevents rolling-window bleed across
+    tickers in the (ticker, date) MultiIndex.
+
+    Required by signals/minervini.passes_trend_template condition 7
+    (Close >= 0.75 * MAX(High, 252)) per CLAUDE.md "Signal Formulas".
+    """
+    out = panel.copy()
+    out["high_52w"] = (
+        panel.groupby(level="ticker")["high"]
+        .rolling(length)
+        .max()
+        .droplevel(0)
+    )
+    return out
+
+
+def low_52w_panel(panel: pd.DataFrame, length: int = 252) -> pd.DataFrame:
+    """Append low_52w column — per-ticker rolling min of `low` over `length` bars.
+
+    Required by signals/minervini.passes_trend_template condition 6
+    (Close >= 1.30 * MIN(Low, 252)) per CLAUDE.md "Signal Formulas".
+    """
+    out = panel.copy()
+    out["low_52w"] = (
+        panel.groupby(level="ticker")["low"]
+        .rolling(length)
+        .min()
+        .droplevel(0)
+    )
+    return out
