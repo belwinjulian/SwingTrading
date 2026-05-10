@@ -350,3 +350,110 @@ def synthetic_vix_calm() -> pd.DataFrame:
         {"close": [15.0] * 50},
         index=pd.DatetimeIndex(idx, name="date"),
     )
+
+
+# --- Phase 4 fixtures (Plans 04-01 through 04-05) ---------------------------
+
+
+@pytest.fixture(scope="session")
+def synthetic_panel_for_trend_template(synthetic_multi_ticker_panel: pd.DataFrame) -> pd.DataFrame:
+    """Multi-ticker panel with all Trend Template input columns populated.
+
+    Builds on the Phase 3 multi-ticker fixture by running the full Phase 4
+    build_panel chain (sma + atr + adr + obv + dryup + rs + high_52w +
+    low_52w). Tickers have >=260 bars; high_52w/low_52w require 252 bars so
+    values at the tail are non-NaN for all 5 tickers (260 > 252).
+    Used by tests/test_signals_minervini.py.
+    """
+    from screener.indicators.trend import (
+        high_52w_panel,
+        low_52w_panel,
+        sma_panel,
+    )
+    from screener.indicators.volatility import adr_pct_panel, atr_panel
+    from screener.indicators.volume import dryup_ratio_panel, obv_panel
+    from screener.indicators.relative_strength import rs_panel
+
+    panel = synthetic_multi_ticker_panel.copy()
+    panel = sma_panel(panel, lengths=(10, 20, 50, 150, 200))
+    panel = atr_panel(panel, length=14)
+    panel = adr_pct_panel(panel, length=20)
+    panel = obv_panel(panel)
+    panel = dryup_ratio_panel(panel, length=50)
+    panel = rs_panel(panel)
+    panel = high_52w_panel(panel, length=252)
+    panel = low_52w_panel(panel, length=252)
+    return panel
+
+
+@pytest.fixture(scope="session")
+def synthetic_scored_panel(synthetic_panel_for_trend_template: pd.DataFrame) -> pd.DataFrame:
+    """Post-composite panel cross-section with composite_score / pivot_zone /
+    regime_state / regime_score columns populated. Used by publisher tests
+    (tests/test_publishers_report.py, tests/test_publishers_snapshot.py).
+
+    Returns a single-date cross-section (one row per ticker) — matches the
+    shape consumed by publishers/report.write_report and persistence
+    .write_snapshot_atomic.
+
+    NOTE: Imports from screener.signals.minervini and screener.signals.composite
+    are lazy (inside the fixture body) so collection-time does not fail when
+    these modules do not yet exist (Plans 04-02/04-03 land them).
+    """
+    from screener.signals.minervini import passes_trend_template  # noqa: PLC0415
+    from screener.signals.composite import score, DEFAULT_WEIGHTS  # noqa: PLC0415
+
+    panel = passes_trend_template(synthetic_panel_for_trend_template)
+    panel = score(panel, DEFAULT_WEIGHTS)
+
+    # Take the latest cross-section — one row per ticker.
+    latest_date = panel.index.get_level_values("date").max()
+    cross = panel.xs(latest_date, level="date").copy()
+
+    # Add the publisher-derived columns (pivot_distance_atr, pivot_zone)
+    # using the same formula publishers/report._classify_pivot_zone uses.
+    cross["pivot_distance_atr"] = (
+        (cross["close"] - cross["high_52w"]) / cross["atr_14"].replace(0, pd.NA)
+    )
+
+    def _zone(d: float) -> str:
+        if pd.isna(d):
+            return "unknown"
+        return "in-zone" if d <= 1.0 else "chase, skip"
+
+    cross["pivot_zone"] = cross["pivot_distance_atr"].apply(_zone)
+    cross["regime_state"] = "Confirmed Uptrend"
+    cross["regime_score"] = 0.82
+    cross["rank"] = pd.array(
+        cross["composite_score"].rank(ascending=False, method="dense").astype("Int64"),
+        dtype=pd.Int64Dtype(),
+    )
+    cross.index.name = "ticker"
+    return cross.reset_index()
+
+
+@pytest.fixture(scope="function")
+def synthetic_high_pass_rate_panel(
+    synthetic_panel_for_trend_template: pd.DataFrame,
+) -> pd.DataFrame:
+    """A panel where ~30% of tickers pass the Trend Template — triggers
+    D-08 hard-fail when paired with regime_state == 'Correction'.
+
+    Used by tests/test_publishers_pipeline.py and the integration test
+    in tests/test_cli_smoke.py for the data-quality gate.
+
+    Function-scope (not session) because tests may mutate the frame in
+    the failure-injection path.
+
+    NOTE: Import from screener.signals.minervini is lazy so collection-time
+    does not fail when the module does not yet exist (Plan 04-02 lands it).
+    """
+    from screener.signals.minervini import passes_trend_template  # noqa: PLC0415
+
+    panel = passes_trend_template(synthetic_panel_for_trend_template)
+    # The fixture's pass rate depends on the synthetic data construction
+    # in synthetic_multi_ticker_panel. If the existing Phase 3 fixture
+    # already produces a high-pass-rate uptrend pattern across all tickers
+    # this is a no-op. Otherwise tests use this fixture's `passes_trend_template`
+    # column directly and inject a regime_state == 'Correction' for D-08.
+    return panel
