@@ -4,18 +4,18 @@ milestone: v1.0
 milestone_name: milestone
 status: ready_to_execute
 stopped_at: null
-last_updated: "2026-05-10T20:00:00.000Z"
+last_updated: "2026-05-10T22:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 15
+  total_plans: 20
   completed_plans: 15
   percent: 50
 ---
 
 # Project State
 
-**Last updated:** 2026-05-10 (Phase 3 COMPLETE — all 5 plans shipped, 72 tests green; regime module + IND-02 CI gate + REG-04 golden-file tests)
+**Last updated:** 2026-05-10 (Phase 4 PLANNED — 5 plans across 4 waves; verifier passed after revision-2; ready to execute)
 
 ## Project Reference
 
@@ -29,12 +29,12 @@ progress:
 
 Phase: 02 (data-foundation) — COMPLETE
 Phase: 03 (indicator-panel-&-regime) — COMPLETE (all 5 plans, 2026-05-10)
-Phase: 04 (trend-template-composite-skeleton-first-report) — NOT STARTED
+Phase: 04 (trend-template-composite-skeleton-first-report) — PLANNED, ready to execute (5 plans / 4 waves)
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** 4 (next)
-- **Plan:** 15 / 15 executed (through Phase 3)
-- **Status:** Ready for Phase 4
+- **Phase:** 4 (ready to execute)
+- **Plan:** 15 / 20 executed (Phase 4 plans landed; execution pending)
+- **Status:** Ready to execute Phase 4
 - **Progress:** [██████████░░░░░] 50%
 
 ### Phase 3 Plan Summary
@@ -46,6 +46,16 @@ Phase: 04 (trend-template-composite-skeleton-first-report) — NOT STARTED
 | 2 | 03-03 | Indicator panel — pure-fn trend/volatility/volume/RS + build_panel orchestrator |
 | 3 | 03-04 | Regime module (compute_for_date, build_history, _classify_state, _regime_score) |
 | 3 | 03-05 | SMA-not-EMA CI grep gate + 3 golden-file regime tests (2008-Q4 / 2020-Q1 / 2022-H1) |
+
+### Phase 4 Plan Summary (2026-05-10)
+
+| Wave | Plan | Objective |
+|------|------|-----------|
+| 1 | 04-01 | Foundation — extend `indicators/trend.py` with `high_52w`/`low_52w`, extend `Settings` (REPORT_TOP_N, TREND_TEMPLATE_PASS_RATE_WARN/HARD_FAIL), `RankingSnapshotSchema` + `write_snapshot_atomic` in persistence, conftest fixtures, `data/snapshots/` .gitignore + .gitkeep |
+| 2 | 04-02 | `signals/minervini.py` — pure `passes_trend_template(panel)` returning `passes_trend_template: bool` + `trend_template_score: int (0–8)` per ticker; 5 tests (8 conditions, score dtype, NaN-safe short history, pass-rate smoke, EMA-gate non-regression) |
+| 2 | 04-03 | `signals/composite.py` — `DEFAULT_WEIGHTS: Final[dict]` (RS 25 / Trend 20 / Pattern 20 / Volume 10 / Earnings 15 / Catalyst 10), `PHASE_4_ZEROED` set, weights-iterating `score(panel, weights)` (D-13 M2 seam); 7 tests incl. unknown-key, sum=1.0, [0,100] property, zeroed components, extension seam (`ml_probability`) |
+| 3 | 04-04 | Publishers — `pipeline.run_pipeline` orchestrator + `apply_regime_gate` (D-03 soft) + `validate_run` (D-08 hard fail); `snapshot.write_snapshot` (atomic); `report.render_report` (regime banner / top-N / per-pick blocks / data-quality footer; pivot zone with 3rd "unknown" state for NaN); 15 tests across pipeline/snapshot/report |
+| 4 | 04-05 | Wiring + freeze — `cli.score`/`cli.report` bodies (no 10th subcommand — D-14 lock preserved), `scripts/check_preregistration.py` (grep-diff CI gate), `docs/strategy_v1_preregistration.md` (weights table + freeze date + `Frozen at commit: <sha>` two-commit ceremony), CI step in `.github/workflows/ci.yml`, 3 preregistration tests + 1 D-08 CliRunner integration test. **Final task uses `checkpoint:human-verify` for the freeze-commit hash dance.** |
 
 ## Performance Metrics
 

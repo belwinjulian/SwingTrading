@@ -1218,27 +1218,35 @@ Per `.planning/config.json` `security_enforcement: true`, ASVS Level 1.
 
 **Total assumptions:** 10. None block Phase 4; all are flagged for confirmation during planning or implementation.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All four open questions were resolved before plan finalization. Dispositions
+> below reflect what shipped in plans 04-01 through 04-05 (or, for Q3, what was
+> explicitly deferred). Resolved 2026-05-10 alongside plan generation.
 
 1. **Should `Settings.TREND_TEMPLATE_PASS_RATE_FAIL` be separate from `TREND_TEMPLATE_PASS_RATE_WARN`?** D-07/D-08 both use 0.25 today. Recommend two separate Settings fields with the same default (0.25) — leaves room for tuning during paper-trade validation without redeploying.
    - What we know: D-07 (warn) and D-08 (hard fail) both fire at > 0.25; D-08 ANDs with regime_state == Correction.
    - What's unclear: Will the user want to warn at 0.20 and fail at 0.30 later? Plausible.
    - Recommendation: ship two fields, both default 0.25.
+   - **RESOLVED: ADOPTED.** Plan 04-01 ships both `TREND_TEMPLATE_PASS_RATE_WARN: float = 0.25` and `TREND_TEMPLATE_PASS_RATE_HARD_FAIL: float = 0.25` on `Settings`. Tunable independently in `.env` without redeploy.
 
 2. **Does `data/snapshots/` need a .gitkeep anchor and a .gitignore line?** Phase 3 used the pattern `data/rs_snapshots/` is gitignored; same policy almost certainly applies.
    - What we know: D-11 from Phase 3 — RS snapshots gitignored. Phase 2 D-19 amendment carved out specific paths.
    - What's unclear: Does the user want one snapshot per day committed to git for portfolio purposes (a la nightly reports)?
    - Recommendation: gitignore `data/snapshots/` for Phase 4; revisit in Phase 8 if nightly cron commits selected reports.
+   - **RESOLVED: ADOPTED.** Plan 04-01 adds `data/snapshots/.gitkeep` and a `data/snapshots/*.parquet` line to `.gitignore`. Phase 8 may carve out specific dates if the cron commits selected reports.
 
 3. **Should the report include a section for "how many tickers were dropped from ranking due to NaN composite_score"?** Useful data-quality signal.
    - What we know: data-quality footer per OUT-02; warn-on-pass-rate per D-07.
    - What's unclear: NaN-composite-count isn't explicitly required.
    - Recommendation: add it to the data-quality footer as a single line — cheap, informative, and aids debugging when pass rate looks weird.
+   - **RESOLVED: DEFERRED to Phase 6.** Plan 04-04 Task 3 ships the data-quality footer with the four ROADMAP-SC1-required fields only (universe size, scan time, fetch success rate, last yfinance refresh) plus the conditional pass-rate banner from D-07. The NaN-composite-count line is non-required by SC1 and adds a column the planner would need to plumb through `_add_publisher_columns`. Adding it now risks breaking the OUT-01 string-match tests for marginal benefit. Phase 6 (when Pattern/Earnings/Catalyst components go live and NaN sources multiply) is the natural place to add it. Tracked as a Phase 6 follow-up, not as a Phase 4 deferred-decision in CONTEXT.md.
 
 4. **Should `signals/__init__.py` re-export `passes_trend_template` and `score`?** Phase 1 D-13 said modules ship docstring-only. But end-of-Phase 4 there ARE real functions to expose.
    - What we know: D-13 was a Phase 1 scaffolding rule; Phase 3 onward populates real bodies.
    - What's unclear: Is the convention to re-export from `__init__.py` or to import from the submodule directly?
    - Recommendation: keep `signals/__init__.py` as docstring-only (matches `indicators/__init__.py` which DOES export — but `indicators` has a single primary entry point `build_panel`; signals has multiple, so per-submodule import is cleaner). Publishers pipeline imports `from screener.signals.minervini import passes_trend_template`.
+   - **RESOLVED: ADOPTED.** Plan 04-04 imports `from screener.signals.minervini import passes_trend_template` and `from screener.signals.composite import score, DEFAULT_WEIGHTS, PHASE_4_ZEROED` directly — no `signals/__init__.py` re-exports. Mirrors the existing import style for `regime` and `persistence`.
 
 ## Sources
 
