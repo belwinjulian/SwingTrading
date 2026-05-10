@@ -4,13 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
 
 from screener.indicators import build_panel
 from screener.persistence import write_ohlcv_atomic, write_universe_atomic
-
 
 REQUIRED_NEW_COLS = {
     "sma_10", "sma_20", "sma_50", "sma_150", "sma_200",
