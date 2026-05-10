@@ -216,7 +216,7 @@ def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capl
     fake_fred_instance = mock.MagicMock()
     fake_fred_instance.get_series.side_effect = FredError(leaky_url)
 
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     with mock.patch("screener.data.macro.Fred", return_value=fake_fred_instance):
         with caplog.at_level(logging.DEBUG):  # root logger; captures every record
             with capture_logs() as structlog_events:
