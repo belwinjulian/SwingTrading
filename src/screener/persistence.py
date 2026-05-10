@@ -135,6 +135,88 @@ class SplitsSchema(pa.DataFrameModel):
         coerce = False
 
 
+class MacroOhlcvSchema(pa.DataFrameModel):
+    """Single-index (date) macro OHLCV — SPY, QQQ. Lowercase columns
+    (data/ layer normalizes yfinance PascalCase before reaching this schema).
+    """
+
+    date: Index[pd.Timestamp] = pa.Field(check_name=True)
+    open: Series[float] = pa.Field(ge=0.0, nullable=False)
+    high: Series[float] = pa.Field(ge=0.0, nullable=False)
+    low: Series[float] = pa.Field(ge=0.0, nullable=False)
+    close: Series[float] = pa.Field(ge=0.0, nullable=False)
+    volume: Series[int] = pa.Field(ge=0, nullable=False)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
+class VixSchema(pa.DataFrameModel):
+    """^VIX is close-only — yfinance returns Volume=0 always (RESEARCH Pitfall 4)."""
+
+    date: Index[pd.Timestamp] = pa.Field(check_name=True)
+    close: Series[float] = pa.Field(ge=0.0, nullable=False)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
+class YieldsSchema(pa.DataFrameModel):
+    """FRED yields — DGS2, DGS10, T10Y2Y in a single Parquet.
+    Nullable because FRED has weekday-only data + holiday gaps (RESEARCH Pitfall 5);
+    consumer side ffills at read time.
+    """
+
+    date: Index[pd.Timestamp] = pa.Field(check_name=True)
+    dgs2: Series[float] = pa.Field(nullable=True)
+    dgs10: Series[float] = pa.Field(nullable=True)
+    t10y2y: Series[float] = pa.Field(nullable=True)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
+class NyadMacroSchema(pa.DataFrameModel):
+    """NYSE A/D line — Stooq $NYAD primary, R1000-breadth fallback per D-05.
+    ad_line is the cumulative advances - declines (can be negative).
+    """
+
+    date: Index[pd.Timestamp] = pa.Field(check_name=True)
+    advances: Series[int] = pa.Field(ge=0, nullable=False)
+    declines: Series[int] = pa.Field(ge=0, nullable=False)
+    ad_line: Series[int] = pa.Field(nullable=False)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
+class RsSnapshotSchema(pa.DataFrameModel):
+    """One row per ticker, taken on a single trading date.
+    rs_rating is nullable Int64 — pd.Int64Dtype, NOT int (RESEARCH Pitfall 9):
+    int cannot hold NaN, but tickers with < 252d history must produce NaN.
+    The custom check enforces the exact dtype because pandera coerce=False does
+    not distinguish int64 from Int64 at the type-annotation level alone.
+    """
+
+    ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
+    rs_raw: Series[float] = pa.Field(nullable=True)
+    rs_rating: Series[pd.Int64Dtype] = pa.Field(nullable=True)
+
+    @pa.check("rs_rating", name="rs_rating_must_be_nullable_int64")
+    @classmethod
+    def _rs_rating_dtype(cls, series: pd.Series) -> bool:
+        """Enforce pd.Int64Dtype (nullable) — not int64 (Pitfall 9)."""
+        return series.dtype == pd.Int64Dtype()
+
+    class Config:
+        strict = True
+        coerce = False
+
+
 # --- Validation helpers (D-16) -----------------------------------------------
 
 
@@ -207,6 +289,18 @@ def _universe_dir() -> Path:
     return Path(getattr(s, "UNIVERSE_CACHE_DIR", "data/universe"))
 
 
+def _macro_dir() -> Path:
+    """Resolve the macro cache directory, with a hard-coded fallback for cross-wave safety."""
+    s: Any = get_settings()
+    return Path(getattr(s, "MACRO_CACHE_DIR", "data/macro"))
+
+
+def _rs_snapshot_dir() -> Path:
+    """Resolve the RS snapshot directory, with a hard-coded fallback for cross-wave safety."""
+    s: Any = get_settings()
+    return Path(getattr(s, "RS_SNAPSHOT_DIR", "data/rs_snapshots"))
+
+
 # --- Public writers (eager validation + atomic write) ------------------------
 
 
@@ -255,6 +349,47 @@ def write_splits_atomic(ticker: str, df: pd.DataFrame) -> Path:
     return target
 
 
+def write_rs_snapshot_atomic(df: pd.DataFrame, snapshot_date: str) -> Path:
+    """Validate + atomically write an RS snapshot to data/rs_snapshots/<date>.parquet.
+    Eager validation (D-16): bad row aborts loud at the write boundary."""
+    validated = validate_at_write(RsSnapshotSchema, df)
+    target = _rs_snapshot_dir() / f"{snapshot_date}.parquet"
+    _write_parquet_atomic(validated, target)
+    log.info(
+        "rs_snapshot_written",
+        path=str(target),
+        n_rows=len(validated),
+        snapshot_date=snapshot_date,
+    )
+    return target
+
+
+# Schema dispatch for macro writes — one of: spy, qqq, vix, nyad, yields.
+_MACRO_SCHEMAS: dict[str, type[pa.DataFrameModel]] = {
+    "spy": MacroOhlcvSchema,
+    "qqq": MacroOhlcvSchema,
+    "vix": VixSchema,
+    "yields": YieldsSchema,
+    "nyad": NyadMacroSchema,
+}
+
+
+def write_macro_atomic(df: pd.DataFrame, series_name: str) -> Path:
+    """Validate + atomically write a macro series to data/macro/<series>.parquet.
+    series_name must be one of: spy, qqq, vix, nyad, yields.
+    """
+    if series_name not in _MACRO_SCHEMAS:
+        raise ValueError(
+            f"unknown macro series {series_name!r}; expected one of {sorted(_MACRO_SCHEMAS)}"
+        )
+    schema = _MACRO_SCHEMAS[series_name]
+    validated = validate_at_write(schema, df)
+    target = _macro_dir() / f"{series_name}.parquet"
+    _write_parquet_atomic(validated, target)
+    log.info("macro_snapshot_written", series=series_name, path=str(target), n_rows=len(validated))
+    return target
+
+
 def make_empty_splits() -> pd.DataFrame:
     """Construct the canonical zero-row splits DataFrame.
 
@@ -278,6 +413,103 @@ def read_universe(snapshot_date: str) -> pd.DataFrame:
     path = _universe_dir() / f"{snapshot_date}.parquet"
     df = pd.read_parquet(path)
     return validate_at_read(UniverseSchema, df)
+
+
+def read_rs_snapshot(snapshot_date: str) -> pd.DataFrame:
+    """Read + lazy-validate an RS snapshot from data/rs_snapshots/<date>.parquet."""
+    path = _rs_snapshot_dir() / f"{snapshot_date}.parquet"
+    df = pd.read_parquet(path)
+    return validate_at_read(RsSnapshotSchema, df)
+
+
+# Macro readers — graceful "missing cache" semantics (D-06 incremental refresh).
+# When the Parquet does not yet exist (first run), return an empty DataFrame with
+# the right schema-shape so refresh_<series>() can use the standard
+#   existing = read_macro_<series>()
+#   if existing.empty: start = MACRO_BACKFILL_START else: start = existing.index.max()+1d
+# pattern from Phase 2 D-07 without an extra path.exists() guard at the call site.
+
+_EMPTY_DT_INDEX = pd.DatetimeIndex([], name="date")
+
+
+def read_macro_spy() -> pd.DataFrame:
+    """Read + lazy-validate data/macro/spy.parquet; returns empty schema-shaped frame if missing."""
+    path = _macro_dir() / "spy.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {
+                "open": pd.Series([], dtype="float64"),
+                "high": pd.Series([], dtype="float64"),
+                "low": pd.Series([], dtype="float64"),
+                "close": pd.Series([], dtype="float64"),
+                "volume": pd.Series([], dtype="int64"),
+            },
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
+    return validate_at_read(MacroOhlcvSchema, df)
+
+
+def read_macro_qqq() -> pd.DataFrame:
+    """Read + lazy-validate data/macro/qqq.parquet; returns empty schema-shaped frame if missing."""
+    path = _macro_dir() / "qqq.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {
+                "open": pd.Series([], dtype="float64"),
+                "high": pd.Series([], dtype="float64"),
+                "low": pd.Series([], dtype="float64"),
+                "close": pd.Series([], dtype="float64"),
+                "volume": pd.Series([], dtype="int64"),
+            },
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
+    return validate_at_read(MacroOhlcvSchema, df)
+
+
+def read_macro_vix() -> pd.DataFrame:
+    """Read + lazy-validate data/macro/vix.parquet; returns empty schema-shaped frame if missing."""
+    path = _macro_dir() / "vix.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {"close": pd.Series([], dtype="float64")},
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
+    return validate_at_read(VixSchema, df)
+
+
+def read_macro_yields() -> pd.DataFrame:
+    """Read + lazy-validate data/macro/yields.parquet; returns empty frame if missing."""
+    path = _macro_dir() / "yields.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {
+                "dgs2": pd.Series([], dtype="float64"),
+                "dgs10": pd.Series([], dtype="float64"),
+                "t10y2y": pd.Series([], dtype="float64"),
+            },
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
+    return validate_at_read(YieldsSchema, df)
+
+
+def read_macro_nyad() -> pd.DataFrame:
+    """Read + lazy-validate data/macro/nyad.parquet; returns empty frame if missing."""
+    path = _macro_dir() / "nyad.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {
+                "advances": pd.Series([], dtype="int64"),
+                "declines": pd.Series([], dtype="int64"),
+                "ad_line": pd.Series([], dtype="int64"),
+            },
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
+    return validate_at_read(NyadMacroSchema, df)
 
 
 def read_splits(ticker: str) -> pd.DataFrame:
