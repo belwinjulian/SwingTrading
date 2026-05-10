@@ -33,8 +33,6 @@ D14_SUBCOMMANDS = [
 # refresh-ohlcv, and refresh-macro now do real work and no longer emit [stub]).
 PHASE_1_STUBS = [
     "refresh-fundamentals",
-    "score",
-    "report",
     "journal",
     "backtest",
     "backtest-audit",
@@ -198,3 +196,73 @@ def test_refresh_universe_success_path_smoke(
     failed = [ev for ev in events if ev.get("event") == "refresh_universe_failed"]
     assert not skip, f"Did not expect skip event on success path; got {skip!r}"
     assert not failed, f"Did not expect failed event on success path; got {failed!r}"
+
+
+# --- D-08 data-quality gate integration test (Phase 4 OUT-01 + SIG-01) ----
+
+
+def test_report_data_quality_gate_d08(monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-08: pass_rate > 0.25 AND regime_state == 'Correction' ->
+    CliRunner exit_code != 0 + 'data_quality_gate_failed' event in stdout +
+    no report or snapshot file written.
+
+    Mirrors test_health_gate_below_95_fails_run pattern (lines 109-137).
+    """
+    # Replace run_pipeline with a function that triggers validate_run with
+    # the failure combination — bypasses build_panel/regime/composite which
+    # need real data.
+    def fake_pipeline(snapshot_date: str, write_report: bool = True) -> None:
+        from screener.publishers.pipeline import validate_run
+
+        validate_run(0.30, "Correction", 0.25, 0.25)
+
+    monkeypatch.setattr(
+        "screener.publishers.pipeline.run_pipeline", fake_pipeline
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["report"])
+    assert result.exit_code != 0, (
+        f"Expected non-zero exit on D-08 gate; got {result.exit_code}. "
+        f"stdout: {result.stdout}"
+    )
+    events = _parse_json_events(result.stdout)
+    failed = [
+        ev for ev in events if ev.get("event") == "data_quality_gate_failed"
+    ]
+    assert failed, (
+        f"Expected 'data_quality_gate_failed' event; got events: {events!r}"
+    )
+    ev = failed[0]
+    assert ev.get("regime_state") == "Correction"
+    assert ev.get("pass_rate") == 0.30
+
+
+def test_score_subcommand_no_longer_stub() -> None:
+    """Phase 4: `score` ships a real body — invoking it does NOT emit a
+    '[stub] score not yet implemented' line. Real run will fail without
+    data files, but the failure is from publishers.pipeline, not [stub]."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["score"])
+    events = _parse_json_events(result.stdout)
+    stub_events = [
+        ev for ev in events
+        if ev.get("command") == "score" and "[stub]" in ev.get("message", "")
+    ]
+    assert not stub_events, (
+        f"`screener score` still emits a [stub] line: {stub_events!r}"
+    )
+
+
+def test_report_subcommand_no_longer_stub() -> None:
+    """Phase 4: `report` ships a real body — same as score."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["report"])
+    events = _parse_json_events(result.stdout)
+    stub_events = [
+        ev for ev in events
+        if ev.get("command") == "report" and "[stub]" in ev.get("message", "")
+    ]
+    assert not stub_events, (
+        f"`screener report` still emits a [stub] line: {stub_events!r}"
+    )

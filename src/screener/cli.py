@@ -197,14 +197,36 @@ def refresh_fundamentals() -> None:
 
 @app.command("score")
 def score() -> None:
-    """Compute composite scores + playbook tags; write data/snapshots/YYYY-MM-DD.parquet."""
-    _stub("score")
+    """Compute composite scores; write data/snapshots/YYYY-MM-DD.parquet."""
+    configure_logging()
+    try:
+        from screener.publishers.pipeline import run_pipeline
+
+        run_pipeline(date.today().isoformat(), write_report=False)
+    except typer.Exit:
+        # Pitfall 7: validate_run's typer.Exit MUST propagate to set
+        # process exit code; do NOT catch in the broader Exception handler.
+        raise
+    except Exception as e:
+        # T-3-02 mitigation carry-forward: log only error_type, never the
+        # exception string (may contain FRED API key URL fragments etc.).
+        log.error("score_failed", error_type=type(e).__name__)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("report")
 def report() -> None:
-    """Render the daily Markdown report to reports/YYYY-MM-DD.md."""
-    _stub("report")
+    """Render daily Markdown report (also computes scores + snapshot)."""
+    configure_logging()
+    try:
+        from screener.publishers.pipeline import run_pipeline
+
+        run_pipeline(date.today().isoformat(), write_report=True)
+    except typer.Exit:
+        raise  # Pitfall 7
+    except Exception as e:
+        log.error("report_failed", error_type=type(e).__name__)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("journal")
