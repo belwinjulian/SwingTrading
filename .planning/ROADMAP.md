@@ -123,7 +123,7 @@ Cross-cutting truths (shared by 2+ plans):
 **Requirements:** DAT-04, IND-01, IND-02, IND-03, IND-04, IND-05, REG-01, REG-02, REG-03, REG-04
 
 **Success Criteria** (what must be TRUE):
-  1. `make macro` refreshes SPY, ^IXIC, ^VIX, the NYSE A/D line (Stooq), and FRED yields, writing them to `data/macro/*.parquet`; subsequent runs append only the latest bar.
+  1. `make macro` refreshes SPY, QQQ, ^VIX, the NYSE A/D line (Stooq with R1000-breadth fallback), and FRED yields, writing them to `data/macro/*.parquet`; subsequent runs append only the latest bar.
   2. `indicators.build_panel()` returns a multi-ticker DataFrame containing SMA(10/20/50/150/200), ATR(14), ADR%(20), OBV, dryup-ratio, and RS rating (integer 1–99) for every Russell 1000 ticker — RS percentile is universe-relative on the same date, recomputed daily.
   3. The CI grep `rg "ema" src/screener/signals/minervini.py src/screener/indicators/trend.py` returns zero matches; introducing an EMA reference fails CI.
   4. Regime golden-file tests classify 2008-Q4, 2020-Q1, and 2022-H1 as `Correction` for the documented date ranges; running `pytest tests/test_regime.py -k 'corrections'` passes on all three.

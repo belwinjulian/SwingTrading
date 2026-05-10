@@ -820,32 +820,32 @@ def refresh_macro(
 | A6 | The 3-state regime priority order (Correction overrides Pressure overrides Uptrend) is implementable as a simple if/elif chain not a weighted threshold | Example 4 | If a future refinement uses a continuous score → state mapping, the if/elif must be replaced. For v1 the if/elif is correct and simpler. |
 | A7 | yfinance `^VIX` Volume=0 is universal across history (verified 2024-01); not a quirk of one sample | Pitfall 4 | If older VIX data has Volume>0, code that filters Volume=0 would silently drop them. Mitigation: pin VixSchema to close-only; never read volume. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`^IXIC` (Nasdaq Composite) — fetch or skip?**
    - What we know: CONTEXT.md D-04 says "QQQ/^VIX (yfinance)" and lists no `^IXIC`. ROADMAP success criteria 1 says "make macro refreshes SPY, ^IXIC, ^VIX". Phase 3 boundary in CONTEXT lists "QQQ", not Nasdaq Composite.
    - What's unclear: Is `^IXIC` synonymous with QQQ for this project? They're different — QQQ is the ETF (with bid/ask), `^IXIC` is the index (no volume).
-   - Recommendation: Treat CONTEXT.md D-04 as authoritative — fetch SPY + QQQ + ^VIX. Surface this in the discuss-phase log; if user wants `^IXIC` in addition, it's one more line in `data/macro.py`.
+   - RESOLVED: Treat CONTEXT.md D-04 as authoritative — fetch SPY + QQQ + ^VIX. ROADMAP SC1 originally listed ^IXIC; v1 uses QQQ as the operative Nasdaq proxy because (a) yfinance ETF data is more consistent than index data, (b) regime classification only consumes SPY anyway (D-01 reads `spy_above_200d`, not Nasdaq), and (c) QQQ is sufficient for any future Phase 6/7 sector-strength references. ^IXIC can be added in one line of `data/macro.py` if needed. CONTEXT.md D-04 has been amended with a `Note (^IXIC deferred)` sub-bullet, and ROADMAP §Phase 3 SC1 has been amended to list QQQ instead of ^IXIC, so both source artifacts now agree.
 
 2. **Should `make macro` write to `data/macro/` and to `data/macro/<date>.parquet` (snapshot pattern), or one rolling file per series (incremental)?**
    - What we know: CONTEXT.md D-06 says incremental append with backfill 2005-01-01 — implies one file per series, like Phase 2 OHLCV.
    - What's unclear: Whether to also keep weekly snapshots like the universe.
-   - Recommendation: Single rolling file per series (no snapshot history). Macro data is single-source-of-truth from yfinance/FRED; if a backtest needs a point-in-time view, it can reconstruct via FRED's `realtime_start` parameter (advanced feature — defer to v2).
+   - RESOLVED: Single rolling file per series (no snapshot history). Macro data is single-source-of-truth from yfinance/FRED; if a backtest needs a point-in-time view, it can reconstruct via FRED's `realtime_start` parameter (advanced feature — defer to v2).
 
 3. **RS snapshot trigger — Phase 3 CLI command or Phase 4 `make rank`?**
    - What we know: D-10 says "after each `make rank` run." `make rank` lands in Phase 4.
    - What's unclear: Whether Phase 3 should also expose a `screener rs-snapshot` standalone subcommand for testability.
-   - Recommendation: NO new subcommand (D-14 surface is locked to 9). Phase 3 ships `write_rs_snapshot_atomic()` as a library helper; Phase 4 wires it into the `score` command (which is already in the locked surface).
+   - RESOLVED: NO new subcommand (D-14 surface is locked to 9). Phase 3 ships `write_rs_snapshot_atomic()` as a library helper; Phase 4 wires it into the `score` command (which is already in the locked surface).
 
 4. **Golden-file regime test data — synthetic or real macro Parquet?**
    - What we know: CONTEXT.md "Claude's Discretion" allows either approach.
    - What's unclear: Whether 20 years of SPY+VIX backfill will be available at CI time (the OHLCV cache is gitignored per Phase 2 D-19).
-   - Recommendation: **Synthetic.** Build minimal SPY/VIX series for each test window with deterministic distribution-day positions. Tests are fast, hermetic, and don't depend on macro Parquets being pre-fetched. A separate `@pytest.mark.integration` test exercises real data when run locally.
+   - RESOLVED: **Synthetic.** Build minimal SPY/VIX series for each test window with deterministic distribution-day positions. Tests are fast, hermetic, and don't depend on macro Parquets being pre-fetched. A separate `@pytest.mark.integration` test exercises real data when run locally.
 
 5. **`fredapi` rate limits — what's the exact policy?**
    - What we know: FRED is documented as "free with API key, very generous" (docs/data-architecture.md).
    - What's unclear: Exact requests/sec ceiling.
-   - Recommendation: Wrap FRED calls in `tenacity` with the same `wait_exponential` as Phase 2 OHLCV. 5 retries, 2-60s window. FRED returns rate-limit errors as HTTP 429; tenacity already handles via `ConnectionError` types — verify the exception class fredapi raises and add it to `retry_if_exception_type`.
+   - RESOLVED: Wrap FRED calls in `tenacity` with the same `wait_exponential` as Phase 2 OHLCV. 5 retries, 2-60s window. FRED returns rate-limit errors as HTTP 429; tenacity already handles via `ConnectionError` types — verify the exception class fredapi raises and add it to `retry_if_exception_type`.
 
 ## Environment Availability
 

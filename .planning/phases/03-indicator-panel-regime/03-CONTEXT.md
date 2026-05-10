@@ -57,6 +57,7 @@ Requirements covered: **DAT-04** (macro refresh), **IND-01** (build_panel column
   - `data/macro/vix.parquet` — yfinance (`^VIX`), daily close
   - `data/macro/nyad.parquet` — Stooq (`$NYAD`) with R1000-breadth fallback (see D-05)
   - `data/macro/yields.parquet` — FRED series DGS2, DGS10, T10Y2Y via `fredapi`; `FRED_API_KEY` already in Settings
+  - **Note (^IXIC deferred):** ROADMAP SC1 originally listed `^IXIC`; v1 uses QQQ as the operative Nasdaq proxy because (a) yfinance ETF data is more consistent than index data, (b) regime classification only consumes SPY anyway (D-01 reads `spy_above_200d`, not Nasdaq), and (c) QQQ is sufficient for any future Phase 6/7 sector-strength references. `^IXIC` can be added in one line of `data/macro.py` if needed. ROADMAP §"Phase 3" Success Criteria 1 has been amended to list QQQ instead of `^IXIC` so both source artifacts now agree.
 
 - **D-05: NYSE A/D line — Stooq `$NYAD` primary, R1000-breadth fallback.** Attempt `$NYAD` via the existing Phase 2 Stooq adapter (`data/stooq.py`). If Stooq returns empty or the series has more than 5% missing values over the 2005–present window, fall back to computing A/D from the R1000 panel: `advances - declines` where advances = tickers with `close > prev_close`. Log the data source used (`nyad_source: stooq | r1000_proxy`) as a structured event. The fallback result is stored in the same `data/macro/nyad.parquet` file — downstream regime code is agnostic to which source was used.
 

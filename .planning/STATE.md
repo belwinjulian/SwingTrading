@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: context exhaustion at 75% (2026-05-03)
-last_updated: "2026-05-03T19:33:10.749Z"
+status: ready_to_execute
+stopped_at: null
+last_updated: "2026-05-10T12:30:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 3
-  total_plans: 10
+  completed_phases: 2
+  total_plans: 15
   completed_plans: 10
   percent: 38
 ---
 
 # Project State
 
-**Last updated:** 2026-05-03 (Phase 2 complete — all 5 plans shipped, 39 tests pass, DAT-08 gap fixed, 7/7 must-haves verified)
+**Last updated:** 2026-05-10 (Phase 3 planned — 5 plans across 3 waves, verifier passed iteration 2/3, all 10 REQ-IDs covered)
 
 ## Project Reference
 
@@ -28,13 +28,23 @@ progress:
 ## Current Position
 
 Phase: 02 (data-foundation) — COMPLETE
-Phase: 03 (indicator-panel-&-regime) — ready to plan
+Phase: 03 (indicator-panel-&-regime) — PLANNED (5 plans, 3 waves)
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
 - **Phase:** 3
-- **Plan:** Not started
-- **Status:** Ready to plan
+- **Plan:** 0 / 5 executed
+- **Status:** Ready to execute
 - **Progress:** [███████░░░] 70%
+
+### Phase 3 Plan Summary
+
+| Wave | Plan | Objective |
+|------|------|-----------|
+| 1 | 03-01 | Settings + 5 pandera schemas + persistence helpers (read/write_macro + read/write_rs_snapshot) |
+| 2 | 03-02 | Macro data layer (SPY/QQQ/^VIX/$NYAD/FRED) + refresh-macro CLI + make macro |
+| 2 | 03-03 | Indicator panel — pure-fn trend/volatility/volume/RS + build_panel orchestrator |
+| 3 | 03-04 | Regime module (compute_for_date, build_history, _classify_state, _regime_score) |
+| 3 | 03-05 | SMA-not-EMA CI grep gate + 3 golden-file regime tests (2008-Q4 / 2020-Q1 / 2022-H1) |
 
 ## Performance Metrics
 
@@ -56,7 +66,7 @@ Phase: 03 (indicator-panel-&-regime) — ready to plan
 |---|-------|--------|---------|
 | 1 | Repo Skeleton & CI Hygiene | ✓ Complete (verified 2026-05-02; 4/4 must-haves) | FND-01, FND-02, FND-03 |
 | 2 | Data Foundation | ✓ Complete (verified 2026-05-03; 7/7 must-haves) | DAT-01..03, DAT-06..09 |
-| 3 | Indicator Panel & Regime | Not started | DAT-04, IND-01..05, REG-01..04 |
+| 3 | Indicator Panel & Regime | Planned (5 plans, 0/5 executed) | DAT-04, IND-01..05, REG-01..04 |
 | 4 | Trend Template, Composite Skeleton & First Report | Not started | FND-05, SIG-01, SIG-04, OUT-01..03 |
 | 5 | Backtest Harness & No-Look-Ahead Gate | Not started | FND-04, BCK-01..07 |
 | 6 | Pattern Detection, Full Signal Stack & Playbook Tagging | Not started | DAT-05, PAT-01..06, SIG-02, SIG-03, CMP-01..05, CAT-01..04 |

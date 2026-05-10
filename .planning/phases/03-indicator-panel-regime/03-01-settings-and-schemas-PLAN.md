@@ -24,7 +24,7 @@ must_haves:
   truths:
     - "Settings exposes 8 new D-12 fields (MACRO_CACHE_DIR, RS_SNAPSHOT_DIR, MACRO_BACKFILL_START, REGIME_BREADTH_THRESHOLD, REGIME_DIST_DAYS_PRESSURE, REGIME_DIST_DAYS_CORRECTION, REGIME_VIX_CORRECTION, REGIME_VIX_CONFIRMED) with typed defaults; .env.example mirrors them under a Phase 3 (D-12) comment block."
     - "persistence.py defines 5 new pandera DataFrameModel schemas: MacroOhlcvSchema, VixSchema, YieldsSchema, NyadMacroSchema, RsSnapshotSchema — all with strict=True, coerce=False; rs_rating uses pd.Int64Dtype (nullable), not int."
-    - "persistence.py exports write_rs_snapshot_atomic, read_rs_snapshot, write_macro_atomic, and one read_macro_<series> per macro file — every writer routes through _write_parquet_atomic (D-11); every reader uses validate_at_read."
+    - "persistence.py exports write_rs_snapshot_atomic, read_rs_snapshot, write_macro_atomic, and one read_macro_<series> per macro file — every writer routes through _write_parquet_atomic (D-11); every reader uses validate_at_read on existing files. Each read_macro_<series>() returns a SCHEMA-SHAPED EMPTY DataFrame when the cache file does not yet exist (required by Plan 03-02 D-06 incremental-refresh — the refresh_<series> functions can call read_macro_<series>() unconditionally to inspect existing.index.max() without an extra path.exists() guard at the call site)."
     - "_macro_dir() and _rs_snapshot_dir() resolver helpers exist following the _ohlcv_dir() pattern (getattr-with-default for race safety)."
   artifacts:
     - path: "src/screener/config.py"
@@ -399,28 +399,77 @@ def read_rs_snapshot(snapshot_date: str) -> pd.DataFrame:
     return validate_at_read(RsSnapshotSchema, df)
 
 
+# Macro readers — graceful "missing cache" semantics (D-06 incremental refresh).
+# When the Parquet does not yet exist (first run), return an empty DataFrame with
+# the right schema-shape so refresh_<series>() can use the standard
+#   existing = read_macro_<series>()
+#   if existing.empty: start = MACRO_BACKFILL_START else: start = existing.index.max()+1d
+# pattern from Phase 2 D-07 without an extra path.exists() guard at the call site.
+
+_EMPTY_DT_INDEX = pd.DatetimeIndex([], name="date")
+
+
 def read_macro_spy() -> pd.DataFrame:
-    df = pd.read_parquet(_macro_dir() / "spy.parquet")
+    path = _macro_dir() / "spy.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {"open": pd.Series([], dtype="float64"),
+             "high": pd.Series([], dtype="float64"),
+             "low": pd.Series([], dtype="float64"),
+             "close": pd.Series([], dtype="float64"),
+             "volume": pd.Series([], dtype="int64")},
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
     return validate_at_read(MacroOhlcvSchema, df)
 
 
 def read_macro_qqq() -> pd.DataFrame:
-    df = pd.read_parquet(_macro_dir() / "qqq.parquet")
+    path = _macro_dir() / "qqq.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {"open": pd.Series([], dtype="float64"),
+             "high": pd.Series([], dtype="float64"),
+             "low": pd.Series([], dtype="float64"),
+             "close": pd.Series([], dtype="float64"),
+             "volume": pd.Series([], dtype="int64")},
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
     return validate_at_read(MacroOhlcvSchema, df)
 
 
 def read_macro_vix() -> pd.DataFrame:
-    df = pd.read_parquet(_macro_dir() / "vix.parquet")
+    path = _macro_dir() / "vix.parquet"
+    if not path.exists():
+        return pd.DataFrame({"close": pd.Series([], dtype="float64")}, index=_EMPTY_DT_INDEX)
+    df = pd.read_parquet(path)
     return validate_at_read(VixSchema, df)
 
 
 def read_macro_yields() -> pd.DataFrame:
-    df = pd.read_parquet(_macro_dir() / "yields.parquet")
+    path = _macro_dir() / "yields.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {"dgs2": pd.Series([], dtype="float64"),
+             "dgs10": pd.Series([], dtype="float64"),
+             "t10y2y": pd.Series([], dtype="float64")},
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
     return validate_at_read(YieldsSchema, df)
 
 
 def read_macro_nyad() -> pd.DataFrame:
-    df = pd.read_parquet(_macro_dir() / "nyad.parquet")
+    path = _macro_dir() / "nyad.parquet"
+    if not path.exists():
+        return pd.DataFrame(
+            {"advances": pd.Series([], dtype="int64"),
+             "declines": pd.Series([], dtype="int64"),
+             "ad_line": pd.Series([], dtype="int64")},
+            index=_EMPTY_DT_INDEX,
+        )
+    df = pd.read_parquet(path)
     return validate_at_read(NyadMacroSchema, df)
 ```
 
@@ -449,7 +498,7 @@ DO NOT touch the existing `OhlcvPanelSchema`, `UniverseSchema`, `SplitsSchema`, 
     - `grep -c "^def _rs_snapshot_dir" src/screener/persistence.py` returns 1.
     - `grep -c "_write_parquet_atomic(validated, target)" src/screener/persistence.py` returns at least 4 (write_universe_atomic, write_ohlcv_atomic, write_rs_snapshot_atomic, write_macro_atomic — atomic-write contract reused).
     - `grep -c "Series\[pd.Int64Dtype\]" src/screener/persistence.py` returns 1 (rs_rating only — Pitfall 9).
-    - `grep -c "validate_at_read(" src/screener/persistence.py` returns at least 7 (existing read_universe + read_panel + read_splits + 5 new readers — but only 6 new ones; total ≥ 7 because existing already had 3).
+    - `grep -c "validate_at_read(" src/screener/persistence.py` returns at least 9 (3 existing: read_universe + read_panel + read_splits; 6 new: read_rs_snapshot + read_macro_spy/qqq/vix/yields/nyad).
     - `uv run mypy --config-file pyproject.toml src/screener/persistence.py` exits 0.
     - `uv run ruff check src/screener/persistence.py` exits 0.
     - The import command in `<automated>` exits 0 with `OK`.

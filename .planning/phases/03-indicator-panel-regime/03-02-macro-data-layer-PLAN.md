@@ -23,7 +23,7 @@ must_haves:
   truths:
     - "`screener refresh-macro` (and `make macro`) refreshes 5 macro series: SPY (yfinance), QQQ (yfinance), ^VIX (yfinance close-only), $NYAD (Stooq with R1000-breadth fallback per D-05), FRED yields (DGS2/DGS10/T10Y2Y); each series writes one Parquet to data/macro/<series>.parquet via persistence.write_macro_atomic."
     - "Stooq $NYAD failure (ParserError per RESEARCH Pitfall 1, or > 5% missing values per D-05) routes cleanly to `_compute_breadth_fallback()` which derives advances/declines from the R1000 panel; structured event `nyad_source` is emitted with `source='stooq'` or `source='r1000_proxy'`."
-    - "Macro refresh is idempotent and incremental (D-06): subsequent runs check `max(date)` in the existing Parquet and fetch only newer bars; first run backfills from MACRO_BACKFILL_START (2005-01-01)."
+    - "Macro refresh is idempotent and incremental (D-06): each refresh_<series>() calls persistence.read_macro_<series>() to inspect the cached Parquet, computes start = max(date)+1d via the shared _incremental_start helper, fetches only newer bars, dedupes on the date index, and writes the combined frame atomically; first run backfills from MACRO_BACKFILL_START (2005-01-01); force=True bypasses the cache. Grep-verifiable: `grep -c \"existing.index.max()\" src/screener/data/macro.py >= 5` (one per series)."
     - "data/macro.py uses the same tenacity retry decorator + 4-invariant gate idiom as data/ohlcv.py (Phase 2 D-10); ^VIX is projected to close-only before write (Pitfall 4); FRED yields are stored as-received with NaN gaps (Pitfall 5)."
     - "FRED_API_KEY missing → log warning `skipping_yields_no_key` and write empty yields.parquet (graceful degradation; yields are not in D-03 score formula)."
     - "D-14 surface lock: refresh-macro is filled in-place; no new typer subcommands added (locked surface = 9)."
@@ -41,8 +41,8 @@ must_haves:
       provides: "macro re-export so `from screener.data import macro` resolves cleanly"
       contains: "from screener.data import macro"
     - path: "tests/test_macro_refresh.py"
-      provides: "6 unit tests covering DAT-04: yf invariants, NYAD Stooq fallback to r1000_proxy, NYAD thin-Stooq fallback, yields columns, no-secret-in-logs, unknown-series ValueError"
-      exports: ["test_yf_invariants_applied", "test_nyad_fallback_to_r1000_proxy", "test_nyad_fallback_on_thin_stooq", "test_yields_parquet_columns", "test_no_secret_in_logs", "test_refresh_spy_writes_macro_parquet"]
+      provides: "9+ unit tests covering DAT-04 + D-06 + T-3-02: yf invariants, NYAD Stooq fallback to r1000_proxy, NYAD thin-Stooq fallback, yields columns, no-secret-in-logs (CliRunner-driven, caplog at root), unknown-series ValueError, refresh_spy round-trip, incremental-append contract"
+      exports: ["test_yf_invariants_applied", "test_nyad_fallback_to_r1000_proxy", "test_nyad_fallback_on_thin_stooq", "test_yields_parquet_columns", "test_no_secret_in_logs", "test_refresh_spy_writes_macro_parquet", "test_refresh_spy_appends_only_new_bars"]
   key_links:
     - from: "src/screener/data/macro.py refresh_spy/qqq/vix/nyad/yields"
       to: "src/screener/persistence.py write_macro_atomic"
@@ -76,7 +76,7 @@ Output:
 - `src/screener/cli.py` modified — fill the `refresh-macro` stub body (lines 161-164) with real orchestration
 - `Makefile` modified — add `macro:` target alongside existing targets
 - `src/screener/data/__init__.py` modified — re-export `macro`
-- `tests/test_macro_refresh.py` (new) — 6 unit tests with mock yfinance/stooq/fredapi
+- `tests/test_macro_refresh.py` (new) — 9+ unit tests with mock yfinance/stooq/fredapi (yf invariants, NYAD fallbacks, VIX close-only, yields columns, skip-without-key, secret-safe logging via CliRunner, unknown-series ValueError, refresh_spy round-trip, D-06 incremental-append contract)
 </objective>
 
 <execution_context>
@@ -194,7 +194,7 @@ D-14 SURFACE LOCK: tests/test_cli_smoke.py asserts the 9-subcommand surface. DO 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
 | T-3-01 | Tampering | data/macro.py _fetch_yf_macro | mitigate | Reuse Phase 2 D-10 4-invariant gate (StaleOrEmptyError on empty/stale/non-monotonic/null-close); pandera MacroOhlcvSchema eager validation at write_macro_atomic catches schema-level violations from yfinance |
-| T-3-02 | Information Disclosure | data/macro.py _fetch_fred_yields | mitigate | Wrap fredapi.Fred(api_key=settings.FRED_API_KEY).get_series(...) in try/except; log only `error_type=type(e).__name__` and `series_id` — NEVER pass settings.FRED_API_KEY or `error=str(e)` to log calls (Fred exceptions may include URL with key in querystring); `test_no_secret_in_logs` asserts FRED_API_KEY does not appear in any captured structlog event from data/macro.py |
+| T-3-02 | Information Disclosure | data/macro.py _fetch_fred_yields + cli.py refresh_macro | mitigate | (1) `data/macro.py` wraps `fredapi.Fred(api_key=settings.FRED_API_KEY).get_series(...)` in try/except and logs ONLY `error_type=type(e).__name__` + `series` — never `error=str(e)` or `settings.FRED_API_KEY`. (2) `cli.py refresh_macro` outer except logs ONLY `error_type=type(e).__name__` (NEVER `error=str(e)` — FRED exception strings may carry URL-querystring keys). `test_no_secret_in_logs` drives the path via `typer.testing.CliRunner` invoking `refresh-macro`, mocks `Fred.get_series` to raise an exception with the secret embedded in `?api_key=...`, and asserts the secret appears in NEITHER `caplog.text` (root logger, DEBUG level) NOR any captured structlog event — covering both module paths. |
 | T-3-03 | DoS | data/macro.py refresh_nyad | mitigate | Catch StaleOrEmptyError, ParserError (pandas.errors.ParserError), and broad Exception from stooq_module.fetch_ohlcv; route to _compute_breadth_fallback; emit nyad_source=r1000_proxy structured event; per RESEARCH Pitfall 1 this is the operative primary path today |
 | T-3-04 | Tampering | data/macro.py write through write_macro_atomic | mitigate | All persistence routed through Phase 2 D-11 _write_parquet_atomic via persistence.write_macro_atomic — no hand-rolled writes; tempfile + os.replace prevents partial writes during cron interruptions |
 </threat_model>
@@ -336,50 +336,124 @@ def _project_ohlcv(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Incremental-append helper (D-06; mirrors Phase 2 D-07 OHLCV idiom).
+#
+# Each refresh_<series>() inspects the cached Parquet via
+# persistence.read_macro_<series>() (which returns an empty schema-shaped frame
+# when the file does not yet exist), computes start = max(date)+1d, and only
+# fetches newer bars. On first run start = MACRO_BACKFILL_START. force=True
+# bypasses the cache and refetches the full backfill.
+# ---------------------------------------------------------------------------
+
+
+def _incremental_start(existing: pd.DataFrame, settings_start: str) -> str | None:
+    """Return the next-day start date for an incremental fetch, or None if
+    the cache is already up-to-date as of today.
+
+    - Empty cache → backfill start.
+    - Non-empty cache → max(date)+1d, unless that's already in the future.
+    """
+    if existing is None or existing.empty:
+        return settings_start
+    last = pd.Timestamp(existing.index.max()).normalize()
+    next_start = last + pd.Timedelta(days=1)
+    if next_start > pd.Timestamp.utcnow().normalize():
+        return None  # nothing to do — cache is current
+    return next_start.strftime("%Y-%m-%d")
+
+
+def _append_new_bars(existing: pd.DataFrame, new_bars: pd.DataFrame) -> pd.DataFrame:
+    """Concat existing + new_bars, dedupe on the date index keeping the new
+    value (Phase 2 D-07 sentinel-bar refetch parity)."""
+    if existing is None or existing.empty:
+        return new_bars
+    combined = pd.concat([existing, new_bars])
+    combined = combined.loc[~combined.index.duplicated(keep="last")]
+    combined = combined.sort_index()
+    return combined
+
+
 def refresh_spy(force: bool, today: date) -> Path:
+    """Idempotent + incremental (D-06). Subsequent runs append only newer bars
+    after the existing max(date); first run backfills from MACRO_BACKFILL_START.
+    """
+    from screener import persistence  # late import; avoids circular concerns
+
     settings = get_settings()
-    log.info("macro_fetch_start", series="spy", source="yfinance")
-    df = _fetch_yf_macro("SPY", settings.MACRO_BACKFILL_START, today)
-    df = _project_ohlcv(df)
-    log.info("macro_fetch_success", series="spy", source="yfinance", n_bars=len(df))
-    return write_macro_atomic(df, "spy")
+    existing = persistence.read_macro_spy() if not force else None
+    start = settings.MACRO_BACKFILL_START if (existing is None or existing.empty) else _incremental_start(existing, settings.MACRO_BACKFILL_START)
+    if start is None:
+        log.info("macro_refresh_skip_up_to_date", series="spy", last_date=str(existing.index.max().date()))
+        return _macro_dir_for_log() / "spy.parquet"
+    log.info("macro_fetch_start", series="spy", source="yfinance", start=start)
+    new_bars = _fetch_yf_macro("SPY", start, today)
+    new_bars = _project_ohlcv(new_bars)
+    combined = _append_new_bars(existing, new_bars)
+    log.info("macro_fetch_success", series="spy", source="yfinance", n_bars=len(combined), n_new=len(new_bars))
+    return write_macro_atomic(combined, "spy")
 
 
 def refresh_qqq(force: bool, today: date) -> Path:
+    from screener import persistence
+
     settings = get_settings()
-    log.info("macro_fetch_start", series="qqq", source="yfinance")
-    df = _fetch_yf_macro("QQQ", settings.MACRO_BACKFILL_START, today)
-    df = _project_ohlcv(df)
-    log.info("macro_fetch_success", series="qqq", source="yfinance", n_bars=len(df))
-    return write_macro_atomic(df, "qqq")
+    existing = persistence.read_macro_qqq() if not force else None
+    start = settings.MACRO_BACKFILL_START if (existing is None or existing.empty) else _incremental_start(existing, settings.MACRO_BACKFILL_START)
+    if start is None:
+        log.info("macro_refresh_skip_up_to_date", series="qqq", last_date=str(existing.index.max().date()))
+        return _macro_dir_for_log() / "qqq.parquet"
+    log.info("macro_fetch_start", series="qqq", source="yfinance", start=start)
+    new_bars = _fetch_yf_macro("QQQ", start, today)
+    new_bars = _project_ohlcv(new_bars)
+    combined = _append_new_bars(existing, new_bars)
+    log.info("macro_fetch_success", series="qqq", source="yfinance", n_bars=len(combined), n_new=len(new_bars))
+    return write_macro_atomic(combined, "qqq")
 
 
 def refresh_vix(force: bool, today: date) -> Path:
-    """^VIX is close-only (Pitfall 4 — Volume=0 always)."""
+    """^VIX is close-only (Pitfall 4 — Volume=0 always). Incremental per D-06."""
+    from screener import persistence
+
     settings = get_settings()
-    log.info("macro_fetch_start", series="vix", source="yfinance")
-    df = _fetch_yf_macro("^VIX", settings.MACRO_BACKFILL_START, today)
-    df = df[["close"]].copy()  # project to close-only per VixSchema
-    log.info("macro_fetch_success", series="vix", source="yfinance", n_bars=len(df))
-    return write_macro_atomic(df, "vix")
+    existing = persistence.read_macro_vix() if not force else None
+    start = settings.MACRO_BACKFILL_START if (existing is None or existing.empty) else _incremental_start(existing, settings.MACRO_BACKFILL_START)
+    if start is None:
+        log.info("macro_refresh_skip_up_to_date", series="vix", last_date=str(existing.index.max().date()))
+        return _macro_dir_for_log() / "vix.parquet"
+    log.info("macro_fetch_start", series="vix", source="yfinance", start=start)
+    new_bars = _fetch_yf_macro("^VIX", start, today)
+    new_bars = new_bars[["close"]].copy()  # project to close-only per VixSchema
+    combined = _append_new_bars(existing, new_bars)
+    log.info("macro_fetch_success", series="vix", source="yfinance", n_bars=len(combined), n_new=len(new_bars))
+    return write_macro_atomic(combined, "vix")
 
 
 def refresh_nyad(force: bool, today: date) -> Path:
-    """Stooq $NYAD primary; R1000-breadth fallback (D-05).
+    """Stooq $NYAD primary; R1000-breadth fallback (D-05). Incremental per D-06.
     Per RESEARCH Pitfall 1, Stooq is currently broken — fallback is operative
     primary today. Structured event nyad_source distinguishes the path used.
+    Both branches honor existing.index.max() — neither path issues a full
+    re-derivation when the cache is current.
     """
+    from screener import persistence
+
     settings = get_settings()
-    log.info("macro_fetch_start", series="nyad", source="stooq")
-    df: pd.DataFrame
+    existing = persistence.read_macro_nyad() if not force else None
+    start = settings.MACRO_BACKFILL_START if (existing is None or existing.empty) else _incremental_start(existing, settings.MACRO_BACKFILL_START)
+    if start is None:
+        log.info("macro_refresh_skip_up_to_date", series="nyad", last_date=str(existing.index.max().date()))
+        return _macro_dir_for_log() / "nyad.parquet"
+    log.info("macro_fetch_start", series="nyad", source="stooq", start=start)
+    new_bars: pd.DataFrame
     try:
-        stooq_df = stooq_module.fetch_ohlcv("$NYAD", settings.MACRO_BACKFILL_START, today)
+        stooq_df = stooq_module.fetch_ohlcv("$NYAD", start, today)
         # D-05 thin-data heuristic: > 5% missing values triggers fallback
         if "close" in stooq_df.columns and stooq_df["close"].isna().mean() > 0.05:
             raise StaleOrEmptyError("$NYAD > 5% missing — falling back to r1000_proxy")
         # If Stooq ever recovers and returns valid OHLCV, derive advances/declines
         # from close.diff() — same shape as fallback.
-        df = _stooq_to_breadth(stooq_df)
+        new_bars = _stooq_to_breadth(stooq_df)
         log.info("nyad_source", source="stooq")
     except Exception as e:
         log.warning(
@@ -388,16 +462,21 @@ def refresh_nyad(force: bool, today: date) -> Path:
             source="stooq",
             error_type=type(e).__name__,
         )
-        df = _compute_breadth_fallback(settings.MACRO_BACKFILL_START, today)
+        # Fallback also honors the incremental window — only re-derive from `start`.
+        new_bars = _compute_breadth_fallback(start, today)
         log.info("nyad_source", source="r1000_proxy")
-    log.info("macro_fetch_success", series="nyad", source="resolved", n_bars=len(df))
-    return write_macro_atomic(df, "nyad")
+    combined = _append_new_bars(existing, new_bars)
+    log.info("macro_fetch_success", series="nyad", source="resolved", n_bars=len(combined), n_new=len(new_bars))
+    return write_macro_atomic(combined, "nyad")
 
 
 def refresh_yields(force: bool, today: date) -> Path:
     """FRED DGS2/DGS10/T10Y2Y. Stored as-received with NaN gaps (Pitfall 5).
     Empty Parquet on missing FRED_API_KEY (graceful — yields not in D-03 score).
+    Incremental per D-06.
     """
+    from screener import persistence
+
     settings = get_settings()
     if not settings.FRED_API_KEY:
         log.warning("skipping_yields_no_key")
@@ -408,16 +487,29 @@ def refresh_yields(force: bool, today: date) -> Path:
             index=pd.DatetimeIndex([], name="date"),
         )
         return write_macro_atomic(empty, "yields")
-    log.info("macro_fetch_start", series="yields", source="fred")
+    existing = persistence.read_macro_yields() if not force else None
+    start = settings.MACRO_BACKFILL_START if (existing is None or existing.empty) else _incremental_start(existing, settings.MACRO_BACKFILL_START)
+    if start is None:
+        log.info("macro_refresh_skip_up_to_date", series="yields", last_date=str(existing.index.max().date()))
+        return _macro_dir_for_log() / "yields.parquet"
+    log.info("macro_fetch_start", series="yields", source="fred", start=start)
     try:
-        df = _fetch_fred_yields(settings.MACRO_BACKFILL_START, today)
+        new_bars = _fetch_fred_yields(start, today)
     except Exception as e:
-        # T-3-02: never pass `error=str(e)` (FRED URL with key may be in trace);
-        # log only error_type.
+        # T-3-02: NEVER pass `error=str(e)` — FRED exceptions may include the
+        # request URL with `?api_key=...` querystring. Log only error_type and
+        # series; let typer surface the traceback to stderr after re-raise.
         log.error("macro_fetch_fail", series="yields", source="fred", error_type=type(e).__name__)
         raise
-    log.info("macro_fetch_success", series="yields", source="fred", n_bars=len(df))
-    return write_macro_atomic(df, "yields")
+    combined = _append_new_bars(existing, new_bars)
+    log.info("macro_fetch_success", series="yields", source="fred", n_bars=len(combined), n_new=len(new_bars))
+    return write_macro_atomic(combined, "yields")
+
+
+def _macro_dir_for_log() -> Path:
+    """Local helper to surface the canonical macro path for skip-log return values."""
+    from screener import persistence
+    return persistence._macro_dir()
 
 
 # ---------------------------------------------------------------------------
@@ -512,6 +604,11 @@ Read current state and append `from screener.data import macro` (or add `macro` 
     - `uv run python -c "from screener.data.macro import refresh_spy, _compute_breadth_fallback; from screener.data import macro; print('OK')"` exits 0 with `OK`.
     - `uv run mypy --config-file pyproject.toml src/screener/data/macro.py` exits 0 (note: `screener.data.*` may be under ignore_errors=True per pyproject; if so, mypy passes trivially — confirm via test).
     - `uv run ruff check src/screener/data/macro.py src/screener/data/__init__.py` exits 0.
+    - `grep -c "existing.index.max()" src/screener/data/macro.py` returns at least 5 (one per series — D-06 incremental check).
+    - `grep -c "_incremental_start" src/screener/data/macro.py` returns at least 6 (1 def + 5 call sites).
+    - `grep -c "persistence.read_macro_" src/screener/data/macro.py` returns at least 5 (one per series — read-existing-cache step before fetch).
+    - `grep -c "_append_new_bars" src/screener/data/macro.py` returns at least 6 (1 def + 5 call sites — append-and-dedupe step).
+    - `grep -c "macro_refresh_skip_up_to_date" src/screener/data/macro.py` returns at least 5 (one per series — up-to-date short-circuit log).
     - Architecture test passes: `uv run pytest tests/test_architecture.py -x -q` exits 0 (data/macro.py imports only `persistence`, `config`, intra-layer `stooq`, plus stdlib + third-party).
   </acceptance_criteria>
   <done>data/macro.py created with 5 refresh fns, 3 helpers, tenacity wrapper, NYAD fallback, FRED secret-safe; data/__init__.py re-exports macro; ruff + mypy clean; architecture test passes.</done>
@@ -538,7 +635,8 @@ Read current state and append `from screener.data import macro` (or add `macro` 
     - Test: `test_nyad_fallback_to_r1000_proxy` — patches `stooq_module.fetch_ohlcv` to raise StaleOrEmptyError, patches `_compute_breadth_fallback` to return synthetic ad_line df; assert structured event `nyad_source` with `source=r1000_proxy` is emitted.
     - Test: `test_nyad_fallback_on_thin_stooq` — patches `stooq_module.fetch_ohlcv` to return df where 10% of close is NaN; assert fallback path taken.
     - Test: `test_yields_parquet_columns` — patches `Fred.get_series` to return synthetic series; assert `refresh_yields` writes a Parquet whose columns are exactly `{dgs2, dgs10, t10y2y}` with date index.
-    - Test: `test_no_secret_in_logs` — sets `FRED_API_KEY="SUPER_SECRET_KEY_xyz"`, patches `Fred.get_series` to raise an exception; capture all structlog events emitted from `screener.data.macro`; assert "SUPER_SECRET_KEY_xyz" appears in NONE of them.
+    - Test: `test_no_secret_in_logs` (T-3-02 mitigation) — drives the leak path through the REAL CLI via `typer.testing.CliRunner` invoking `screener refresh-macro`; mocks `Fred.get_series` to raise an exception whose message embeds the secret in a `?api_key=...` querystring; uses `caplog.at_level(logging.DEBUG)` at module scope (root logger) AND `structlog.testing.capture_logs()` to capture EVERY log record from EVERY logger; asserts the literal `SECRET_FAKE_KEY_12345` AND the substring `api_key=` appear in NEITHER caplog.text NOR any structlog event — covers cli.py, macro.py, and any indirect log path.
+    - Test: `test_refresh_spy_appends_only_new_bars` (D-06 incremental-append) — first run mocks yfinance to return 100 bars from 2025-01-01..2025-04-10 → write to `data/macro/spy.parquet`; second run mocks yfinance to return ONLY the next bar (2025-04-11) → assert combined Parquet has 101 rows, last date is 2025-04-11, AND assert the SECOND `yf.download` call was made with `start="2025-04-11"` (NOT `MACRO_BACKFILL_START`).
     - Test: `test_refresh_spy_writes_macro_parquet` — patches `_fetch_yf_macro`, asserts `data/macro/spy.parquet` is created via `write_macro_atomic`.
   </behavior>
   <action>
@@ -572,11 +670,16 @@ def refresh_macro(
         refresh_yields(force=force, today=today)
         log.info("refresh_macro_ok")
     except Exception as e:
-        log.error(
-            "refresh_macro_failed",
-            error=str(e),
-            error_type=type(e).__name__,
-        )
+        # T-3-02 mitigation: NEVER pass `error=str(e)` to a structured-log
+        # call. FRED exceptions may include the request URL with
+        # `?api_key=...` in their stringified form; passing str(e) into the
+        # log event would leak the secret into structured-log sinks (and
+        # downstream runs.jsonl in Phase 8). We log only the error_type.
+        # Re-raising via `typer.Exit(code=1) from e` lets typer print the
+        # traceback to stderr — outside the structured-log channel — which
+        # is acceptable for interactive runs but never persisted to log
+        # aggregators. The `from e` chain is preserved for debugging.
+        log.error("refresh_macro_failed", error_type=type(e).__name__)
         raise typer.Exit(code=1) from e
 ```
 
@@ -767,11 +870,25 @@ def test_yields_skipped_without_key(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert path.exists()
 
 
-def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """T-3-02: FRED_API_KEY must NEVER appear in any structlog event from macro."""
+def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    """T-3-02: FRED_API_KEY must NEVER appear in any captured log event from
+    macro.py OR cli.py during a refresh-macro invocation.
+
+    This test is driven via typer.testing.CliRunner so the assertion covers
+    BOTH structured logs from screener.data.macro AND screener.cli — exactly
+    the surface a real run touches. caplog is set at module scope (root
+    logger, DEBUG level) so we capture every record regardless of which
+    logger emits it.
+    """
+    import logging
+
+    from typer.testing import CliRunner
+
+    from screener.cli import app as cli_app
+
     macro_dir = tmp_path / "macro"
     monkeypatch.setattr("screener.persistence._macro_dir", lambda: macro_dir)
-    secret = "SUPER_SECRET_KEY_xyz123_nobody_should_see"
+    secret = "SECRET_FAKE_KEY_12345"
     monkeypatch.setattr(
         "screener.config.get_settings",
         lambda: type("S", (), {
@@ -781,15 +898,117 @@ def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
         })(),
     )
 
+    # Stub the four happy-path series (so the run reaches refresh_yields).
+    monkeypatch.setattr("screener.data.macro.refresh_spy", lambda force, today: macro_dir / "spy.parquet")
+    monkeypatch.setattr("screener.data.macro.refresh_qqq", lambda force, today: macro_dir / "qqq.parquet")
+    monkeypatch.setattr("screener.data.macro.refresh_vix", lambda force, today: macro_dir / "vix.parquet")
+    monkeypatch.setattr("screener.data.macro.refresh_nyad", lambda force, today: macro_dir / "nyad.parquet")
+
+    # FRED raises an exception whose stringified form embeds the secret
+    # in the URL querystring — exactly the leak vector T-3-02 guards against.
+    leaky_url = (
+        f"rate limit hit at https://api.stlouisfed.org/fred/series/observations"
+        f"?series_id=DGS10&api_key={secret}"
+    )
+
+    class FredError(RuntimeError):
+        pass
+
     fake_fred_instance = mock.MagicMock()
-    fake_fred_instance.get_series.side_effect = RuntimeError(f"FRED returned 401 for url=https://api.fred.com/?key={secret}")
+    fake_fred_instance.get_series.side_effect = FredError(leaky_url)
+
+    runner = CliRunner(mix_stderr=False)
     with mock.patch("screener.data.macro.Fred", return_value=fake_fred_instance):
-        with capture_logs() as logs:
-            with pytest.raises(RuntimeError):
-                macro_module.refresh_yields(force=True, today=REF_DATE)
-    for entry in logs:
+        with caplog.at_level(logging.DEBUG):  # root logger; captures every record
+            with capture_logs() as structlog_events:
+                result = runner.invoke(cli_app, ["refresh-macro"])
+
+    # Refresh must have failed (non-zero exit).
+    assert result.exit_code != 0, "expected non-zero exit when FRED raises"
+
+    # 1) Secret must not appear in any structlog event from macro/cli.
+    for entry in structlog_events:
         for v in entry.values():
-            assert secret not in str(v), f"secret leaked in log entry {entry}"
+            assert secret not in str(v), f"secret leaked in structlog entry {entry}"
+            assert "api_key=" not in str(v), f"api_key= leaked in structlog entry {entry}"
+
+    # 2) Secret must not appear in stdlib caplog text (covers any non-structlog path).
+    assert secret not in caplog.text, f"secret leaked in caplog: {caplog.text}"
+    assert "api_key=" not in caplog.text, f"api_key= leaked in caplog: {caplog.text}"
+
+
+def test_refresh_spy_appends_only_new_bars(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """D-06 incremental-append contract: a second refresh fetches ONLY bars
+    after max(date)+1d and appends them; it does NOT re-issue the full backfill.
+
+    Uses real persistence.read_macro_spy() to round-trip through the
+    schema-shaped empty-frame path on first run, then through the populated
+    path on second run.
+    """
+    macro_dir = tmp_path / "macro"
+    monkeypatch.setattr("screener.persistence._macro_dir", lambda: macro_dir)
+
+    # First run — 100 bars from 2025-01-01..(date+100bd). yfinance mock returns
+    # the synthetic frame; we capture (start, end) so we can verify the second
+    # run uses the NEXT-DAY start.
+    first_n = 100
+    first_idx = pd.bdate_range(start=pd.Timestamp("2025-01-01"), periods=first_n)
+    first_df = pd.DataFrame(
+        {
+            "Open": np.full(first_n, 100.0),
+            "High": np.full(first_n, 101.0),
+            "Low": np.full(first_n, 99.0),
+            "Close": np.full(first_n, 100.5),
+            "Volume": np.full(first_n, 1_000_000, dtype="int64"),
+        },
+        index=first_idx,
+    )
+    captured_starts: list[str] = []
+
+    def _mock_yf_first(ticker: str, *args: object, **kwargs: object) -> pd.DataFrame:
+        # First call captures whatever start refresh_spy passes in.
+        captured_starts.append(str(kwargs.get("start", args[0] if args else "")))
+        return first_df
+
+    with mock.patch("screener.data.macro.yf.download", side_effect=_mock_yf_first):
+        path1 = macro_module.refresh_spy(force=False, today=date(2025, 5, 21))
+    loaded1 = pd.read_parquet(path1)
+    assert len(loaded1) == first_n, f"expected first run to write {first_n} bars; got {len(loaded1)}"
+    last_first = loaded1.index.max()
+
+    # Second run — yfinance returns ONLY the next bar (1 row).
+    next_day = (last_first + pd.Timedelta(days=1)).normalize()
+    second_df = pd.DataFrame(
+        {
+            "Open": [102.0],
+            "High": [103.0],
+            "Low": [101.0],
+            "Close": [102.5],
+            "Volume": [2_000_000],
+        },
+        index=pd.DatetimeIndex([next_day]),
+    )
+
+    def _mock_yf_second(ticker: str, *args: object, **kwargs: object) -> pd.DataFrame:
+        captured_starts.append(str(kwargs.get("start", args[0] if args else "")))
+        return second_df
+
+    with mock.patch("screener.data.macro.yf.download", side_effect=_mock_yf_second):
+        path2 = macro_module.refresh_spy(force=False, today=date(2025, 5, 22))
+    loaded2 = pd.read_parquet(path2)
+
+    assert len(loaded2) == first_n + 1, f"expected {first_n + 1} bars after append; got {len(loaded2)}"
+    assert loaded2.index.max() == next_day, f"expected last date {next_day}; got {loaded2.index.max()}"
+
+    # Critical assertion: the SECOND yf.download call's start arg is
+    # next_day_str, NOT MACRO_BACKFILL_START. captured_starts[1] is the
+    # second run's start.
+    assert len(captured_starts) >= 2, f"expected 2 yf calls; got {captured_starts}"
+    next_day_str = next_day.strftime("%Y-%m-%d")
+    assert captured_starts[1] == next_day_str, (
+        f"D-06 incremental-fetch start was {captured_starts[1]!r}; "
+        f"expected {next_day_str!r} (max(date)+1d)"
+    )
 ```
 
 **Step D — DO NOT modify `tests/conftest.py`.** All synthetic frames used by `tests/test_macro_refresh.py` are module-local helpers (`_synthetic_yf_ohlcv`, `_synthetic_breadth_df`) defined inside the test file itself — this keeps Plan 03-02's `files_modified` orthogonal to Plan 03-03's, allowing parallel execution within Wave 2 with zero merge surface.
@@ -805,13 +1024,20 @@ def test_no_secret_in_logs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
     - `grep -c "refresh_spy(force=force, today=today)" src/screener/cli.py` returns 1.
     - `grep -c "refresh_macro_ok" src/screener/cli.py` returns 1.
     - `grep -c "refresh_macro_failed" src/screener/cli.py` returns 1.
+    - `grep -c "error=str(e)" src/screener/cli.py` returns 0 (T-3-02 mitigation: secret leak prevention — `error=str(e)` MUST NOT appear in any structured-log call).
+    - `grep -E "log\.(error|warning|info)\(.*error=str\(" src/screener/cli.py` returns no matches (broader form of the same gate).
     - `grep -E "^macro:" Makefile` returns one line.
     - `grep -E "^	uv run screener refresh-macro$" Makefile` returns at least one line (TAB-prefixed; the `data:` recipe also has this line).
     - `grep -c "^.PHONY:.* macro" Makefile` returns 1 (macro listed in PHONY).
     - `tests/test_macro_refresh.py` exists.
-    - `grep -c "^def test_" tests/test_macro_refresh.py` returns at least 8.
+    - `grep -c "^def test_" tests/test_macro_refresh.py` returns at least 9 (8 existing + new test_refresh_spy_appends_only_new_bars per D-06).
     - `grep -c "test_no_secret_in_logs" tests/test_macro_refresh.py` returns 1.
     - `grep -c "test_nyad_fallback_to_r1000_proxy" tests/test_macro_refresh.py` returns 1.
+    - `grep -c "test_refresh_spy_appends_only_new_bars" tests/test_macro_refresh.py` returns 1 (D-06 incremental-append contract).
+    - `grep -c "from typer.testing import CliRunner" tests/test_macro_refresh.py` returns 1 (test_no_secret_in_logs drives the leak path through the real CLI).
+    - `grep -c "caplog.at_level" tests/test_macro_refresh.py` returns 1 (T-3-02: secret-leak assertion checks ALL loggers, not just macro module).
+    - `grep -c "SECRET_FAKE_KEY_12345" tests/test_macro_refresh.py` returns at least 1 (canonical secret literal in the leak test — exact string the gate searches for).
+
     - `uv run pytest tests/test_macro_refresh.py -x -q` exits 0.
     - `uv run pytest tests/test_cli_smoke.py -x -q` exits 0 (D-14 surface still 9 subcommands).
     - `uv run ruff check src/screener/cli.py tests/test_macro_refresh.py` exits 0.
