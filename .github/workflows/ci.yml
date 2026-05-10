@@ -39,6 +39,13 @@ jobs:
       - name: ruff check
         run: uv run ruff check .
 
+      - name: SMA-not-EMA gate (IND-02)
+        run: |
+          if grep -ilE "ema" src/screener/signals/minervini.py src/screener/indicators/trend.py 2>/dev/null; then
+            echo "ERR: 'ema' reference found in SMA-only files. See IND-02 / CLAUDE.md §13.6 pitfall #4."
+            exit 1
+          fi
+
   typecheck:
     name: typecheck
     runs-on: ubuntu-latest
