@@ -131,7 +131,20 @@ Cross-cutting truths (shared by 2+ plans):
 
 **Estimated Complexity:** M
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+
+**Wave 1**
+- [ ] 03-01-settings-and-schemas-PLAN.md — Settings D-12 fields + 5 pandera schemas (MacroOhlcvSchema, VixSchema, YieldsSchema, NyadMacroSchema, RsSnapshotSchema) + 4 persistence helpers (write_rs_snapshot_atomic, write_macro_atomic, read_*) (DAT-04, IND-03)
+
+**Wave 2** *(blocked on 03-01; 03-02 and 03-03 run in parallel — zero file overlap)*
+- [ ] 03-02-macro-data-layer-PLAN.md — data/macro.py with 5 fetchers (SPY/QQQ/^VIX/$NYAD/FRED yields) + R1000 breadth fallback per D-05 + refresh-macro CLI body + make macro target (DAT-04)
+- [ ] 03-03-indicator-panel-PLAN.md — indicators/{trend,volatility,volume,relative_strength}.py pure functions + build_panel orchestrator (IND-01, IND-03, IND-04, IND-05)
+
+**Wave 3** *(blocked on 03-02 + 03-03; final stitching)*
+- [ ] 03-04-regime-module-PLAN.md — regime.py with _classify_state + _compute_distribution_days + _regime_score + compute_for_date + build_history (REG-01, REG-02, REG-03)
+- [ ] 03-05-ci-gate-and-golden-tests-PLAN.md — IND-02 SMA-not-EMA grep step in ci.yml + mutation test + 3 REG-04 golden-file tests (2008-Q4, 2020-Q1, 2022-H1) (IND-02, REG-04)
 
 ### Phase 4: Trend Template, Composite Skeleton & First Report
 
@@ -236,7 +249,7 @@ Cross-cutting truths (shared by 2+ plans):
 |-------|----------------|--------|-----------|
 | 1. Repo Skeleton & CI Hygiene | 5/5 | Complete   | 2026-05-02 |
 | 2. Data Foundation | 5/5 | Complete | 2026-05-03 |
-| 3. Indicator Panel & Regime | 0/? | Not started | - |
+| 3. Indicator Panel & Regime | 0/5 | Planned | - |
 | 4. Trend Template, Composite Skeleton & First Report | 0/? | Not started | - |
 | 5. Backtest Harness & No-Look-Ahead Gate | 0/? | Not started | - |
 | 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 0/? | Not started | - |
