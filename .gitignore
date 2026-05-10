@@ -41,6 +41,9 @@ htmlcov/
 /data/ohlcv/**/prices.parquet
 !/data/ohlcv/**/splits.parquet
 !/data/ohlcv/**/.gitkeep
+!/data/snapshots/
+data/snapshots/*.parquet
+!/data/snapshots/.gitkeep
 /reports/
 /runs.jsonl
 
