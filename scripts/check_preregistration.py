@@ -102,10 +102,15 @@ def main() -> int:
             diffs.append(
                 f"composite.py {k}={w:.2f} vs doc {k}={dw}"
             )
-    # Bidirectional check (REVIEW CR-02): also detect keys present in the
-    # doc table that are NOT in DEFAULT_WEIGHTS. The forward loop above only
-    # catches code → doc; this catches doc → code so a renamed/added doc row
-    # without a corresponding DEFAULT_WEIGHTS update is surfaced.
+    # Partial bidirectional check (REVIEW CR-02 + WR-02 iter 2): detect keys
+    # present in the doc table that are NOT in DEFAULT_WEIGHTS. SCOPE: this
+    # only catches doc rows whose friendly name IS in NAME_TO_KEY but whose
+    # internal key is missing from DEFAULT_WEIGHTS (i.e., a renamed/removed
+    # composite key). A doc row whose friendly name is NOT in NAME_TO_KEY is
+    # silently dropped during parse_doc_weights and does NOT reach this gate.
+    # A fully-bidirectional doc-table scan (catching unknown friendly names)
+    # would require parsing the raw markdown rows; deferred to a future
+    # phase since v1 has a fixed 6-component composite.
     extra_in_doc = set(doc_weights) - set(DEFAULT_WEIGHTS)
     if extra_in_doc:
         diffs.append(
