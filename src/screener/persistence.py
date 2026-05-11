@@ -622,6 +622,28 @@ def read_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
         prices["ticker"] = t
         prices = prices.set_index("ticker", append=True).reorder_levels([1, 0])
         frames.append(prices)
+
+    # REVIEW WR-02 (second): aggregate coverage check at read time. The 95%
+    # health gate is enforced inside refresh-ohlcv, but a subsequent score or
+    # report run on a partially-backfilled cache would otherwise proceed
+    # silently with low coverage. Re-validate here so downstream pipelines
+    # fail loud rather than emit a report on a tiny universe.
+    n_universe = len(universe)
+    n_loaded = len(frames)
+    threshold = get_settings().UNIVERSE_HEALTH_THRESHOLD
+    if n_universe > 0 and n_loaded / n_universe < threshold:
+        log.error(
+            "read_panel_low_coverage",
+            n_universe=n_universe,
+            n_loaded=n_loaded,
+            ratio=n_loaded / n_universe,
+            threshold=threshold,
+        )
+        raise RuntimeError(
+            f"read_panel: only {n_loaded}/{n_universe} tickers loaded — "
+            "re-run refresh-ohlcv to fix coverage"
+        )
+
     if not frames:
         # Construct an empty panel with the right MultiIndex shape.
         panel = pd.DataFrame(
