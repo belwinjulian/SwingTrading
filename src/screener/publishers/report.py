@@ -130,27 +130,32 @@ def _write_text_atomic(content: str, target: Path) -> None:
     same-filesystem rename (POSIX-atomic). A crash leaves no partial file
     and the .tmp is unlinked.
 
-    REVIEW WR-04: tempfile is created with delete=False so the context
-    manager does NOT clean it up on exit. Wrap both the tmp.write() and
-    the os.replace() in a single try/except so a write failure (e.g.,
-    disk full) does not leak a stranded .tmp on disk.
+    REVIEW WR-03 (iter 2) / WR-04 (iter 1): tempfile is created with
+    delete=False so the context manager does NOT clean it up on exit.
+    Perform the tmp.write() INSIDE the `with` block (consolidated with
+    os.replace under a single try/except) so a SIGKILL between the outer
+    `with` exit and the inner write call cannot orphan an empty .tmp.
+    The iter-1 fix re-opened the empty tempfile for the actual write,
+    which closed the disk-full leak but introduced a narrow empty-.tmp
+    orphan window between `with` exit and the inner `open()`. The
+    consolidated structure below matches the parquet variant's pattern.
     """
     target.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        dir=target.parent,
-        prefix=f".{target.name}.",
-        suffix=".tmp",
-        delete=False,
-        mode="w",
-        encoding="utf-8",
-    ) as tmp:
-        tmp_path = Path(tmp.name)
+    tmp_path: Path | None = None
     try:
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        with tempfile.NamedTemporaryFile(
+            dir=target.parent,
+            prefix=f".{target.name}.",
+            suffix=".tmp",
+            delete=False,
+            mode="w",
+            encoding="utf-8",
+        ) as tmp:
+            tmp_path = Path(tmp.name)
+            tmp.write(content)
         os.replace(tmp_path, target)
     except Exception:
-        if tmp_path.exists():
+        if tmp_path is not None and tmp_path.exists():
             tmp_path.unlink(missing_ok=True)
         raise
 
