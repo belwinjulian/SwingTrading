@@ -228,7 +228,7 @@ class RankingSnapshotSchema(pa.DataFrameModel):
 
     ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
     rank: Series[pd.Int64Dtype] = pa.Field(ge=1, nullable=True)
-    composite_score: Series[float] = pa.Field(ge=0.0, le=110.0, nullable=True)
+    composite_score: Series[float] = pa.Field(ge=0.0, le=100.0, nullable=True)
     rs_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=True)
     trend_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=True)
     volume_component: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=True)
