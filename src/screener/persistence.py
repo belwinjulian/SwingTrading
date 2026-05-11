@@ -608,6 +608,16 @@ def read_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
     backfilled) are SKIPPED with a warning event, not raised — read_panel is
     a best-effort read; the 95% gate enforced by the CLI is what guards
     coverage.
+
+    Test-author note (REVIEW IN-01, iter 2):
+        The low-coverage gate below reads `UNIVERSE_HEALTH_THRESHOLD` via
+        `get_settings()`, which is decorated with `@lru_cache(maxsize=1)`
+        in config.py. Tests that monkeypatch `UNIVERSE_HEALTH_THRESHOLD`
+        in the environment AFTER any prior code path has already called
+        `get_settings()` will see the stale cached value here. To force
+        re-read, call `get_settings.cache_clear()` in the test fixture
+        before invoking `read_panel`. This caveat applies to every
+        settings field read through `get_settings()` in this module.
     """
     snapshot_str = str(snapshot_date)[:10] if not isinstance(snapshot_date, str) else snapshot_date
     universe = read_universe(snapshot_str)
