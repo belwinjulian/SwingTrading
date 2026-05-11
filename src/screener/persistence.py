@@ -638,6 +638,10 @@ def read_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
     # report run on a partially-backfilled cache would otherwise proceed
     # silently with low coverage. Re-validate here so downstream pipelines
     # fail loud rather than emit a report on a tiny universe.
+    # REVIEW IN-02 (iter 2): raise StaleOrEmptyError (not bare RuntimeError)
+    # so the CLI's broad `except Exception` logs `error_type=StaleOrEmptyError`,
+    # matching the existing data-quality fail-loud convention used by
+    # data/ohlcv.py and data/stooq.py for log-grep consistency.
     n_universe = len(universe)
     n_loaded = len(frames)
     threshold = get_settings().UNIVERSE_HEALTH_THRESHOLD
@@ -649,7 +653,7 @@ def read_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
             ratio=n_loaded / n_universe,
             threshold=threshold,
         )
-        raise RuntimeError(
+        raise StaleOrEmptyError(
             f"read_panel: only {n_loaded}/{n_universe} tickers loaded — "
             "re-run refresh-ohlcv to fix coverage"
         )
