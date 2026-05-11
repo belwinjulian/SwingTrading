@@ -68,14 +68,17 @@ def validate_run(
 ) -> None:
     """Emit D-07 warning + raise D-08 typer.Exit(1) on the data-quality combo.
 
-    D-07: pass_rate > warn_threshold (default 0.25) -> structlog warning,
-          no exit. The publisher report.py renders a banner in the data-
-          quality footer.
+    D-07: pass_rate > warn_threshold (default 0.15, top of the documented
+          healthy 5-15% range) -> structlog warning, no exit. The publisher
+          report.py renders a banner in the data-quality footer.
 
     D-08: pass_rate > fail_threshold_with_correction (default 0.25) AND
           regime_state == 'Correction' -> typer.Exit(code=1). Caller (the
           CLI body in Plan 04-05) MUST allow typer.Exit to propagate so
           the process exit code reflects the failure (Pitfall 7).
+
+    Per REVIEW IN-01 / WR-01 the two defaults are now distinct so the
+    warn fires earlier than the Correction-only hard fail.
 
     Mirrors the refresh_ohlcv health-gate pattern (cli.py:130-144).
     """
