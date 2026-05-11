@@ -62,7 +62,11 @@ class Settings(BaseSettings):
     SNAPSHOT_DIR: Path = Path("data/snapshots")
     REPORT_DIR: Path = Path("reports")
     REPORT_TOP_N: int = 15
-    TREND_TEMPLATE_PASS_RATE_WARN: float = 0.25
+    # REVIEW WR-01: distinct defaults so the two-tier (warn vs. hard-fail)
+    # semantics are testable. The warn threshold aligns with the documented
+    # healthy range (5-15%); the hard-fail threshold is the more severe
+    # data-quality combo (only fires in Correction regime, per D-08).
+    TREND_TEMPLATE_PASS_RATE_WARN: float = 0.15
     TREND_TEMPLATE_PASS_RATE_HARD_FAIL: float = 0.25
 
 
