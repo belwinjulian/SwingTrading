@@ -116,12 +116,23 @@ def test_per_pick_breakdown_format_d04() -> None:
 
 
 def test_pivot_zone_labels() -> None:
-    """OUT-02 + Pitfall 5: pivot_zone shows in-zone / chase, skip / unknown."""
+    """OUT-02 + Pitfall 5 + REVIEW CR-05: pivot_zone shows in-zone /
+    chase, skip / unknown.
+
+    Sign convention is (high_52w - close)/atr: positive when close is BELOW
+    high_52w. 'in-zone' requires 0.0 <= distance <= 1.0 (close within 1 ATR
+    *below* the 52w high). Breakouts (close > high_52w -> negative distance)
+    and laggards (distance > 1 ATR) both classify as 'chase, skip'.
+    """
     from screener.publishers.report import _classify_pivot_zone, render_report
 
     # Direct helper test:
-    assert _classify_pivot_zone(100.0, 99.0, 2.0) == "in-zone"  # 0.5 ATR -> in-zone
-    assert _classify_pivot_zone(120.0, 100.0, 2.0) == "chase, skip"  # 10 ATR
+    # close=98.5, high_52w=100.0, atr=2.0 -> distance = 0.75 ATR below -> in-zone
+    assert _classify_pivot_zone(98.5, 100.0, 2.0) == "in-zone"
+    # close=80.0, high_52w=100.0, atr=2.0 -> distance = 10 ATR below -> chase, skip
+    assert _classify_pivot_zone(80.0, 100.0, 2.0) == "chase, skip"
+    # close=120.0, high_52w=100.0, atr=2.0 -> distance = -10 (above high) -> chase, skip
+    assert _classify_pivot_zone(120.0, 100.0, 2.0) == "chase, skip"
     assert _classify_pivot_zone(100.0, float("nan"), 2.0) == "unknown"
     assert _classify_pivot_zone(100.0, 99.0, float("nan")) == "unknown"
     assert _classify_pivot_zone(100.0, 99.0, 0.0) == "unknown"  # divide-by-zero

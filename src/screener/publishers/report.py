@@ -47,14 +47,19 @@ def _classify_pivot_zone(close: float, high_52w: float, atr: float) -> PivotZone
     """D-06 + Pitfall 5: 3-state pivot zone classifier.
 
     Returns 'unknown' when high_52w is NaN, atr is NaN, or atr == 0.
-    Returns 'in-zone' when (close - high_52w) / atr <= 1.0; else 'chase, skip'.
-    Negative distances (close BELOW high_52w) are 'in-zone' by this proxy --
-    Phase 6 with the real VCP pivot will tighten.
+    Returns 'in-zone' when close is within 1 ATR *below* the 52-week high
+    (0.0 <= (high_52w - close) / atr <= 1.0); else 'chase, skip'.
+
+    Per REVIEW CR-05: distance is measured as (high_52w - close) / atr so a
+    stock trading well below its 52-week high (e.g., -10 ATR) is classified
+    as 'chase, skip' (a laggard, not a near-pivot candidate). Stocks above
+    the 52-week high (breakouts) also classify as 'chase, skip' here --
+    Phase 6 with the real VCP pivot will refine the breakout case.
     """
     if pd.isna(high_52w) or pd.isna(atr) or atr == 0:
         return "unknown"
-    distance = (close - high_52w) / atr
-    return "in-zone" if distance <= 1.0 else "chase, skip"
+    distance = (high_52w - close) / atr  # positive when close is BELOW high_52w
+    return "in-zone" if 0.0 <= distance <= 1.0 else "chase, skip"
 
 
 def _add_publisher_columns(
@@ -66,8 +71,11 @@ def _add_publisher_columns(
     """
     out = cross.copy()
     # Pitfall 5: replace 0 ATR with NA before division.
+    # REVIEW CR-05: sign convention is (high_52w - close)/atr so a positive
+    # number means close is BELOW the 52w high (small positive = near-pivot;
+    # large positive = laggard). Matches _classify_pivot_zone's distance.
     atr_safe = out["atr_14"].replace(0, pd.NA)
-    out["pivot_distance_atr"] = (out["close"] - out["high_52w"]) / atr_safe
+    out["pivot_distance_atr"] = (out["high_52w"] - out["close"]) / atr_safe
     out["pivot_zone"] = [
         _classify_pivot_zone(c, h, a)
         for c, h, a in zip(out["close"], out["high_52w"], out["atr_14"], strict=False)
