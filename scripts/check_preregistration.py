@@ -82,6 +82,15 @@ def main() -> int:
             diffs.append(
                 f"composite.py {k}={w:.2f} vs doc {k}={dw}"
             )
+    # Bidirectional check (REVIEW CR-02): also detect keys present in the
+    # doc table that are NOT in DEFAULT_WEIGHTS. The forward loop above only
+    # catches code → doc; this catches doc → code so a renamed/added doc row
+    # without a corresponding DEFAULT_WEIGHTS update is surfaced.
+    extra_in_doc = set(doc_weights) - set(DEFAULT_WEIGHTS)
+    if extra_in_doc:
+        diffs.append(
+            f"doc has extra keys not in composite.py: {sorted(extra_in_doc)}"
+        )
     if diffs:
         print(
             "Weight mismatch:\n  " + "\n  ".join(diffs),
