@@ -27,16 +27,27 @@ NAME_TO_KEY = {
 }
 
 
+class PreregistrationDocError(RuntimeError):
+    """Raised by parse_doc_weights for missing/unreadable preregistration docs.
+
+    REVIEW IN-02: parse_doc_weights used to call sys.exit() directly,
+    which made the two error paths (parse vs. mismatch) inconsistent
+    (SystemExit vs. int return). Now the parse path raises a typed
+    exception and main() converts it to a uniform non-zero int return.
+    The __main__ entry point calls sys.exit(main()) per convention.
+    """
+
+
 def parse_doc_weights() -> dict[str, float]:
     """Parse the Frozen Weight column from docs/strategy_v1_preregistration.md.
 
     Per-row regex captures the rightmost percentage on a row whose first
     cell starts with one of the friendly names. Tolerance: 1e-3.
 
-    Raises SystemExit on missing weight (sys.exit) or unreadable file.
+    Raises PreregistrationDocError on missing weight or unreadable file.
     """
     if not DOC.exists():
-        sys.exit(f"Preregistration doc not found: {DOC}")
+        raise PreregistrationDocError(f"Preregistration doc not found: {DOC}")
     text = DOC.read_text(encoding="utf-8")
     out: dict[str, float] = {}
     for friendly, key in NAME_TO_KEY.items():
@@ -48,7 +59,7 @@ def parse_doc_weights() -> dict[str, float]:
         )
         m = re.search(pattern, text)
         if m is None:
-            sys.exit(
+            raise PreregistrationDocError(
                 f"Preregistration doc missing frozen weight for: {friendly}"
             )
         out[key] = float(m.group(1)) / 100.0
@@ -60,11 +71,20 @@ def main() -> int:
 
     FND-05 + D-09 verbatim mismatch line format:
         "Weight mismatch:\\n  composite.py rs=0.30 vs doc rs=0.25\\n  ..."
+
+    REVIEW IN-02: returns a non-zero int on EITHER parse failure OR
+    weight mismatch so callers see one uniform error model. The
+    __main__ block at the bottom of this file converts the int to a
+    process exit code.
     """
     # Lazy heavy import — module top is stdlib only (Pitfall 9).
     from screener.signals.composite import DEFAULT_WEIGHTS
 
-    doc_weights = parse_doc_weights()
+    try:
+        doc_weights = parse_doc_weights()
+    except PreregistrationDocError as err:
+        print(str(err), file=sys.stderr)
+        return 1
 
     # Sum check on parsed weights — must sum to 1.0 +/- 0.005 (Pitfall 11)
     doc_sum = sum(doc_weights.values())

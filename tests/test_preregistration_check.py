@@ -93,9 +93,12 @@ def test_mismatched_weights_fail(
 
 
 def test_missing_weight_in_doc_fail(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """FND-05: a doc missing one of the 6 weight rows -> SystemExit (sys.exit)."""
+    """FND-05 + REVIEW IN-02: a doc missing one of the 6 weight rows ->
+    main() returns 1 (uniform error model) with a stderr message
+    naming the missing row.
+    """
     monkeypatch.chdir(tmp_path)
     # Write a doc that omits the Catalyst row.
     doc_path = tmp_path / "docs" / "strategy_v1_preregistration.md"
@@ -111,6 +114,6 @@ def test_missing_weight_in_doc_fail(
     )
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from scripts.check_preregistration import main
-    with pytest.raises(SystemExit) as exc:
-        main()
-    assert "Catalyst presence" in str(exc.value)
+    assert main() == 1
+    captured = capsys.readouterr()
+    assert "Catalyst presence" in captured.err
