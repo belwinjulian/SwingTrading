@@ -129,6 +129,11 @@ def _write_text_atomic(content: str, target: Path) -> None:
     Tempfile MUST be in the same directory as target so os.replace() is a
     same-filesystem rename (POSIX-atomic). A crash leaves no partial file
     and the .tmp is unlinked.
+
+    REVIEW WR-04: tempfile is created with delete=False so the context
+    manager does NOT clean it up on exit. Wrap both the tmp.write() and
+    the os.replace() in a single try/except so a write failure (e.g.,
+    disk full) does not leak a stranded .tmp on disk.
     """
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -140,8 +145,9 @@ def _write_text_atomic(content: str, target: Path) -> None:
         encoding="utf-8",
     ) as tmp:
         tmp_path = Path(tmp.name)
-        tmp.write(content)
     try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(content)
         os.replace(tmp_path, target)
     except Exception:
         if tmp_path.exists():
