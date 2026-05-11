@@ -153,6 +153,11 @@ def run_pipeline(snapshot_date: str, write_report: bool = True) -> None:
     )
 
     # 7. Add publisher-derived columns (pivot zone) and rank.
+    # REVIEW WR-03 sequencing note: this step MUST run AFTER step 5
+    # (apply_regime_gate) because _add_publisher_columns ranks rows by
+    # `composite_score`, which the regime gate has already multiplied by
+    # regime_score. Reordering so ranking precedes the regime gate would
+    # silently produce a pre-regime ranking — a hard-to-spot logic bug.
     from screener.publishers.report import _add_publisher_columns
 
     today_panel = _add_publisher_columns(today_panel, regime_row)
