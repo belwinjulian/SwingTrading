@@ -86,20 +86,25 @@ def validate_run(
             expected_range="0.05-0.15",
             warn_threshold=warn_threshold,
         )
-        if (
-            regime_state == "Correction"
-            and pass_rate > fail_threshold_with_correction
-        ):
-            log.error(
-                "data_quality_gate_failed",
-                pass_rate=pass_rate,
-                regime_state=regime_state,
-                message=(
-                    f"Pass rate {pass_rate * 100:.1f}% in Correction regime — "
-                    f"data quality gate failed"
-                ),
-            )
-            raise typer.Exit(code=1)
+    # Independent check — does NOT require pass_rate > warn_threshold first.
+    # Flattened from a previously-nested if (see REVIEW CR-01): the two
+    # thresholds are independent control surfaces so an operator can set
+    # warn_threshold lower than fail_threshold_with_correction without the
+    # hard-fail being suppressed by the outer warn gate.
+    if (
+        regime_state == "Correction"
+        and pass_rate > fail_threshold_with_correction
+    ):
+        log.error(
+            "data_quality_gate_failed",
+            pass_rate=pass_rate,
+            regime_state=regime_state,
+            message=(
+                f"Pass rate {pass_rate * 100:.1f}% in Correction regime — "
+                f"data quality gate failed"
+            ),
+        )
+        raise typer.Exit(code=1)
 
 
 # --- run_pipeline orchestrator --------------------------------------------
