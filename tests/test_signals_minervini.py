@@ -142,35 +142,37 @@ def test_pass_rate_smoke() -> None:
 
 
 def test_condition_7_isolated_fail() -> None:
-    """REVIEW WR-05: stress condition 7 (Close >= 0.75 * MAX(High, 252))
-    in isolation.
+    """REVIEW WR-01 (iter 2) / WR-05 (iter 1): stress condition 7
+    (Close >= 0.75 * MAX(High, 252)) in TRUE isolation.
 
-    The _make_uptrend_panel fixture always has high_52w == current close
-    (monotonic rise), so 0.75 * close <= close is trivially true and the
-    test never exercises condition 7 non-trivially. Construct a panel
-    where ALL other conditions pass but close is BELOW 0.75 * high_52w,
-    and assert the score drops below 8 (i.e., condition 7 is the failing
-    one).
+    The iter-1 fixture pinned sma_200[-1] far below sma_200[-23], which
+    also fails cond 3 (SMA200 > SMA200[t-22]). Score-only assertions
+    (score < 8) cannot distinguish "cond 7 failed" from "cond 3 + cond 7
+    both failed", so the test did not demonstrate condition 7 isolation.
+
+    New construction: inject a single price spike at index 60 — which is
+    OUTSIDE all SMA window footprints at the final bar (SMA50 uses bars
+    250..299, SMA150 uses 150..299, SMA200 uses 100..299, cond 3's
+    sma_200[t-22] window is 77..276), but INSIDE the 252-bar
+    high_52w window (bars 48..299). The spike inflates high_52w[-1] so
+    close[-1] < 0.75 * high_52w[-1] while every SMA-based condition
+    (1, 2, 3, 4, 5) reflects the unperturbed uptrend. Cond 6 and 8 also
+    pass trivially. Then assert score == 7 (exactly one cond failed).
     """
     n = 300
     dates = pd.date_range("2024-01-01", periods=n, freq="B")
-    # Build a long uptrend, then crash to <75% of the historical high at
-    # the final bar so condition 7 fails while conds 1, 2, 4, 5, 6, 8
-    # remain plausible.
     close = pd.Series(100.0 * (1.002 ** np.arange(n)), index=dates)
-    high_52w = close.rolling(252).max()
-    # Force close[-1] BELOW 0.75 * high_52w[-1].
-    close.iloc[-1] = float(high_52w.iloc[-1]) * 0.70
-    # SMAs recomputed AFTER the artificial drop so cond 5 (close > sma_50)
-    # is the only other risk — keep close[-1] still above the trailing SMAs.
+    # Inject a spike at index 60 — inside the 252-bar high_52w window at
+    # the last bar (48..299) but OUTSIDE every SMA window (SMA200 uses
+    # 100..299, SMA200[-23] uses 77..276, SMA150 uses 150..299, SMA50 uses
+    # 250..299). The spike value is engineered so 0.75 * spike > close[-1]:
+    # close[-1] ~ 100 * 1.002^299 ~= 182; choose spike = 400 so
+    # 0.75 * 400 = 300 > 182 -> cond 7 fails.
+    close.iloc[60] = 400.0
     sma_50 = close.rolling(50).mean()
     sma_150 = close.rolling(150).mean()
     sma_200 = close.rolling(200).mean()
-    # Pin SMAs below the dropped close so cond 5 still passes.
-    forced_sma = float(close.iloc[-1]) * 0.90
-    sma_50.iloc[-1] = forced_sma
-    sma_150.iloc[-1] = forced_sma * 0.95
-    sma_200.iloc[-1] = forced_sma * 0.90
+    high_52w = close.rolling(252).max()
     low_52w = close.rolling(252).min()
     panel = pd.DataFrame(
         {
@@ -186,11 +188,21 @@ def test_condition_7_isolated_fail() -> None:
     )
     out = passes_trend_template(panel)
     last = out.iloc[-1]
-    # Condition 7 should now fail. Score must drop below 8 and gate False.
-    assert last["trend_template_score"] < 8, (
-        f"condition 7 fixture should NOT score 8; got {last['trend_template_score']}"
+    # Exactly one condition (cond 7) should fail -> score == 7.
+    # This is the strong-form isolation assertion the iter-1 test lacked.
+    assert last["trend_template_score"] == 7, (
+        "condition 7 must be the ONLY failing condition (score == 7); "
+        f"got score {last['trend_template_score']}. If score < 7, multiple "
+        "conditions are co-failing and the test no longer isolates cond 7."
     )
     assert bool(last["passes_trend_template"]) is False
+    # Sanity: with the spike, 0.75 * high_52w[-1] must indeed exceed close[-1].
+    last_close = float(close.iloc[-1])
+    last_high_52w = float(high_52w.iloc[-1])
+    assert last_close < 0.75 * last_high_52w, (
+        f"cond 7 setup invariant: close[-1]={last_close} >= "
+        f"0.75 * high_52w[-1]={0.75 * last_high_52w} — spike too small"
+    )
 
 
 def test_per_ticker_shift_no_bleed_pitfall_2() -> None:
