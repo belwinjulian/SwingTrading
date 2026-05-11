@@ -137,8 +137,17 @@ def _write_text_atomic(content: str, target: Path) -> None:
     `with` exit and the inner write call cannot orphan an empty .tmp.
     The iter-1 fix re-opened the empty tempfile for the actual write,
     which closed the disk-full leak but introduced a narrow empty-.tmp
-    orphan window between `with` exit and the inner `open()`. The
-    consolidated structure below matches the parquet variant's pattern.
+    orphan window between `with` exit and the inner `open()`.
+
+    REVIEW IN-01 (iter 3): the consolidated `write-inside-with` structure
+    below is now STRICTER than persistence._write_parquet_atomic, which
+    still uses the older split pattern (NamedTemporaryFile context exits
+    before `df.to_parquet(tmp_path, ...)`, leaving a narrow empty-.tmp
+    orphan window between `with` exit and the `to_parquet()` call). The
+    parquet variant should be brought to the same standard in a follow-up
+    (see persistence.py:_write_parquet_atomic). Both helpers remain
+    POSIX-atomic at the `os.replace()` step; only the tempfile-cleanup
+    guarantee differs.
     """
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp_path: Path | None = None
