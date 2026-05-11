@@ -141,6 +141,58 @@ def test_pass_rate_smoke() -> None:
     assert pass_rate == 0.5, f"expected 0.5 (AAA passes, BBB fails); got {pass_rate}"
 
 
+def test_condition_7_isolated_fail() -> None:
+    """REVIEW WR-05: stress condition 7 (Close >= 0.75 * MAX(High, 252))
+    in isolation.
+
+    The _make_uptrend_panel fixture always has high_52w == current close
+    (monotonic rise), so 0.75 * close <= close is trivially true and the
+    test never exercises condition 7 non-trivially. Construct a panel
+    where ALL other conditions pass but close is BELOW 0.75 * high_52w,
+    and assert the score drops below 8 (i.e., condition 7 is the failing
+    one).
+    """
+    n = 300
+    dates = pd.date_range("2024-01-01", periods=n, freq="B")
+    # Build a long uptrend, then crash to <75% of the historical high at
+    # the final bar so condition 7 fails while conds 1, 2, 4, 5, 6, 8
+    # remain plausible.
+    close = pd.Series(100.0 * (1.002 ** np.arange(n)), index=dates)
+    high_52w = close.rolling(252).max()
+    # Force close[-1] BELOW 0.75 * high_52w[-1].
+    close.iloc[-1] = float(high_52w.iloc[-1]) * 0.70
+    # SMAs recomputed AFTER the artificial drop so cond 5 (close > sma_50)
+    # is the only other risk — keep close[-1] still above the trailing SMAs.
+    sma_50 = close.rolling(50).mean()
+    sma_150 = close.rolling(150).mean()
+    sma_200 = close.rolling(200).mean()
+    # Pin SMAs below the dropped close so cond 5 still passes.
+    forced_sma = float(close.iloc[-1]) * 0.90
+    sma_50.iloc[-1] = forced_sma
+    sma_150.iloc[-1] = forced_sma * 0.95
+    sma_200.iloc[-1] = forced_sma * 0.90
+    low_52w = close.rolling(252).min()
+    panel = pd.DataFrame(
+        {
+            "close": close.to_numpy(),
+            "sma_50": sma_50.to_numpy(),
+            "sma_150": sma_150.to_numpy(),
+            "sma_200": sma_200.to_numpy(),
+            "high_52w": high_52w.to_numpy(),
+            "low_52w": low_52w.to_numpy(),
+            "rs_rating": pd.array([95] * n, dtype=pd.Int64Dtype()),
+        },
+        index=pd.MultiIndex.from_product([["CC7"], dates], names=["ticker", "date"]),
+    )
+    out = passes_trend_template(panel)
+    last = out.iloc[-1]
+    # Condition 7 should now fail. Score must drop below 8 and gate False.
+    assert last["trend_template_score"] < 8, (
+        f"condition 7 fixture should NOT score 8; got {last['trend_template_score']}"
+    )
+    assert bool(last["passes_trend_template"]) is False
+
+
 def test_per_ticker_shift_no_bleed_pitfall_2() -> None:
     """Cond 3 (SMA200 > SMA200[t-22]) uses per-ticker shift — no MultiIndex bleed.
 
