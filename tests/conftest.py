@@ -400,6 +400,7 @@ def synthetic_scored_panel(synthetic_panel_for_trend_template: pd.DataFrame) -> 
     are lazy (inside the fixture body) so collection-time does not fail when
     these modules do not yet exist (Plans 04-02/04-03 land them).
     """
+    from screener.publishers.report import _add_publisher_columns
     from screener.signals.composite import DEFAULT_WEIGHTS, score
     from screener.signals.minervini import passes_trend_template
 
@@ -410,26 +411,12 @@ def synthetic_scored_panel(synthetic_panel_for_trend_template: pd.DataFrame) -> 
     latest_date = panel.index.get_level_values("date").max()
     cross = panel.xs(latest_date, level="date").copy()
 
-    # Add the publisher-derived columns (pivot_distance_atr, pivot_zone)
-    # using the same formula publishers/report._classify_pivot_zone uses.
-    cross["pivot_distance_atr"] = (
-        (cross["close"] - cross["high_52w"]) / cross["atr_14"].replace(0, pd.NA)
-    )
-
-    def _zone(d: float) -> str:
-        if pd.isna(d):
-            return "unknown"
-        return "in-zone" if d <= 1.0 else "chase, skip"
-
-    cross["pivot_zone"] = cross["pivot_distance_atr"].apply(_zone)
-    cross["regime_state"] = "Confirmed Uptrend"
-    cross["regime_score"] = 0.82
-    cross["rank"] = pd.array(
-        cross["composite_score"].rank(ascending=False, method="dense").astype("Int64"),
-        dtype=pd.Int64Dtype(),
-    )
-    cross.index.name = "ticker"
-    return cross.reset_index()
+    # REVIEW WR-06: delegate pivot/regime/rank column derivation to the
+    # production helper so this fixture cannot silently diverge from
+    # publishers/report's behavior (e.g., after CR-05's sign-convention fix).
+    regime_row = pd.Series({"regime_state": "Confirmed Uptrend", "regime_score": 0.82})
+    cross = _add_publisher_columns(cross, regime_row)
+    return cross
 
 
 @pytest.fixture(scope="function")
