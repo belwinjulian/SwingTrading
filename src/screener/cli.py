@@ -236,9 +236,54 @@ def journal() -> None:
 
 
 @app.command("backtest")
-def backtest() -> None:
+def backtest(
+    start: Annotated[
+        str,
+        typer.Option(
+            "--start",
+            help="ISO date string for the earliest IS window start (default: 2016-01-01).",
+        ),
+    ] = "2016-01-01",
+    end: Annotated[
+        str | None,
+        typer.Option(
+            "--end",
+            help="ISO date string for the latest OOS window end (default: today).",
+        ),
+    ] = None,
+) -> None:
     """Run vectorbt walk-forward backtest (3-yr IS / 1-yr OOS rolling windows)."""
-    _stub("backtest")
+    configure_logging()
+    try:
+        from screener.backtest.report import render_report
+        from screener.backtest.vbt_runner import run
+
+        effective_end = end or date.today().isoformat()
+        result = run(start, effective_end)
+        report_path = Path("reports") / f"backtest-{effective_end}.md"
+        render_report(result, report_path)
+        # D-14: terminal summary in addition to the file.
+        print(
+            f"Sharpe distribution: min={result.sharpe_min:.2f} "
+            f"| median={result.sharpe_median:.2f} "
+            f"| max={result.sharpe_max:.2f} "
+            f"({len(result.windows)} windows, {result.n_zero_trade_windows} zero-trade)"
+        )
+        print(f"Report written: {report_path}")
+        # cli.py uses structlog (not stdlib logging) -- kwargs OK here.
+        log.info(
+            "backtest_ok",
+            n_windows=len(result.windows),
+            sharpe_median=result.sharpe_median,
+            report=str(report_path),
+        )
+    except typer.Exit:
+        # Pitfall 7: typer.Exit MUST propagate; do not catch in broader Exception.
+        raise
+    except Exception as e:
+        # T-3-02 carry-forward: log error_type only; never the exception string.
+        log.error("backtest_failed", error_type=type(e).__name__)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("backtest-audit")
