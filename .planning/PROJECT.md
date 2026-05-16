@@ -14,27 +14,28 @@ Every evening, the user opens one report and gets a small, ranked list of high-q
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- ✓ Daily Russell 1000 EOD scan with cached OHLCV (yfinance + Stooq fallback) — Phase 2
+- ✓ IBD-style relative-strength percentile rating (universe-relative, recomputed daily) — Phase 3
+- ✓ Market-regime gate (SPY 200d trend + breadth + distribution-day count + VIX) — Phase 3
+- ✓ Minervini Trend Template gate (8 conditions, SMA-based, NaN-safe, per-ticker shift) — Phase 4
+- ✓ Composite confidence score skeleton (RS 25% + Trend 20% + Volume 10%; pattern/earnings/catalyst zeroed until Phase 6) — Phase 4
+- ✓ Daily markdown report (regime banner, top-N picks table, per-pick breakdown, data quality footer) — Phase 4 skeleton
+- ✓ Reproducible local pipeline (`make data && make rank`) — Phase 4 (score/report CLI wired)
 
 ### Active
 
 <!-- Current scope. Building toward these. v1 hypotheses until paper-trade validated. -->
 
-- [ ] Daily Russell 1000 EOD scan with cached OHLCV (yfinance + Stooq fallback)
-- [ ] Minervini Trend Template gate (8 conditions, SMA-based)
-- [ ] IBD-style relative-strength percentile rating (universe-relative, recomputed daily)
-- [ ] VCP and continuation-flag pattern detection (pivot-based, with depth/volume contraction checks)
-- [ ] Qullamaggie Setup A momentum scan (top-1–2% performer + ADR% + dollar-volume filters)
-- [ ] Post-gap-continuation detection on D+1 (free-tier proxy for Setup B Episodic Pivot)
-- [ ] Per-pick playbook tagging (Qullamaggie continuation / Minervini VCP / leader-hold) with style-specific entry, stop, and trail rules
-- [ ] Composite confidence score (0–100) combining trend, RS, pattern, volume, regime — this *is* the v1 confidence number; ML probability is M2
-- [ ] Market-regime gate (SPY 200d trend + breadth + distribution-day count + VIX) that scales position size
-- [ ] ATR-based position sizing with risk ≤ 1×ADR per Qullamaggie rule
-- [ ] Daily markdown report (top picks, entry/stop/size, playbook tag, regime state) committed nightly by GitHub Actions cron
-- [ ] Paper-trade journal (CSV/SQLite) capturing every actionable pick + executed paper outcomes — *the M2 ML training set*
-- [ ] Weekly universe snapshot (mitigates survivorship bias going forward)
-- [ ] vectorbt backtest harness with walk-forward + honest reporting (slippage assumed, survivorship disclosed, no-look-ahead enforced)
-- [ ] Reproducible local pipeline (`make data && make rank && make backtest`)
+- [ ] vectorbt backtest harness with walk-forward + honest reporting (slippage assumed, survivorship disclosed, no-look-ahead enforced) — Phase 5
+- [ ] VCP and continuation-flag pattern detection (pivot-based, with depth/volume contraction checks) — Phase 6
+- [ ] Qullamaggie Setup A momentum scan (top-1–2% performer + ADR% + dollar-volume filters) — Phase 6
+- [ ] Post-gap-continuation detection on D+1 (free-tier proxy for Setup B Episodic Pivot) — Phase 6
+- [ ] Per-pick playbook tagging (Qullamaggie continuation / Minervini VCP / leader-hold) with style-specific entry, stop, and trail rules — Phase 6
+- [ ] Composite confidence score — pattern/earnings/catalyst components (currently zeroed, targeting Phase 6)
+- [ ] ATR-based position sizing with risk ≤ 1×ADR per Qullamaggie rule — Phase 7
+- [ ] Paper-trade journal (CSV/SQLite) capturing every actionable pick + executed paper outcomes — *the M2 ML training set* — Phase 7
+- [ ] Daily markdown report committed nightly by GitHub Actions cron — Phase 8
+- [ ] Weekly universe snapshot (mitigates survivorship bias going forward) — Phase 2 ✓ (infrastructure), ongoing
 
 ### Out of Scope
 
@@ -89,6 +90,11 @@ Every evening, the user opens one report and gets a small, ranked list of high-q
 | Paper trading required before real money | The journal validates the system on live (post-publication) picks, not backtests. Backtests overstate returns; paper trading does not | — Pending |
 | Russell 1000 universe | Liquid enough that fills aren't an issue; wide enough for 5-15 daily breakout candidates; manageable under yfinance rate limits | — Pending |
 | SMAs for Trend Template (not EMAs); next-bar-open execution; 45-day fundamentals lag | Three subtle methodology rules that, if violated, silently inflate backtest performance | — Pending |
+| DEFAULT_WEIGHTS pre-registered and frozen at git hash 7ea58d3 | Walk-forward tuning is reserved for M2; v1 weights are fixed to prevent in-sample overfitting and enable honest reporting | Locked at Phase 4 |
+| D-13 weights.items() scoring loop — no hardcoded column refs inside the loop | Adding ml_probability in M2 requires only a new key in DEFAULT_WEIGHTS; zero refactor of composite.py scoring body | Locked at Phase 4 |
+| D-03 soft regime gate: composite_score × regime_score (multiplicative, not boolean cutoff) | Gradual scaling preserves rank ordering during uncertain regimes; hard cutoff loses nuance at the margin | Locked at Phase 4 |
+| D-08 data quality hard-fail: Correction + pass_rate > 25% → pipeline exit code 1 | High pass rate in a correction means the data is likely stale or the universe filter is broken, not that every stock is trending | Locked at Phase 4 |
+| Pivot zone proxy: ATR from 52w high in Phase 4; real pivot detection in Phase 6 | Proper pivot requires VCP pattern data not yet built; ATR from 52w high gives a usable proxy with zero look-ahead | Acknowledged tech debt |
 
 ## Evolution
 
@@ -108,4 +114,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-03 — Phase 2 (Data Foundation) complete; DAT-01/02/03/06/07/08/09 satisfied; 39 tests passing; Phase 3 (Indicator Panel & Regime) next.*
+*Last updated: 2026-05-16 — Phase 4 (Trend Template, Composite Skeleton & First Report) UAT-verified complete; 134 tests passing; composite weights frozen at 7ea58d3; Phase 5 (Backtest Harness) next.*

@@ -2,39 +2,40 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_execute
+status: ready_to_plan
 stopped_at: null
-last_updated: "2026-05-10T22:00:00.000Z"
+last_updated: "2026-05-16T00:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 20
   completed_plans: 20
-  percent: 75
+  percent: 50
 ---
 
 # Project State
 
-**Last updated:** 2026-05-10 (Phase 4 PLANNED — 5 plans across 4 waves; verifier passed after revision-2; ready to execute)
+**Last updated:** 2026-05-16 (Phase 4 UAT complete — 134 tests passing, all 9 UAT checks green; ready to plan Phase 5)
 
 ## Project Reference
 
 - **Project:** Momentum Swing Screener
 - **Core value:** Every evening, the user opens one report and gets a small, ranked list of high-quality long candidates with playbook-specific trade plans they can execute the next morning — reliable enough to size real positions on once paper-trade validation confirms it works.
-- **Current focus:** Phase 04 — trend-template-composite-skeleton-first-report
+- **Current focus:** Phase 05 — backtest-harness-no-lookahead-gate
 - **Out of scope (v1):** ML/LightGBM, Streamlit dashboard, FinBERT/Reddit sentiment, intraday/pre-market scanning, broker API, paid data feeds, PySpark, dbt+duckdb, hosted demo, options data, alt-data.
 - **Audience:** Belwin (data engineer; personal-trading first; portfolio-credible second).
 
 ## Current Position
 
-Phase: 02 (data-foundation) — COMPLETE
-Phase: 03 (indicator-panel-&-regime) — COMPLETE (all 5 plans, 2026-05-10)
-Phase: 04 (trend-template-composite-skeleton-first-report) — PLANNED, ready to execute (5 plans / 4 waves)
+Phase: 01 (repo-skeleton-ci-hygiene) — COMPLETE (2026-05-02)
+Phase: 02 (data-foundation) — COMPLETE (2026-05-03)
+Phase: 03 (indicator-panel-&-regime) — COMPLETE (2026-05-10; 5 plans)
+Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05-10 executed; 2026-05-16 UAT verified; 5 plans)
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** 4 (ready to execute)
-- **Plan:** 15 / 20 executed (Phase 4 plans landed; execution pending)
-- **Status:** Ready to execute Phase 4
+- **Phase:** 5 (ready to plan)
+- **Plan:** 20 / 20 executed (Phases 1–4 all plans complete)
+- **Status:** Ready to plan Phase 5
 - **Progress:** [██████████░░░░░] 50%
 
 ### Phase 3 Plan Summary
@@ -144,16 +145,15 @@ None.
 
 ### Last Session
 
-- **Activity:** `/gsd-execute-phase 2` Plan 02-02 — extended Settings to 15 fields (8 D-20 data-layer fields), added pandas-datareader>=0.10 dep, updated mypy strict files list and ignore_missing_imports, amended .gitignore with D-19 carve-out (prices.parquet ignored, splits.parquet + universe/*.parquet committed), added .gitkeep anchors.
-- **Outcome:** 3 commits (f7f5de7 Settings D-20, c9cc323 pandas-datareader + mypy, 88087dc .gitignore carve-out). Tests 5 passed.
+- **Activity:** `/gsd-verify-work 4` — UAT for Phase 4 (trend-template-composite-skeleton-first-report). Ran full suite (134 passed, 2 skipped), verified live imports, preregistration check, and all 9 UAT tests. All green. STATE.md + PROJECT.md updated.
+- **Outcome:** Phase 4 UAT complete. 04-UAT.md written. Phase 4 fully verified.
 - **Resume file:** None
-- **Stopped at:** context exhaustion at 75% (2026-05-03)
+- **Stopped at:** Phase 4 verified complete; Phase 5 ready to plan (2026-05-16)
 
 ### Next Session
 
-- **First, user action:** Run the `gh api` command in `docs/branch_protection.md` (or click through `/settings/branches`). Verify with the documented `gh api ... --jq '.required_status_checks.contexts'` call.
-- **Then:** `/gsd-discuss-phase 2` to gather context for the Data Foundation phase (universe builder, OHLCV cache, macro/regime-input ingest, EDGAR identity setup, requests-cache + tenacity wiring, weekly universe snapshots to mitigate survivorship bias going forward).
-- **Phase 2 reminder:** When API keys (`FINNHUB_API_KEY`, `FRED_API_KEY`, `EDGAR_IDENTITY`) land in CI, add them as GitHub Actions `secrets:` and reference via `${{ secrets.X }}`. Never `echo` them. The Phase 1 workflow has `permissions: contents: read` and uses no secrets, which is correct for now.
+- `/gsd-discuss-phase 5` — gather context for the Backtest Harness & No-Look-Ahead Gate (vectorbt walk-forward, CI-blocking no-look-ahead test, slippage tiers, forensic audit CLI, per-playbook + per-regime breakdowns)
+- Or `/gsd-plan-phase 5` to skip discussion and plan directly.
 
 ---
 *State initialized: 2026-04-27*
