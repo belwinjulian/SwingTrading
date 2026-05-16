@@ -313,6 +313,60 @@ def synthetic_multi_ticker_panel() -> pd.DataFrame:
     return pd.concat(frames).sort_index()
 
 
+# --- Phase 5 backtest harness fixtures (Plan 05-00) --------------------------
+
+
+@pytest.fixture(scope="session")
+def synthetic_ohlcv_panel() -> pd.DataFrame:
+    """1300 business days x 3 tickers mean-zero GBM OHLCV in the panel shape
+    `persistence.read_panel()` returns. Pinned seed=42 (per-ticker shift seed+i);
+    loc=0.0 drift (mean-zero) satisfies the FND-04 no-look-ahead test thresholds
+    (`abs(total_return) < 0.50` shifted; `total_return > 1.00` unshifted)
+    with margin — 10-seed verification documented in 05-RESEARCH.md §B Q5.
+
+    Span rationale (REVISED 2026-05-16 iter 3, C-1 fix): 1300 bdays starting
+    2019-01-01 covers ≈ 5.15 calendar years (ends ≈ 2024-01-XX) — large enough
+    for `walk_forward_windows(IS=3yr, OOS=1yr, slide=1yr)` to produce ≥2
+    complete windows:
+        Win 1: IS 2019-01-01..2021-12-31 | OOS 2022-01-01..2022-12-31
+        Win 2: IS 2020-01-01..2022-12-31 | OOS 2023-01-01..2023-12-31
+    Earlier iter-2 attempt (1008 bars starting 2020-01-01, ending ~2023-11-15)
+    was the C-1 defect: `start + 4yr = 2024-01-01 > 2023-11-15` → ZERO complete
+    windows → mutation test trivially passed (total_return = 0.0 for both
+    lookahead modes), smuggling B-2 back in. Iter 3 fix: extend start by 1 year
+    and grow span to ≥5 calendar years.
+
+    Multi-ticker (AAA/BBB/CCC) gives the per-ticker slippage panel (D-11 tiers)
+    real shape to test — plan 05-01's `_build_slippage_panel` unstacks by ticker.
+
+    Schema matches `persistence.read_panel()`:
+      - MultiIndex (ticker, date), names=["ticker", "date"]
+      - Columns: open, high, low, close (float64); volume (int64)
+      - 1300 business days starting 2019-01-01 per ticker (3 tickers x 1300 = 3900 rows)
+    """
+    n_bars = 1300
+    tickers = ("AAA", "BBB", "CCC")
+    seed_base = 42
+    dates = pd.bdate_range(start="2019-01-01", periods=n_bars)
+    frames: list[pd.DataFrame] = []
+    for i, ticker in enumerate(tickers):
+        rng = np.random.default_rng(seed_base + i)
+        log_returns = rng.normal(loc=0.0, scale=0.012, size=n_bars)
+        close = 100.0 * np.exp(np.cumsum(log_returns))
+        open_ = close * (1 + rng.normal(0, 0.002, n_bars))
+        high = np.maximum(open_, close) * (1 + np.abs(rng.normal(0, 0.005, n_bars)))
+        low = np.minimum(open_, close) * (1 - np.abs(rng.normal(0, 0.005, n_bars)))
+        volume = rng.integers(500_000, 2_000_000, n_bars, dtype="int64")
+        idx = pd.MultiIndex.from_product([[ticker], dates], names=["ticker", "date"])
+        frames.append(
+            pd.DataFrame(
+                {"open": open_, "high": high, "low": low, "close": close, "volume": volume},
+                index=idx,
+            )
+        )
+    return pd.concat(frames).sort_index()
+
+
 # --- Phase 3 regime fixtures (Plan 03-04) ------------------------------------
 
 
