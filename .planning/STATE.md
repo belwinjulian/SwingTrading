@@ -15,7 +15,7 @@ progress:
 
 # Project State
 
-**Last updated:** 2026-05-16 (Phase 4 UAT complete — 134 tests passing, all 9 UAT checks green; ready to plan Phase 5)
+**Last updated:** 2026-05-16 (Phase 5 context gathered — 4 areas discussed; ready to plan Phase 5)
 
 ## Project Reference
 
@@ -35,7 +35,8 @@ Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
 - **Phase:** 5 (ready to plan)
 - **Plan:** 20 / 20 executed (Phases 1–4 all plans complete)
-- **Status:** Ready to plan Phase 5
+- **Status:** Context gathered — ready to plan Phase 5
+- **Resume file:** `.planning/phases/05-backtest-harness-no-lookahead-gate/05-CONTEXT.md`
 - **Progress:** [██████████░░░░░] 50%
 
 ### Phase 3 Plan Summary
@@ -145,15 +146,14 @@ None.
 
 ### Last Session
 
-- **Activity:** `/gsd-verify-work 4` — UAT for Phase 4 (trend-template-composite-skeleton-first-report). Ran full suite (134 passed, 2 skipped), verified live imports, preregistration check, and all 9 UAT tests. All green. STATE.md + PROJECT.md updated.
-- **Outcome:** Phase 4 UAT complete. 04-UAT.md written. Phase 4 fully verified.
-- **Resume file:** None
-- **Stopped at:** Phase 4 verified complete; Phase 5 ready to plan (2026-05-16)
+- **Activity:** `/gsd-discuss-phase 5` — gathered context for Phase 5 (Backtest Harness & No-Look-Ahead Gate). Discussed 4 areas: walk-forward data strategy, no-look-ahead mutation test design, per-playbook stub, and backtest report output.
+- **Outcome:** 05-CONTEXT.md written. Key decisions: 10yr backfill script, integration mutation test with _lookahead backdoor, leader_hold stub, terminal+file report.
+- **Resume file:** `.planning/phases/05-backtest-harness-no-lookahead-gate/05-CONTEXT.md`
+- **Stopped at:** Phase 5 context gathered (2026-05-16)
 
 ### Next Session
 
-- `/gsd-discuss-phase 5` — gather context for the Backtest Harness & No-Look-Ahead Gate (vectorbt walk-forward, CI-blocking no-look-ahead test, slippage tiers, forensic audit CLI, per-playbook + per-regime breakdowns)
-- Or `/gsd-plan-phase 5` to skip discussion and plan directly.
+- `/gsd-plan-phase 5` — plan the Backtest Harness & No-Look-Ahead Gate with context in hand.
 
 ---
 *State initialized: 2026-04-27*
