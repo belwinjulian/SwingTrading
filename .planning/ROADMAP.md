@@ -28,7 +28,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 - [x] **Phase 2: Data Foundation** — Russell 1000 universe with weekly snapshots, yfinance OHLCV cache with Stooq fallback, retry/health-check infrastructure, pandera schemas at I/O boundaries (completed 2026-05-03)
 - [x] **Phase 3: Indicator Panel & Regime** — SMA/ATR/ADR%/RS-percentile panel, macro data layer, three-state regime gate with continuous regime_score (completed 2026-05-10)
 - [x] **Phase 4: Trend Template, Composite Skeleton & First Report** — Minervini 8-condition gate, composite skeleton (weights pre-registered), ATR-based sizing, first daily markdown report (completed 2026-05-10)
-- [ ] **Phase 5: Backtest Harness & No-Look-Ahead Gate** — vectorbt walk-forward harness, CI-blocking no-look-ahead test, slippage tiers, forensic audit CLI, per-playbook + per-regime breakdowns
+- [x] **Phase 5: Backtest Harness & No-Look-Ahead Gate** — vectorbt walk-forward harness, CI-blocking no-look-ahead test, slippage tiers, forensic audit CLI, per-playbook + per-regime breakdowns (completed 2026-05-16; 6 plans; 3 items pending human ratification in 05-HUMAN-UAT.md)
 - [ ] **Phase 6: Pattern Detection, Full Signal Stack & Playbook Tagging** — VCP + continuation-flag + post-gap-continuation detectors, Qullamaggie Setup A scan, CANSLIM C+L+M overlay, composite playbook tagger, catalyst flags
 - [ ] **Phase 7: Sizing Finalization & Paper-Trade Journal** — per-playbook stop/trail rules, auto-rejection at 1×ADR risk, append-only SQLite journal with `features_json` blob — the v2 ML contract
 - [ ] **Phase 8: GitHub Actions Cron & Operations** — nightly refresh workflow, heartbeat job, structured run log, manual workflow_dispatch trigger
@@ -260,9 +260,9 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Repo Skeleton & CI Hygiene | 5/5 | Complete   | 2026-05-02 |
 | 2. Data Foundation | 5/5 | Complete | 2026-05-03 |
-| 3. Indicator Panel & Regime | 0/5 | Planned | - |
+| 3. Indicator Panel & Regime | 5/5 | Complete | 2026-05-10 |
 | 4. Trend Template, Composite Skeleton & First Report | 5/5 | Complete | 2026-05-10 |
-| 5. Backtest Harness & No-Look-Ahead Gate | 0/? | Not started | - |
+| 5. Backtest Harness & No-Look-Ahead Gate | 6/6 | Complete (human ratify pending) | 2026-05-16 |
 | 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 0/? | Not started | - |
 | 7. Sizing Finalization & Paper-Trade Journal | 0/? | Not started | - |
 | 8. GitHub Actions Cron & Operations | 0/? | Not started | - |

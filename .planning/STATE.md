@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
+status: phase_complete
 stopped_at: null
-last_updated: "2026-05-16T00:00:00.000Z"
+last_updated: "2026-05-16T22:35:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 4
-  total_plans: 20
-  completed_plans: 20
-  percent: 50
+  completed_phases: 5
+  total_plans: 26
+  completed_plans: 26
+  percent: 62.5
 ---
 
 # Project State
 
-**Last updated:** 2026-05-16 (Phase 5 context gathered — 4 areas discussed; ready to plan Phase 5)
+**Last updated:** 2026-05-16 (Phase 5 executed and verified — 5/5 ROADMAP success criteria met; 3 items pending human ratification in 05-HUMAN-UAT.md)
 
 ## Project Reference
 
@@ -31,13 +31,14 @@ Phase: 01 (repo-skeleton-ci-hygiene) — COMPLETE (2026-05-02)
 Phase: 02 (data-foundation) — COMPLETE (2026-05-03)
 Phase: 03 (indicator-panel-&-regime) — COMPLETE (2026-05-10; 5 plans)
 Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05-10 executed; 2026-05-16 UAT verified; 5 plans)
+Phase: 05 (backtest-harness-no-lookahead-gate) — COMPLETE (2026-05-16; 6 plans; 5/5 SCs verified; 3 items in 05-HUMAN-UAT.md)
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** 5 (ready to plan)
-- **Plan:** 20 / 20 executed (Phases 1–4 all plans complete)
-- **Status:** Context gathered — ready to plan Phase 5
-- **Resume file:** `.planning/phases/05-backtest-harness-no-lookahead-gate/05-CONTEXT.md`
-- **Progress:** [██████████░░░░░] 50%
+- **Phase:** 6 (ready to discuss)
+- **Plan:** 26 / 26 executed (Phases 1–5 all plans complete)
+- **Status:** Phase 5 complete — human ratification of D-07 + branch protection pending; ready to start Phase 6
+- **Resume file:** `.planning/phases/05-backtest-harness-no-lookahead-gate/05-HUMAN-UAT.md` (then `/gsd-discuss-phase 6`)
+- **Progress:** [████████████░░░] 62.5%
 
 ### Phase 3 Plan Summary
 
@@ -63,12 +64,12 @@ Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Phases complete | 3 / 8 | Phase 1 ✓ 2026-05-02; Phase 2 ✓ 2026-05-03; Phase 3 ✓ 2026-05-10 |
-| Plans complete | 15 / 15 (Phases 1+2+3) | 01-01..01-05, 02-01..02-05, 03-01..03-05 all shipped |
+| Phases complete | 5 / 8 | Phase 1 ✓ 2026-05-02; Phase 2 ✓ 2026-05-03; Phase 3 ✓ 2026-05-10; Phase 4 ✓ 2026-05-10; Phase 5 ✓ 2026-05-16 |
+| Plans complete | 26 / 26 (Phases 1–5) | 01-01..01-05, 02-01..02-05, 03-01..03-05, 04-01..04-05, 05-00..05-05 all shipped |
 | Requirements mapped | 64 / 64 | 100% coverage |
-| Requirements completed | 21 / 64 | FND-01..03, DAT-01..04, DAT-06..09, IND-01..05, REG-01..04 |
-| Last test run | 72 passed, 2 skipped | `pytest -m "not slow and not integration"` 2026-05-10 |
-| Last lint pass | clean | ruff + mypy passing |
+| Requirements completed | 34 / 64 | FND-01..05, DAT-01..04, DAT-06..09, IND-01..05, REG-01..04, SIG-01, SIG-04, OUT-01..03, BCK-01..07 (BCK-04 partial-by-design per D-12) |
+| Last test run | 149 passed, 2 skipped | `uv run pytest --no-cov -q` 2026-05-16 (Phase 5 end-of-execution) |
+| Last lint pass | clean (touched files) | ruff + mypy passing on Phase 5 files; pre-existing repo-wide format drift on 38 files deferred |
 | Phase 01 P04 | 2min | 2 tasks | 2 files |
 | Phase 01 P05 | 3min | 2 tasks | 6 files |
 | Phase 02 P02 | 10min | 3 tasks | 5 files |
@@ -80,8 +81,8 @@ Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05
 | 1 | Repo Skeleton & CI Hygiene | ✓ Complete (verified 2026-05-02; 4/4 must-haves) | FND-01, FND-02, FND-03 |
 | 2 | Data Foundation | ✓ Complete (verified 2026-05-03; 7/7 must-haves) | DAT-01..03, DAT-06..09 |
 | 3 | Indicator Panel & Regime | ✓ Complete (2026-05-10; 5/5 plans; 72 tests green) | DAT-04, IND-01..05, REG-01..04 |
-| 4 | Trend Template, Composite Skeleton & First Report | Not started | FND-05, SIG-01, SIG-04, OUT-01..03 |
-| 5 | Backtest Harness & No-Look-Ahead Gate | Not started | FND-04, BCK-01..07 |
+| 4 | Trend Template, Composite Skeleton & First Report | ✓ Complete (2026-05-10; 5/5 plans; 134 tests green) | FND-05, SIG-01, SIG-04, OUT-01..03 |
+| 5 | Backtest Harness & No-Look-Ahead Gate | ✓ Complete (2026-05-16; 6/6 plans; 5/5 SCs; 3 human-UAT items) | FND-04, BCK-01..07 |
 | 6 | Pattern Detection, Full Signal Stack & Playbook Tagging | Not started | DAT-05, PAT-01..06, SIG-02, SIG-03, CMP-01..05, CAT-01..04 |
 | 7 | Sizing Finalization & Paper-Trade Journal | Not started | SIZ-01..05, OUT-04..06 |
 | 8 | GitHub Actions Cron & Operations | Not started | OPS-01..05 |
@@ -146,14 +147,15 @@ None.
 
 ### Last Session
 
-- **Activity:** `/gsd-discuss-phase 5` — gathered context for Phase 5 (Backtest Harness & No-Look-Ahead Gate). Discussed 4 areas: walk-forward data strategy, no-look-ahead mutation test design, per-playbook stub, and backtest report output.
-- **Outcome:** 05-CONTEXT.md written. Key decisions: 10yr backfill script, integration mutation test with _lookahead backdoor, leader_hold stub, terminal+file report.
-- **Resume file:** `.planning/phases/05-backtest-harness-no-lookahead-gate/05-CONTEXT.md`
-- **Stopped at:** Phase 5 context gathered (2026-05-16)
+- **Activity:** `/gsd-execute-phase 5` — executed all 6 plans (Wave 0: 05-00 foundation; Wave 1: 05-01 vbt_runner + 05-02 FND-04 mutation test serialized; Wave 2: 05-03 report + 05-04 backfill parallel; Wave 3: 05-05 audit CLI + CI workflow). Verifier returned `human_needed` with 5/5 SCs + 6/6 must-haves codebase-verified; 3 items routed to 05-HUMAN-UAT.md. User approved phase close.
+- **Outcome:** Phase 5 complete (2026-05-16). 149 passed / 2 skipped. FND-04 mutation gate load-bearing (manual `.shift(1)` removal triggers FAIL). One notable deviation: 05-02 recalibrated D-07 thresholds from `0.50`/`1.00` to `8e-7`/`8e-7`/`3.0×` based on 10-seed Monte Carlo on the production multi-ticker harness (CONTEXT.md doc ratification pending in HUMAN-UAT.md).
+- **Resume file:** `.planning/phases/05-backtest-harness-no-lookahead-gate/05-HUMAN-UAT.md`
+- **Stopped at:** Phase 5 marked complete (2026-05-16)
 
 ### Next Session
 
-- `/gsd-plan-phase 5` — plan the Backtest Harness & No-Look-Ahead Gate with context in hand.
+- `/gsd-discuss-phase 6` — gather context for Phase 6 (Pattern Detection, Full Signal Stack & Playbook Tagging).
+- USER ACTIONS pending (do not block Phase 6): (a) ratify D-07 recalibration in `05-CONTEXT.md`, (b) `gh api` branch-protection update for `no-lookahead-gate` check, (c) decide audit check #1 coverage-gate disposition.
 
 ---
 *State initialized: 2026-04-27*

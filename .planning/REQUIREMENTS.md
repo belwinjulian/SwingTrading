@@ -12,7 +12,7 @@ Each requirement is user-centric, atomic, and testable. Maps to exactly one road
 - [x] **FND-01**: Repo skeleton runs on `uv` with `pyproject.toml` pinning the v1 stack (pandas, pandas-ta-classic, yfinance, vectorbt, edgartools, finnhub-python, fredapi, pydantic-settings, pandera, structlog, typer)
 - [x] **FND-02**: `make data && make rank && make report && make backtest` runs end-to-end locally with no manual steps after setup
 - [x] **FND-03**: CI runs ruff, mypy (strict on `signals/` and `indicators/`), and pytest on every PR
-- [ ] **FND-04**: `tests/test_backtest_no_lookahead.py` exists, is mutation-tested (removing `.shift(1)` causes failure), and is a CI-blocking gate on every PR touching `signals/` or `backtest/`
+- [x] **FND-04**: `tests/test_backtest_no_lookahead.py` exists, is mutation-tested (removing `.shift(1)` causes failure), and is a CI-blocking gate on every PR touching `signals/` or `backtest/` (Phase 5, 2026-05-16; thresholds recalibrated per D-07-REVISED-3, ratification pending in HUMAN-UAT)
 - [ ] **FND-05**: `docs/strategy_v1_preregistration.md` records the v1 composite-score weights with a git hash before any backtest result is reported
 
 ### Data
@@ -92,13 +92,13 @@ Each requirement is user-centric, atomic, and testable. Maps to exactly one road
 
 ### Backtest
 
-- [ ] **BCK-01**: vectorbt 1.0 walk-forward harness runs with 3-year IS / 1-year OOS rolling windows; outputs the OOS Sharpe distribution across windows, not a single number
-- [ ] **BCK-02**: Backtest enforces signals execute at next-bar open (not current-bar close); the no-look-ahead test (FND-04) regresses against this
-- [ ] **BCK-03**: Slippage is tiered by ADV (5 bps for ADV > $50M, 15 bps for $5M–$50M, 30 bps for < $5M); transaction-cost-zero is not a supported reporting mode
-- [ ] **BCK-04**: Backtest report includes per-playbook attribution (CAGR / Sharpe / max DD / win rate / profit factor / expectancy split by `qullamaggie_continuation` / `minervini_vcp` / `leader_hold`)
-- [ ] **BCK-05**: Backtest report includes per-regime breakdown (returns during Confirmed Uptrend vs Uptrend Under Pressure vs Correction)
-- [ ] **BCK-06**: Backtest report disclosure header explicitly states the universe source date, survivorship-bias caveat, slippage assumptions, and period selection
-- [ ] **BCK-07**: `make backtest-audit` runs a forensic checklist (no-look-ahead, weight-pre-registration hash match, universe snapshot ≤ start date) before any backtest result is considered reportable
+- [x] **BCK-01**: vectorbt 1.0 walk-forward harness runs with 3-year IS / 1-year OOS rolling windows; outputs the OOS Sharpe distribution across windows, not a single number (Phase 5, 2026-05-16)
+- [x] **BCK-02**: Backtest enforces signals execute at next-bar open (not current-bar close); the no-look-ahead test (FND-04) regresses against this (Phase 5, 2026-05-16)
+- [x] **BCK-03**: Slippage is tiered by ADV (5 bps for ADV > $50M, 15 bps for $5M–$50M, 30 bps for < $5M); transaction-cost-zero is not a supported reporting mode (Phase 5, 2026-05-16)
+- [~] **BCK-04**: Backtest report includes per-playbook attribution (CAGR / Sharpe / max DD / win rate / profit factor / expectancy split by `qullamaggie_continuation` / `minervini_vcp` / `leader_hold`) (Phase 5 partial-by-design per D-12 — leader_hold stub only; full playbook tagging deferred to Phase 6)
+- [x] **BCK-05**: Backtest report includes per-regime breakdown (returns during Confirmed Uptrend vs Uptrend Under Pressure vs Correction) (Phase 5, 2026-05-16)
+- [x] **BCK-06**: Backtest report disclosure header explicitly states the universe source date, survivorship-bias caveat, slippage assumptions, and period selection (Phase 5, 2026-05-16)
+- [x] **BCK-07**: `make backtest-audit` runs a forensic checklist (no-look-ahead, weight-pre-registration hash match, universe snapshot ≤ start date) before any backtest result is considered reportable (Phase 5, 2026-05-16; check 3 REVISED to WARN-not-FAIL per D-16)
 
 ### Operations
 
@@ -162,7 +162,7 @@ Populated by `gsd-roadmapper` on 2026-04-27.
 | FND-01 | Phase 1 | Complete |
 | FND-02 | Phase 1 | Complete |
 | FND-03 | Phase 1 | Complete |
-| FND-04 | Phase 5 | Pending |
+| FND-04 | Phase 5 | Complete |
 | FND-05 | Phase 4 | Pending |
 | DAT-01 | Phase 2 | Pending |
 | DAT-02 | Phase 2 | Pending |
@@ -212,13 +212,13 @@ Populated by `gsd-roadmapper` on 2026-04-27.
 | OUT-04 | Phase 7 | Pending |
 | OUT-05 | Phase 7 | Pending |
 | OUT-06 | Phase 7 | Pending |
-| BCK-01 | Phase 5 | Pending |
-| BCK-02 | Phase 5 | Pending |
-| BCK-03 | Phase 5 | Pending |
-| BCK-04 | Phase 5 | Pending |
-| BCK-05 | Phase 5 | Pending |
-| BCK-06 | Phase 5 | Pending |
-| BCK-07 | Phase 5 | Pending |
+| BCK-01 | Phase 5 | Complete |
+| BCK-02 | Phase 5 | Complete |
+| BCK-03 | Phase 5 | Complete |
+| BCK-04 | Phase 5 | Partial (D-12; full in Phase 6) |
+| BCK-05 | Phase 5 | Complete |
+| BCK-06 | Phase 5 | Complete |
+| BCK-07 | Phase 5 | Complete |
 | OPS-01 | Phase 8 | Pending |
 | OPS-02 | Phase 8 | Pending |
 | OPS-03 | Phase 8 | Pending |
