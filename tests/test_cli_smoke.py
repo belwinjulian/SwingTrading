@@ -30,11 +30,13 @@ D14_SUBCOMMANDS = [
 ]
 
 # Phase-2-stub-only subset for the [stub] log-line iteration (refresh-universe,
-# refresh-ohlcv, and refresh-macro now do real work and no longer emit [stub]).
+# refresh-ohlcv, and refresh-macro now do real work and no longer emit [stub];
+# Phase 4 also removed `score` and `report` from this list; Phase 5 plan 05-03
+# fills `backtest` so it is removed here too — see
+# test_backtest_subcommand_no_longer_stub below).
 PHASE_1_STUBS = [
     "refresh-fundamentals",
     "journal",
-    "backtest",
     "backtest-audit",
 ]
 
@@ -265,4 +267,21 @@ def test_report_subcommand_no_longer_stub() -> None:
     ]
     assert not stub_events, (
         f"`screener report` still emits a [stub] line: {stub_events!r}"
+    )
+
+
+def test_backtest_subcommand_no_longer_stub() -> None:
+    """Phase 5 (plan 05-03): `backtest` ships a real body — invoking it does
+    NOT emit a '[stub] backtest not yet implemented' line. Real run will fail
+    without data/snapshots/ (RuntimeError per vbt_runner._load_snapshots_in_range
+    L10 hard-fail), but the failure is from the harness, not [stub]."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["backtest"])
+    events = _parse_json_events(result.stdout)
+    stub_events = [
+        ev for ev in events
+        if ev.get("command") == "backtest" and "[stub]" in ev.get("message", "")
+    ]
+    assert not stub_events, (
+        f"`screener backtest` still emits a [stub] line: {stub_events!r}"
     )
