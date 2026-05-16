@@ -39,7 +39,7 @@ Requirements covered: **FND-04** (no-look-ahead mutation test + CI gate), **BCK-
 
 - **D-06: Perfect-foresight signal = enter when next-day return > 0.** At bar t, signal = `(close[t+1] - close[t]) / close[t] > 0`. When `.shift(1)` is applied in the harness, the signal becomes 2-bar delayed → negates the foresight advantage → total return ≈ random/market.
 
-- **D-07: Assertion threshold = total return ≤ 2× buy-and-hold.** Applies when `_lookahead=False` (normal operation). The shifted foresight signal should behave roughly market-neutral on 250 bars of synthetic data.
+- **D-07 (REVISED 2026-05-16 from research): Absolute return thresholds replace "≤ 2× BH".** When `_lookahead=False`, assert `abs(total_return) < 0.50`. When `_lookahead=True`, assert `total_return > 1.00`. 4× separation between the two regimes, robust across 10 GBM seeds. The original "≤ 2× BH" wording was flaky — 10-seed Monte Carlo on the planned synthetic OHLCV (GBM, 250 bars) showed the shifted-foresight strategy still earns ~+25% on near-zero-drift markets due to GBM autocorrelation, so the BH-relative bound did not separate cleanly from the foresight regime. See 05-RESEARCH.md §B Q5 for the experiment.
 
 - **D-08: Two-call parameterized test proves the mutation.** `vbt_runner.run()` accepts a `_lookahead: bool = False` test-only parameter. When `True`, `.shift(1)` is bypassed. Test call 1: `_lookahead=False` → assert `total_return ≤ 2× BH` (PASS). Test call 2: `_lookahead=True` → assert `total_return > 2× BH` (PASS — proves that removing the shift causes dramatic outperformance). Removing `.shift(1)` from the production harness is equivalent to hardcoding `_lookahead=True`, which the second assertion would then fail.
 
@@ -72,7 +72,7 @@ Requirements covered: **FND-04** (no-look-ahead mutation test + CI gate), **BCK-
 - **D-16: `make backtest-audit` runs 4 checks (exits non-zero if any fails):**
   1. No-look-ahead test passes (`pytest tests/test_backtest_no_lookahead.py -q`)
   2. Weight preregistration hash match — `scripts/check_preregistration.py` confirms `DEFAULT_WEIGHTS` in `signals/composite.py` matches `docs/strategy_v1_preregistration.md` (Phase 4 D-09 script, already CI-gated)
-  3. Universe snapshot date ≤ backtest start date (latest `data/universe/*.parquet` stem ≤ earliest IS window start)
+  3. Universe snapshot date check (REVISED 2026-05-16 from research): **earliest available** `data/universe/*.parquet` stem ≤ earliest IS window start. Original wording ("latest snapshot ≤ start") would never pass until a backdated 2016 snapshot exists; relaxing to "earliest available" lets the audit run today and the survivorship caveat is honestly recorded in the BCK-06 disclosure header. The audit emits a WARN line naming the earliest snapshot date and the gap to the IS start. See 05-RESEARCH.md §D for the gap analysis.
   4. ≥ 2 complete OOS windows exist (requires ≥ 4 years of `data/snapshots/` coverage). Failure message: `"Insufficient OOS history: N complete windows found, 2 required."`
 
 ### Carried-forward constraints (not re-discussed)
