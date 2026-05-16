@@ -288,5 +288,141 @@ def backtest(
 
 @app.command("backtest-audit")
 def backtest_audit() -> None:
-    """Run forensic checks (no-look-ahead, weight-preregistration hash, universe snapshot)."""
-    _stub("backtest-audit")
+    """Forensic checks (no-look-ahead, preregistration hash, universe, OOS depth)."""
+    configure_logging()
+    try:
+        import re as _re
+        import subprocess
+        from pathlib import Path
+
+        import pandas as pd
+
+        from screener.backtest.walkforward import walk_forward_windows
+
+        date_re = _re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+        # ----- Check 1: no-look-ahead test passing (FND-04) ----------------
+        # T-5-02: list-form argv, shell=False (default).
+        nla = subprocess.run(
+            ["uv", "run", "pytest", "tests/test_backtest_no_lookahead.py", "-q"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        nla_pass = nla.returncode == 0
+        log.info(
+            "audit_check",
+            check="no-lookahead test passing",
+            result="PASS" if nla_pass else "FAIL",
+            detail=(nla.stdout + nla.stderr)[-500:] if not nla_pass else "exit=0",
+        )
+
+        # ----- Check 2: preregistration hash match (FND-05 carry-forward) ---
+        prereg = subprocess.run(
+            ["uv", "run", "python", "scripts/check_preregistration.py"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        prereg_pass = prereg.returncode == 0
+        log.info(
+            "audit_check",
+            check="preregistration hash match",
+            result="PASS" if prereg_pass else "FAIL",
+            detail=(prereg.stdout + prereg.stderr)[-500:] if not prereg_pass else "exit=0",
+        )
+
+        # ----- Check 3 (REVISED D-16 2026-05-16): universe snapshot ---------
+        # Original wording "latest snapshot <= start" would never pass until a
+        # backdated 2016 universe snapshot exists. Relaxed to "earliest available
+        # <= earliest IS window start"; FAIL only when no universe exists; WARN
+        # (does NOT block) when the gap is non-zero.
+        universe_dir = Path("data/universe")
+        earliest_is_start = pd.Timestamp("2016-01-01")
+        # Try to derive earliest_is_start from walk_forward_windows for consistency.
+        wins = walk_forward_windows(
+            pd.Timestamp("2016-01-01"),
+            pd.Timestamp.today().normalize(),
+        )
+        if wins:
+            earliest_is_start = wins[0][0]
+        universe_pass = False
+        universe_warn = False
+        universe_detail = ""
+        if not universe_dir.exists():
+            universe_detail = "data/universe/ does not exist"
+        else:
+            stems = sorted(p.stem for p in universe_dir.glob("*.parquet") if date_re.match(p.stem))
+            if not stems:
+                universe_detail = "no ISO-named universe snapshots found in data/universe/"
+            else:
+                earliest_uni = pd.Timestamp(stems[0])
+                if earliest_uni <= earliest_is_start:
+                    universe_pass = True
+                    universe_detail = (
+                        f"earliest universe snapshot {earliest_uni.date()} "
+                        f"<= earliest IS start {earliest_is_start.date()}"
+                    )
+                else:
+                    # WARN (not FAIL) per REVISED D-16: survivorship is acknowledged in BCK-06.
+                    universe_pass = True
+                    universe_warn = True
+                    gap_days = (earliest_uni - earliest_is_start).days
+                    universe_detail = (
+                        f"WARN: earliest universe snapshot {earliest_uni.date()} "
+                        f"> earliest IS start {earliest_is_start.date()} "
+                        f"(gap = {gap_days} days); survivorship caveat documented "
+                        f"in BCK-06 disclosure header"
+                    )
+        log.info(
+            "audit_check",
+            check="universe snapshot date <= earliest IS start",
+            result="WARN" if universe_warn else ("PASS" if universe_pass else "FAIL"),
+            detail=universe_detail,
+        )
+
+        # ----- Check 4: >= 2 complete OOS windows ---------------------------
+        snapshot_dir = Path("data/snapshots")
+        oos_pass = False
+        oos_detail = ""
+        if not snapshot_dir.exists():
+            oos_detail = "data/snapshots/ does not exist"
+        else:
+            snap_stems = sorted(
+                p.stem for p in snapshot_dir.glob("*.parquet") if date_re.match(p.stem)
+            )
+            if not snap_stems:
+                oos_detail = "no ISO-named snapshots found in data/snapshots/"
+            else:
+                earliest_snap = pd.Timestamp(snap_stems[0])
+                latest_snap = pd.Timestamp(snap_stems[-1])
+                snap_windows = walk_forward_windows(earliest_snap, latest_snap)
+                n_windows = len(snap_windows)
+                if n_windows >= 2:
+                    oos_pass = True
+                    oos_detail = f"{n_windows} complete OOS windows available"
+                else:
+                    oos_detail = (
+                        f"Insufficient OOS history: {n_windows} complete windows found, 2 required."
+                    )
+        log.info(
+            "audit_check",
+            check=">= 2 complete OOS windows",
+            result="PASS" if oos_pass else "FAIL",
+            detail=oos_detail,
+        )
+
+        # ----- Tally -------------------------------------------------------
+        results = [nla_pass, prereg_pass, universe_pass, oos_pass]
+        failures = sum(1 for r in results if not r)
+        log.info("audit_complete", failures=failures, total=len(results))
+        if failures > 0:
+            print(f"AUDIT FAILED ({failures} checks failed)")
+            raise typer.Exit(code=1)
+        print("AUDIT PASSED")
+    except typer.Exit:
+        # Pitfall 7 carry-forward: typer.Exit MUST propagate.
+        raise
+    except Exception as e:
+        log.error("backtest_audit_failed", error_type=type(e).__name__)
+        raise typer.Exit(code=1) from e

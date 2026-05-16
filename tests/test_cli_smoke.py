@@ -32,12 +32,12 @@ D14_SUBCOMMANDS = [
 # Phase-2-stub-only subset for the [stub] log-line iteration (refresh-universe,
 # refresh-ohlcv, and refresh-macro now do real work and no longer emit [stub];
 # Phase 4 also removed `score` and `report` from this list; Phase 5 plan 05-03
-# fills `backtest` so it is removed here too — see
-# test_backtest_subcommand_no_longer_stub below).
+# fills `backtest` so it is removed; Phase 5 plan 05-05 fills `backtest-audit`
+# so it is removed too — see test_backtest_audit_subcommand_no_longer_stub
+# below).
 PHASE_1_STUBS = [
     "refresh-fundamentals",
     "journal",
-    "backtest-audit",
 ]
 
 
@@ -84,8 +84,7 @@ def test_each_phase1_stub_exits_zero_with_stub_log() -> None:
             ev.get("command") == name and "[stub]" in ev.get("message", "") for ev in events
         )
         assert found, (
-            f"`screener {name}` did not emit a structured [stub] log line. "
-            f"events: {events!r}"
+            f"`screener {name}` did not emit a structured [stub] log line. events: {events!r}"
         )
 
 
@@ -106,9 +105,7 @@ def _mock_universe_df() -> pd.DataFrame:
     )
 
 
-def test_health_gate_below_95_fails_run(
-    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_health_gate_below_95_fails_run(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Combined success rate 8/10 = 0.80 < 0.95 -> CLI exits non-zero with 'health_check_failed'."""
     # Patch the universe lookup + read so we don't need real iShares.
     fake_snapshot = tmp_path / "2026-04-27.parquet"
@@ -136,9 +133,7 @@ def test_health_gate_below_95_fails_run(
     assert ev.get("threshold") == 0.95
 
 
-def test_health_gate_above_95_passes_run(
-    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_health_gate_above_95_passes_run(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Combined success rate 10/10 = 1.0 >= 0.95 -> CLI exits 0 with 'health_check_passed'."""
     fake_snapshot = tmp_path / "2026-04-27.parquet"
     fake_snapshot.touch()
@@ -210,6 +205,7 @@ def test_report_data_quality_gate_d08(monkeypatch: pytest.MonkeyPatch) -> None:
 
     Mirrors test_health_gate_below_95_fails_run pattern (lines 109-137).
     """
+
     # Replace run_pipeline with a function that triggers validate_run with
     # the failure combination — bypasses build_panel/regime/composite which
     # need real data.
@@ -218,23 +214,16 @@ def test_report_data_quality_gate_d08(monkeypatch: pytest.MonkeyPatch) -> None:
 
         validate_run(0.30, "Correction", 0.25, 0.25)
 
-    monkeypatch.setattr(
-        "screener.publishers.pipeline.run_pipeline", fake_pipeline
-    )
+    monkeypatch.setattr("screener.publishers.pipeline.run_pipeline", fake_pipeline)
 
     runner = CliRunner()
     result = runner.invoke(app, ["report"])
     assert result.exit_code != 0, (
-        f"Expected non-zero exit on D-08 gate; got {result.exit_code}. "
-        f"stdout: {result.stdout}"
+        f"Expected non-zero exit on D-08 gate; got {result.exit_code}. stdout: {result.stdout}"
     )
     events = _parse_json_events(result.stdout)
-    failed = [
-        ev for ev in events if ev.get("event") == "data_quality_gate_failed"
-    ]
-    assert failed, (
-        f"Expected 'data_quality_gate_failed' event; got events: {events!r}"
-    )
+    failed = [ev for ev in events if ev.get("event") == "data_quality_gate_failed"]
+    assert failed, f"Expected 'data_quality_gate_failed' event; got events: {events!r}"
     ev = failed[0]
     assert ev.get("regime_state") == "Correction"
     assert ev.get("pass_rate") == 0.30
@@ -248,12 +237,9 @@ def test_score_subcommand_no_longer_stub() -> None:
     result = runner.invoke(app, ["score"])
     events = _parse_json_events(result.stdout)
     stub_events = [
-        ev for ev in events
-        if ev.get("command") == "score" and "[stub]" in ev.get("message", "")
+        ev for ev in events if ev.get("command") == "score" and "[stub]" in ev.get("message", "")
     ]
-    assert not stub_events, (
-        f"`screener score` still emits a [stub] line: {stub_events!r}"
-    )
+    assert not stub_events, f"`screener score` still emits a [stub] line: {stub_events!r}"
 
 
 def test_report_subcommand_no_longer_stub() -> None:
@@ -262,12 +248,9 @@ def test_report_subcommand_no_longer_stub() -> None:
     result = runner.invoke(app, ["report"])
     events = _parse_json_events(result.stdout)
     stub_events = [
-        ev for ev in events
-        if ev.get("command") == "report" and "[stub]" in ev.get("message", "")
+        ev for ev in events if ev.get("command") == "report" and "[stub]" in ev.get("message", "")
     ]
-    assert not stub_events, (
-        f"`screener report` still emits a [stub] line: {stub_events!r}"
-    )
+    assert not stub_events, f"`screener report` still emits a [stub] line: {stub_events!r}"
 
 
 def test_backtest_subcommand_no_longer_stub() -> None:
@@ -279,9 +262,23 @@ def test_backtest_subcommand_no_longer_stub() -> None:
     result = runner.invoke(app, ["backtest"])
     events = _parse_json_events(result.stdout)
     stub_events = [
-        ev for ev in events
-        if ev.get("command") == "backtest" and "[stub]" in ev.get("message", "")
+        ev for ev in events if ev.get("command") == "backtest" and "[stub]" in ev.get("message", "")
     ]
-    assert not stub_events, (
-        f"`screener backtest` still emits a [stub] line: {stub_events!r}"
-    )
+    assert not stub_events, f"`screener backtest` still emits a [stub] line: {stub_events!r}"
+
+
+def test_backtest_audit_subcommand_no_longer_stub() -> None:
+    """Phase 5 (plan 05-05): `backtest-audit` ships a real body — invoking it
+    does NOT emit a '[stub] backtest-audit not yet implemented' line. The audit
+    may exit non-zero (e.g. FAIL on check #4 if data/snapshots/ has insufficient
+    OOS depth in the worktree), but the failure is from the audit checks, not
+    from [stub]."""
+    runner = CliRunner()
+    result = runner.invoke(app, ["backtest-audit"])
+    events = _parse_json_events(result.stdout)
+    stub_events = [
+        ev
+        for ev in events
+        if ev.get("command") == "backtest-audit" and "[stub]" in ev.get("message", "")
+    ]
+    assert not stub_events, f"`screener backtest-audit` still emits a [stub] line: {stub_events!r}"
