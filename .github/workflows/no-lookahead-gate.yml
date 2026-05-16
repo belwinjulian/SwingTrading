@@ -1,0 +1,48 @@
+name: no-lookahead-gate
+
+# FND-04 / D-09: CI-blocking no-look-ahead mutation test on every PR touching
+# signals/ or backtest/ (or the test file itself). Separate workflow for
+# branch-protection independence (RESEARCH §C Q8 Option A).
+on:
+  pull_request:
+    paths:
+      - 'src/screener/signals/**'
+      - 'src/screener/backtest/**'
+      - 'tests/test_backtest_no_lookahead.py'
+  push:
+    branches: [main]
+    paths:
+      - 'src/screener/signals/**'
+      - 'src/screener/backtest/**'
+      - 'tests/test_backtest_no_lookahead.py'
+
+# Cancel superseded runs on the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  no-lookahead-gate:
+    name: no-lookahead-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python from pyproject
+        run: uv python install
+
+      - name: Install dependencies (frozen)
+        run: uv sync --frozen --extra dev
+
+      - name: No-look-ahead mutation test (FND-04)
+        run: uv run pytest tests/test_backtest_no_lookahead.py -v --tb=short
