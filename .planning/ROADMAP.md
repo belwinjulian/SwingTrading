@@ -187,7 +187,13 @@ Plans:
 
 **Estimated Complexity:** L
 
-**Plans:** TBD
+**Plans:** 6 plans in 4 waves
+- [ ] 05-00-PLAN.md — Wave 0 validation skeleton: 4 test skip-stubs + synthetic_ohlcv_panel(seed=42, loc=0.0 GBM) fixture in conftest.py (FND-04, BCK-01, BCK-03, BCK-07 stubs)
+- [ ] 05-01-PLAN.md — Wave 1 harness core: backtest/walkforward.py + metrics.py + vbt_runner.py (BacktestResult, run(_lookahead=False) with .shift(1), SLIPPAGE_TIERS, _build_slippage_panel) + fill walkforward+slippage tests (BCK-01, BCK-02, BCK-03, BCK-04, BCK-05)
+- [ ] 05-02-PLAN.md — Wave 1 TDD: tests/test_backtest_no_lookahead.py body (REVISED D-07 thresholds 0.50/1.00; monkeypatch read_panel + _load_snapshots_in_range; manual mutation check) (FND-04, BCK-02)
+- [ ] 05-03-PLAN.md — Wave 2 report + CLI: backtest/report.py (YAML frontmatter disclosure header BCK-06 + atomic write) + cli.py backtest body fill (BCK-04, BCK-05, BCK-06)
+- [ ] 05-04-PLAN.md — Wave 2 backfill: scripts/backfill_snapshots.py (idempotent run_pipeline loop) + Makefile backfill-snapshots target (BCK-01 data depth precondition)
+- [ ] 05-05-PLAN.md — Wave 3 audit + CI gate: cli.py backtest-audit body fill (4 checks with REVISED D-16 check #3) + tests/test_backtest_audit.py + .github/workflows/no-lookahead-gate.yml (FND-04, BCK-07)
 
 ### Phase 6: Pattern Detection, Full Signal Stack & Playbook Tagging
 
