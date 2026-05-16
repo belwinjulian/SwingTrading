@@ -330,6 +330,71 @@ def _run_backtest_window(
 
 **Why fill NaN ADV with 0.0030 (30 bps) instead of skipping the row:** vectorbt does not accept NaN in `slippage`. Filling with the worst tier is a one-line defensive default; the alternative (filtering out the first 19 bars of every ticker) loses 19 × N_tickers data points unnecessarily, and the Phase 5 backtest's IS window is 3 years (756 bars) so the 19-bar warmup is negligible.
 
+### Q11. `vbt.Portfolio.returns()` shape verification (added iter 3 for B-3)
+
+**Verified API:** `vbt.Portfolio.from_signals(...).returns()` returns:
+- `pd.Series` indexed by date when called on a single-column Portfolio (1 ticker, no `group_by`)
+- `pd.DataFrame` indexed by date with one column per ticker/group when called on a multi-column Portfolio (which is the Phase 5 case: 3 synthetic tickers `AAA/BBB/CCC` reduced to ONE group via `cash_sharing=True` + `group_by=np.zeros(N_tickers, dtype=int)` — the grouped Portfolio still returns a DataFrame, just with a single column)
+
+This Q was added in iter 3 to back-fill the verification that B-3 (plan 05-01's `_build_regime_returns_for_window` helper) silently introduced — Q1–Q4 covered `from_signals`, `.shift(1)`, walk_forward_windows, and the per-ticker slippage panel, but `pf.returns()` was new in iter 2's B-3 fix.
+
+**Verification command (run by the Wave 1 executor on first GREEN run; commit the actual output verbatim to RESEARCH.md replacing the placeholder below):**
+
+```bash
+uv run python -c "
+import vectorbt as vbt
+import numpy as np
+import pandas as pd
+idx = pd.bdate_range('2020-01-01', periods=10)
+close = pd.DataFrame({'AAA': np.linspace(100, 110, 10), 'BBB': np.linspace(100, 105, 10)}, index=idx)
+entries = pd.DataFrame(False, index=idx, columns=close.columns)
+entries.iloc[2] = True
+pf = vbt.Portfolio.from_signals(
+    close=close,
+    entries=entries,
+    init_cash=10000,
+    freq='1D',
+    direction='longonly',
+    cash_sharing=True,
+    group_by=np.zeros(close.shape[1], dtype=int),
+)
+r = pf.returns()
+print(type(r), r.shape, getattr(r, 'columns', None), r.index[:3].tolist())
+"
+```
+
+**Expected output (placeholder — executor commits actual verbatim output on first GREEN run):**
+```
+<class 'pandas.core.frame.DataFrame'> (10, 1) Int64Index([0], dtype='int64') [Timestamp('2020-01-01 00:00:00'), Timestamp('2020-01-02 00:00:00'), Timestamp('2020-01-03 00:00:00')]
+```
+
+(Without `cash_sharing=True` + `group_by`, the expected shape would be `(10, 2) Index(['AAA', 'BBB'], ...)`. Phase 5 uses the grouped form so the harness reports one composite portfolio return per bar — the same return that the BCK-01 Sharpe distribution is computed from.)
+
+**Contract for `_build_regime_returns_for_window` in `backtest/vbt_runner.py` (B-3 hardening — iter 3):**
+
+The helper MUST replace iter-2's broad try/except graceful-degradation with a hard assert on the return type:
+
+```python
+pf_returns = pf.returns()
+assert isinstance(pf_returns, (pd.Series, pd.DataFrame)), (
+    f"vbt.Portfolio.returns() returned unexpected type {type(pf_returns)} — "
+    f"see 05-RESEARCH.md §A Q11. If vbt's API has changed, update this helper "
+    f"to handle the new shape rather than silently rendering empty regime rows."
+)
+```
+
+The Series-vs-DataFrame branching for legitimate single-ticker handling is kept (a downstream test fixture may use a single ticker); the broad except is removed so a real shape mismatch fails LOUDLY rather than producing an empty `all_regime_returns` that silently renders as empty rows in the backtest report.
+
+**Report-level user-visible failure mode (B-3 hardening — iter 3):**
+
+Plan 05-03's `_render_per_regime_section` MUST emit a visible WARN line in the rendered markdown report when `result.all_regime_returns.empty` (e.g., the harness ran with `windows=[]`, or `_build_regime_returns_for_window` returned empty for every window):
+
+```markdown
+> ⚠ No regime-attributed returns produced. See 05-RESEARCH.md §A Q11.
+```
+
+This makes the failure mode user-visible in the report itself (not just in stderr or in pytest output) — closes the C-2 loop where an empty regime breakdown was silently rendered as three "0 / —" rows that looked like a benign empty-data state instead of the actual diagnostic.
+
 ---
 
 ## Section B — No-look-ahead mutation test (FND-04)
