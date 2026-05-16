@@ -363,12 +363,27 @@ print(type(r), r.shape, getattr(r, 'columns', None), r.index[:3].tolist())
 "
 ```
 
-**Expected output (placeholder — executor commits actual verbatim output on first GREEN run):**
+**Actual output (committed by Wave 1 executor on first GREEN run, 2026-05-16):**
 ```
-<class 'pandas.core.frame.DataFrame'> (10, 1) Int64Index([0], dtype='int64') [Timestamp('2020-01-01 00:00:00'), Timestamp('2020-01-02 00:00:00'), Timestamp('2020-01-03 00:00:00')]
+<class 'pandas.core.series.Series'> (10,) None [Timestamp('2020-01-01 00:00:00'), Timestamp('2020-01-02 00:00:00'), Timestamp('2020-01-03 00:00:00')]
 ```
 
-(Without `cash_sharing=True` + `group_by`, the expected shape would be `(10, 2) Index(['AAA', 'BBB'], ...)`. Phase 5 uses the grouped form so the harness reports one composite portfolio return per bar — the same return that the BCK-01 Sharpe distribution is computed from.)
+**Important deviation from the placeholder prediction:** the placeholder assumed
+the grouped Portfolio would return a `DataFrame (10, 1)` with a single
+`Int64Index([0])` column. In **vectorbt 1.0.0**, the grouped form actually
+collapses further and returns a **`pd.Series`** of shape `(10,)` (no columns).
+
+This is exactly why C-2's hard `assert isinstance(pf_returns, (pd.Series,
+pd.DataFrame))` is correct: both branches are now exercised in production. The
+helper's existing `if isinstance(pf_returns, pd.DataFrame): ... else: ...`
+control flow handles both the (legacy / future) DataFrame shape AND the
+observed Series shape gracefully — no code change needed in
+`_build_regime_returns_for_window` after the verification.
+
+(Without `cash_sharing=True` + `group_by`, the expected shape would be
+`(10, 2) Index(['AAA', 'BBB'], ...)`. Phase 5 uses the grouped form so the
+harness reports one composite portfolio return per bar — the same return that
+the BCK-01 Sharpe distribution is computed from.)
 
 **Contract for `_build_regime_returns_for_window` in `backtest/vbt_runner.py` (B-3 hardening — iter 3):**
 
