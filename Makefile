@@ -4,7 +4,7 @@
 # Phase 1: every command logs a structured [stub] line and exits 0.
 # Later phases fill in the bodies without changing this contract (FND-02).
 
-.PHONY: help setup data macro rank report backtest backtest-audit journal lint typecheck test all clean
+.PHONY: help setup data macro rank report backtest backtest-audit backfill-snapshots journal lint typecheck test all clean
 
 help:  ## List available targets with descriptions
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -33,6 +33,9 @@ backtest:  ## Run vectorbt walk-forward backtest (Phase 1: stub)
 
 backtest-audit:  ## Run the forensic checklist (no-look-ahead, weight-pre-reg hash, universe date)
 	uv run screener backtest-audit
+
+backfill-snapshots:  ## Backfill historical snapshots 2016-01-01..today (one-off; see D-01)
+	uv run python scripts/backfill_snapshots.py
 
 journal:  ## Append actionable picks to data/journal.sqlite (Phase 1: stub)
 	uv run screener journal
