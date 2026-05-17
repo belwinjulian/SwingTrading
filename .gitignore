@@ -47,6 +47,24 @@ htmlcov/
 /reports/
 /runs.jsonl
 
+# Phase 6 — fundamentals + insider + pattern audit (gitignored per D-05).
+# Literal blanket-ignore lines so the Wave 0 verifier finds the expected
+# `^data/<dir>/$` patterns. Anchor each directory with a committed
+# `.gitkeep` so the runtime dir exists even when contents are absent
+# (mirrors the Phase 2 snapshots carve-out).
+data/fundamentals/
+data/insider/
+data/pattern_audit/
+!/data/fundamentals/
+/data/fundamentals/*
+!/data/fundamentals/.gitkeep
+!/data/insider/
+/data/insider/*
+!/data/insider/.gitkeep
+!/data/pattern_audit/
+/data/pattern_audit/*
+!/data/pattern_audit/.gitkeep
+
 # IDE
 .vscode/
 .idea/

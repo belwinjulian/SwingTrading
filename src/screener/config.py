@@ -69,6 +69,11 @@ class Settings(BaseSettings):
     TREND_TEMPLATE_PASS_RATE_WARN: float = 0.15
     TREND_TEMPLATE_PASS_RATE_HARD_FAIL: float = 0.25
 
+    # Phase 6 — fundamentals + insider + pattern audit paths (CONTEXT.md D-05, D-08, D-09)
+    FUNDAMENTALS_CACHE_DIR: Path = Path("data/fundamentals")
+    INSIDER_CACHE_PATH: Path = Path("data/insider/form4.sqlite")
+    PATTERN_AUDIT_DIR: Path = Path("data/pattern_audit")
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
