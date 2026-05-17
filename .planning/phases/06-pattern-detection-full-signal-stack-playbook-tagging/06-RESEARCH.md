@@ -863,28 +863,37 @@ def tag_playbook(panel: pd.DataFrame) -> pd.DataFrame:
 
 **This table is non-empty:** 7 assumptions flagged. The discuss-phase already covered most of the design space — these are tactical implementation assumptions the planner can verify quickly in Wave 0 (a one-day spike on assumption A1 alone may save a full wave of iteration).
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All five open questions from the research phase are resolved by Phase 6
+planning decisions (checker B4 — Dimension 11 #1602 gate requires RESOLVED
+suffix on every question + planning resolution).
 
 1. **Exact `order` parameter for `argrelextrema`**
    - What we know: start at 5; tune against 4 golden files
    - What's unclear: whether a single `order` works for both VCP (longer consolidation) and flag (5-25 bars)
    - Recommendation: ship two constants — `VCP_PIVOT_ORDER: Final[int] = 5` and `FLAG_PIVOT_ORDER: Final[int] = 3` — let golden files dictate
+   - RESOLVED: Plan 02 Task 3 tunes via golden files; final value baked into Final constants (`VCP_PIVOT_ORDER`, `FLAG_PIVOT_ORDER`). See Plan 02 Task 3 acceptance criteria + the patterns.py module docstring "Tuning Log" section.
 2. **Whether to include `pattern_diagnostics` JSON in `RankingSnapshotSchema` strict mode**
    - What we know: D-05 stores ~150 bytes/pick as JSON-encoded dict
    - What's unclear: pandera `strict=True` allows it as `Series[str]`, but a custom `@pa.check` validator that calls `json.loads()` per row may slow the write
    - Recommendation: ship without custom validator (treat as opaque string); add validator only if a bug surfaces
+   - RESOLVED: Ship without custom validator per Plan 02 Task 2; consumer (Plan 04 / Plan 05) wraps `json.loads` in try/except per security threat model (T-06-08 / decode_pattern_diagnostics returns `{"type": "none"}` on malformed input). Add validator only when a real bug surfaces.
 3. **Coverage of yfinance EPS data across Russell 1000**
    - What we know: Pitfall 5 documents yfinance brittleness
    - What's unclear: actual coverage % until first production `make fundamentals` run
    - Recommendation: structured-log per-ticker EPS-missing event; emit `eps_coverage_pct` in pipeline_complete event; alert if <70%
+   - RESOLVED: Deferred to first production run; tracked in 06-VALIDATION.md as HUMAN-UAT item. Plan 03 Task 2 emits `fundamentals_eps_unavailable` / `fundamentals_eps_no_diluted_or_basic_row` structured-log events; alert hook at <70% coverage is a Phase 8 GitHub Actions concern (not blocking for Phase 6).
 4. **Whether `data/insider/form4.sqlite` should be gitignored or committed**
    - What we know: STATE.md "Quick Tasks Completed" deferred this decision for Phase 7 journal.sqlite
    - What's unclear: insider Form 4 is historical SEC data — committing gives reproducible analysis but bloats repo (~100MB/year of accumulated filings)
    - Recommendation: GITIGNORE Phase 6; revisit if Phase 7 commits journal.sqlite (consistency)
+   - RESOLVED: GITIGNORED per Plan 01 Task 1 — `.gitignore` adds `data/insider/`. Phase 7 will revisit when journal.sqlite ships.
 5. **EDGAR rate limit during peak nightly hours**
    - What we know: edgartools auto-enforces 10 req/sec
    - What's unclear: SEC may apply stricter limits during peak (per their "new rate control limits" announcement)
    - Recommendation: add `set_rate_limit(5)` defensively in Phase 6; bump to 10 if Phase 8 production runs show no throttling
+   - RESOLVED: Plan 03 Task 3 calls `edgar.set_rate_limit(5)` defensively at module import time in `data/insider.py` (guarded by `hasattr(edgar, "set_rate_limit")` for forward/backward compat). Bump to 10 in Phase 8 if production runs show no throttling.
 
 ## Environment Availability
 

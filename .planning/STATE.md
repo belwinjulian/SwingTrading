@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Phase 6 context gathered
-last_updated: "2026-05-17T00:22:37.824Z"
+status: in_progress
+stopped_at: Phase 6 planned — ready to execute
+last_updated: "2026-05-17T03:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 26
+  total_plans: 31
   completed_plans: 26
-  percent: 100
+  percent: 84
 ---
 
 # Project State
@@ -32,13 +32,14 @@ Phase: 02 (data-foundation) — COMPLETE (2026-05-03)
 Phase: 03 (indicator-panel-&-regime) — COMPLETE (2026-05-10; 5 plans)
 Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05-10 executed; 2026-05-16 UAT verified; 5 plans)
 Phase: 05 (backtest-harness-no-lookahead-gate) — COMPLETE (2026-05-16; 6 plans; 5/5 SCs verified; 3 items in 05-HUMAN-UAT.md)
+Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — PLANNED (2026-05-17; 5 plans in 4 waves; ready to execute)
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** 6 (ready to discuss)
-- **Plan:** 26 / 26 executed (Phases 1–5 all plans complete)
-- **Status:** Phase 5 complete — human ratification of D-07 + branch protection pending; ready to start Phase 6
-- **Resume file:** .planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-CONTEXT.md
-- **Progress:** [████████████░░░] 62.5%
+- **Phase:** 6 (ready to execute)
+- **Plan:** 26 / 31 executed (Phase 6 adds 5 plans)
+- **Status:** Phase 6 planned — Wave 0 foundation, Wave 1 patterns + data adapters (parallel), Wave 2 signals + composite + tagger, Wave 3 wiring. Run `/gsd-execute-phase 6`.
+- **Resume file:** .planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-01-PLAN.md
+- **Progress:** [█████████████░░] 84%
 
 ### Phase 3 Plan Summary
 

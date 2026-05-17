@@ -213,7 +213,29 @@ Plans:
 
 **Estimated Complexity:** L
 
-**Plans:** TBD
+**Plans:** 5 plans in 4 waves
+
+Plans:
+
+**Wave 0 — Foundation**
+- [ ] 06-01-PLAN.md — 12 test skeletons + 3 pandera schemas (Fundamentals/Insider/PatternAudit) + 10-col RankingSnapshotSchema extension + 5 Settings fields + 7 fixtures + architecture/CLI smoke extensions + make fundamentals target + persistence.read_universe_latest() helper (DAT-05, PAT-06, SIG-02, SIG-03, CMP-01..05, CAT-01, CAT-04)
+
+**Wave 1 — Detection + Data Adapters *(blocked on Wave 0; 06-02 and 06-03 run in parallel — zero file overlap)***
+- [ ] 06-02-PLAN.md — indicators/patterns.py with VCP + flag + post-gap-continuation (scipy.signal.argrelextrema; 13 Final constants per D-03/D-04/D-06; legs sub-field per D-05); 4 golden-file tests + split-pivot continuity test + breakout_strength edge cases (PAT-01..06)
+- [ ] 06-03-PLAN.md — data/fundamentals.py (Finnhub /calendar/earnings + yfinance Ticker.quarterly_income_stmt) + data/insider.py (edgartools Form 4 -> SQLite append-only) + persistence read/write helpers with D-13b lag enforcement (DAT-05, CAT-01, CAT-03, CAT-04)
+
+**Wave 2 — Signals + Composite Activation *(blocked on Wave 1 completion)***
+- [ ] 06-04-PLAN.md — signals/qullamaggie.py (Setup A scan) + signals/canslim.py (C-only, no L/M double-count) + composite.py extension (PHASE_4_ZEROED -> frozenset(); 3 component helpers; 5 Final tie-breaker constants; tag_playbook via np.select cascade per D-14) (SIG-02, SIG-03, CMP-01..05, CAT-02, CAT-03)
+
+**Wave 3 — Wiring *(blocked on Wave 2 completion)***
+- [ ] 06-05-PLAN.md — cli.refresh-fundamentals body + _ensure_edgar_identity startup hook + pipeline DAG extension + RankingSnapshotSchema projection at write boundary + report D-19 format + 'Currently Held / Leaders' section + preregistration amendment (DAT-05, CAT-01..04, CMP-04, CMP-05)
+
+**Cross-cutting constraints (truths shared across ≥2 plans):**
+- `signals/` and `indicators/` MUST NOT import `data/` — structural defense of the 45-day fundamentals lag (D-13b; enforced by `tests/test_architecture.py` ALLOWED dict per D-23)
+- `DEFAULT_WEIGHTS` and `D14_SUBCOMMANDS` lists are bytewise unchanged from Phase 4 (CMP-01 / D-16; D-24 / Pitfall 6)
+- Every plan re-runs `tests/test_backtest_no_lookahead.py` (FND-04 gate) in `<verify>`
+- Pivot prices re-derived from adjusted closes per PAT-05 (D-25; NVDA 2024-06-10 split is the regression gate)
+- Test files in `files_modified` annotated as `(EXTEND — do not overwrite)` for every pre-existing file; per-plan `<verify>` greps that pre-Phase-6 test names still exist
 
 ### Phase 7: Sizing Finalization & Paper-Trade Journal
 
@@ -263,7 +285,7 @@ Plans:
 | 3. Indicator Panel & Regime | 5/5 | Complete | 2026-05-10 |
 | 4. Trend Template, Composite Skeleton & First Report | 5/5 | Complete | 2026-05-10 |
 | 5. Backtest Harness & No-Look-Ahead Gate | 6/6 | Complete (human ratify pending) | 2026-05-16 |
-| 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 0/? | Not started | - |
+| 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 0/5 | Planned   | - |
 | 7. Sizing Finalization & Paper-Trade Journal | 0/? | Not started | - |
 | 8. GitHub Actions Cron & Operations | 0/? | Not started | - |
 

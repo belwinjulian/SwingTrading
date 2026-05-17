@@ -101,26 +101,26 @@ Wave 0 establishes the test scaffolding + pandera schemas + Settings extensions 
 
 ## Phase Requirements → Test Map
 
-| Req ID | Behavior | Test Type | Automated Command | File Exists? |
-|--------|----------|-----------|-------------------|--------------|
-| DAT-05 | `make fundamentals` runs end-to-end with 45-day lag enforced | integration | `uv run pytest tests/test_canslim_lag.py -x` | ❌ Wave 0 |
-| PAT-01 | VCP detector identifies pivots via `scipy.signal.argrelextrema` | unit + golden | `uv run pytest tests/test_patterns_golden.py::test_nvda_2023_vcp -x` | ❌ Wave 0 |
-| PAT-02 | VCP threshold criteria (depth contractions, n_contractions, breakout vol) enforced | unit | `uv run pytest tests/test_patterns_golden.py::test_vcp_thresholds -x` | ❌ Wave 0 |
-| PAT-03 | Flag detector recognizes 5–25 bar consolidation along rising SMA, higher lows | unit + golden | `uv run pytest tests/test_patterns_golden.py::test_nvda_2023_flag -x` | ❌ Wave 0 |
-| PAT-04 | Post-gap-continuation boolean: `gap≥8% AND vol>1.5×SMA50 AND close in upper third` (D-04) | unit | `uv run pytest tests/test_patterns_golden.py::test_post_gap_continuation -x` | ❌ Wave 0 |
-| PAT-05 | Pivot re-derived from adjusted closes; survives NVDA 2024-06-10 10:1 split | unit | `uv run pytest tests/test_patterns_split.py::test_nvda_2024_split_pivot_continuity -x` | ❌ Wave 0 |
-| PAT-06 | Golden-file tests for ≥3 historical setups + flag (D-02 = 4 tests) | regression | `uv run pytest tests/test_patterns_golden.py -x` | ❌ Wave 0 |
-| SIG-02 | Qullamaggie Setup A scan: top 1–2% perf 1m/3m/6m AND ADV>$1.5M AND ADR%≥4 | unit | `uv run pytest tests/test_qullamaggie.py -x` | ❌ Wave 0 |
-| SIG-03 | CANSLIM additive; L (RS≥80) and M (regime) NOT double-counted (D-18) | unit | `uv run pytest tests/test_canslim.py::test_no_double_count -x` | ❌ Wave 0 |
-| CMP-01 | Composite weights unchanged from Phase 4; sum to 1.0; preregistration CI gate green | unit (existing) | `uv run pytest tests/test_signals_composite.py::test_weights_sum_to_one -x` AND `uv run python scripts/check_preregistration.py` | ✅ |
-| CMP-02 | Each pick emits `playbook_tag ∈ {qullamaggie_continuation, minervini_vcp, leader_hold, none}` | unit | `uv run pytest tests/test_playbook_tagger.py::test_tag_values_valid -x` | ❌ Wave 0 |
-| CMP-03 | Tie-breaker matrix (D-14: Qullamaggie wins on overlap; D-15: leader_hold = trend pass + RS≥90 + no pattern) | unit | `uv run pytest tests/test_playbook_tagger.py::test_d14_tiebreaker -x tests/test_playbook_tagger.py::test_d15_leader_hold -x` | ❌ Wave 0 |
-| CMP-04 | `tag_playbook` co-located in `signals/composite.py`; `signals/` cannot import `data/` | architectural | `uv run pytest tests/test_architecture.py -x` (extended for D-23) | ✅ extended |
-| CMP-05 | Per-pick component breakdown matches D-19 format `RS=92 \| Trend=8/8 \| Pattern=... \| Volume=... \| Earnings=... \| Catalyst=...` | unit | `uv run pytest tests/test_publishers_report.py::test_d19_breakdown_format -x` | ❌ Wave 0 (extend existing) |
-| CAT-01 | `days_to_next_earnings` (+ BMO/AMC) + `earnings_in_3d_warn` populated | unit | `uv run pytest tests/test_fundamentals_io.py::test_earnings_calendar_normalize -x` | ❌ Wave 0 |
-| CAT-02 | `crossed_52w_high_within_60d` populated correctly | unit | `uv run pytest tests/test_publishers_snapshot.py::test_52w_high_60d_flag -x` | ❌ Wave 0 (extend existing) |
-| CAT-03 | Insider cluster-buy: ≥2 distinct insiders BUY within 5-day rolling window over last 30 days | unit | `uv run pytest tests/test_insider_cluster_buy.py -x` | ❌ Wave 0 |
-| CAT-04 | `edgartools.set_identity()` called at CLI startup; fails loud if `EDGAR_IDENTITY` unset | integration | `uv run pytest tests/test_cli_smoke.py::test_edgar_identity_required -x` | ❌ Wave 0 |
+| Req ID | Behavior | Test Type | Automated Command | Completes At | File Exists? |
+|--------|----------|-----------|-------------------|--------------|--------------|
+| DAT-05 | `make fundamentals` runs end-to-end with 45-day lag enforced | integration | `uv run pytest tests/test_canslim_lag.py -x` | Wave 1 (06-03-1) | ✅ stub Wave 0 |
+| PAT-01 | VCP detector identifies pivots via `scipy.signal.argrelextrema` | unit + golden | `uv run pytest tests/test_patterns_golden.py::test_nvda_2023_vcp -x` | Wave 1 (06-02-3) | ✅ stub Wave 0 |
+| PAT-02 | VCP threshold criteria (depth contractions, n_contractions, breakout vol) enforced | unit | `uv run pytest tests/test_patterns_golden.py::test_vcp_thresholds -x` | Wave 1 (06-02-3) | ✅ stub Wave 0 |
+| PAT-03 | Flag detector recognizes 5–25 bar consolidation along rising SMA, higher lows | unit + golden | `uv run pytest tests/test_patterns_golden.py::test_nvda_2023_flag -x` | Wave 1 (06-02-3) | ✅ stub Wave 0 |
+| PAT-04 | Post-gap-continuation boolean: `gap≥8% AND vol>1.5×SMA50 AND close in upper third` (D-04) | unit | `uv run pytest tests/test_patterns_golden.py::test_post_gap_continuation -x` | Wave 1 (06-02-3) | ✅ stub Wave 0 |
+| PAT-05 | Pivot re-derived from adjusted closes; survives NVDA 2024-06-10 10:1 split | unit | `uv run pytest tests/test_patterns_split.py::test_nvda_2024_split_pivot_continuity -x` | Wave 1 (06-02-3) | ✅ stub Wave 0 |
+| PAT-06 | Golden-file tests for ≥3 historical setups + flag (D-02 = 4 tests) | regression | `uv run pytest tests/test_patterns_golden.py -x` | Wave 1 (06-02-3) | ✅ stub Wave 0 |
+| SIG-02 | Qullamaggie Setup A scan: top 1–2% perf 1m/3m/6m AND ADV>$1.5M AND ADR%≥4 | unit | `uv run pytest tests/test_qullamaggie.py -x` | Wave 2 (06-04-1) | ✅ stub Wave 0 |
+| SIG-03 | CANSLIM additive; L (RS≥80) and M (regime) NOT double-counted (D-18) | unit | `uv run pytest tests/test_canslim.py::test_no_double_count -x` | Wave 2 (06-04-2) | ✅ stub Wave 0 |
+| CMP-01 | Composite weights unchanged from Phase 4; sum to 1.0; preregistration CI gate green | unit (existing) | `uv run pytest tests/test_signals_composite.py::test_weights_sum_to_one -x` AND `uv run python scripts/check_preregistration.py` | Wave 2 (06-04-3) | ✅ |
+| CMP-02 | Each pick emits `playbook_tag ∈ {qullamaggie_continuation, minervini_vcp, leader_hold, none}` | unit | `uv run pytest tests/test_playbook_tagger.py::test_tag_values_valid -x` | Wave 2 (06-04-3) | ✅ stub Wave 0 |
+| CMP-03 | Tie-breaker matrix (D-14: Qullamaggie wins on overlap; D-15: leader_hold = trend pass + RS≥90 + no pattern) | unit | `uv run pytest tests/test_playbook_tagger.py::test_d14_tiebreaker -x tests/test_playbook_tagger.py::test_d15_leader_hold -x` | Wave 2 (06-04-3) | ✅ stub Wave 0 |
+| CMP-04 | `tag_playbook` co-located in `signals/composite.py`; `signals/` cannot import `data/` | architectural | `uv run pytest tests/test_architecture.py -x` (extended for D-23) | Wave 0 (06-01-3) | ✅ extended |
+| CMP-05 | Per-pick component breakdown matches D-19 format `RS=92 \| Trend=8/8 \| Pattern=... \| Volume=... \| Earnings=... \| Catalyst=...` | unit | `uv run pytest tests/test_publishers_report.py::test_d19_breakdown_format -x` | Wave 3 (06-05-3) | ❌ verify lands with body in Wave 3 (checker I12) |
+| CAT-01 | `days_to_next_earnings` (+ BMO/AMC) + `earnings_in_3d_warn` populated | unit | `uv run pytest tests/test_fundamentals_io.py::test_earnings_calendar_normalize -x` | Wave 1 (06-03-2) | ✅ stub Wave 0 |
+| CAT-02 | `crossed_52w_high_within_60d` populated correctly | unit | `uv run pytest tests/test_publishers_snapshot.py::test_52w_high_60d_flag -x` | Wave 3 (06-05-3) | ❌ verify lands with body in Wave 3 |
+| CAT-03 | Insider cluster-buy: ≥2 distinct insiders BUY within 5-day rolling window over last 30 days | unit | `uv run pytest tests/test_insider_cluster_buy.py -x` | Wave 1 (06-03-1) | ✅ stub Wave 0 |
+| CAT-04 | `edgartools.set_identity()` called at CLI startup; fails loud if `EDGAR_IDENTITY` unset | integration | `uv run pytest tests/test_cli_smoke.py::test_edgar_identity_required -x` | Wave 3 (06-05-2) | ✅ stub Wave 0 |
 
 ### Cross-cutting verification (decisions, not REQ-IDs)
 
@@ -145,6 +145,8 @@ Wave 0 establishes the test scaffolding + pandera schemas + Settings extensions 
 | Pattern_diagnostics JSON renders correctly in markdown report | CMP-05 (D-19 format) | Visual inspection of `reports/YYYY-MM-DD.md` after first full run | After Wave 0, run `make rank && make report`; verify per-pick block matches D-19 format exactly (no trailing commas, no quote escapes in JSON) |
 | Per-playbook attribution in Phase 5 backtest after backfill | BCK-04 | Phase 5 harness must consume new `playbook_tag` column; requires re-running backfill | After Phase 6 complete: `make backfill-snapshots && make backtest`; verify `qullamaggie_continuation`, `minervini_vcp`, `leader_hold` rows appear in attribution table (was leader_hold-only stub in Phase 5) |
 | 4 golden-file pattern tests classify correctly | PAT-06 (Success Criterion 1) | Tuning `argrelextrema(order=N)` may need empirical iteration on real OHLCV slices before tests stabilize | Wave 1: iterate `order` value (start 5 for VCP, 3 for flag) until all 4 golden tests pass; document chosen values in `patterns.py` module docstring |
+| HUMAN-UAT-W7: Phase 5 backfill produces non-NaN playbook_tag (checker W7) | BCK-04 / D-22 | Per-snapshot pattern detection runs only on each backfilled trailing slice — needs real Russell 1000 data; cannot be CI-asserted | After Phase 6 complete + Plan 05 ships: `make backfill-snapshots --start 2024-01-01 --end 2024-03-31`; read 10 random snapshot Parquets; assert ≥80% of cross-sections contain at least one `playbook_tag != "none"` row when regime != Correction. If <80%, investigate detect_all_patterns trailing-slice behavior. |
+| HUMAN-UAT-EPS-COVERAGE (Open Question 3 RESOLVED): yfinance EPS coverage % | DAT-05 | yfinance coverage varies by ticker; alert at <70% | After first production `make fundamentals` run: count `data/fundamentals/*.parquet` files and compare against universe size; if <70%, file an issue and consider Finnhub `/stock/financials` fallback (deferred in v1) |
 
 ---
 
