@@ -91,8 +91,18 @@ def test_report_sections_present() -> None:
 
 
 def test_per_pick_breakdown_format_d04() -> None:
-    """OUT-02 + D-04: per-pick block contains 6-component breakdown
-    with '---(Phase 6)' placeholders for PHASE_4_ZEROED keys."""
+    """OUT-02 + D-04 (Phase 6 update): breakdown line renders live Phase-4 components.
+
+    Phase 4: PHASE_4_ZEROED contained pattern/earnings/catalyst; the breakdown
+    code block rendered them as '--(Phase 6)' placeholders.
+    Phase 6 D-16: PHASE_4_ZEROED == frozenset(); those placeholder entries are
+    dropped from the breakdown code block. The full D-19 format (with pattern/
+    earnings/catalyst values) is wired in Plan 05.
+
+    Note: The report still contains '(Phase 6)' in hardcoded narrative strings
+    (playbook/catalysts stubs, footer note, pivot proxy note) — those are Plan 05
+    responsibilities and are intentionally left for now.
+    """
     from screener.publishers.report import render_report
 
     md = render_report(
@@ -102,17 +112,21 @@ def test_per_pick_breakdown_format_d04() -> None:
         top_n=15,
         pass_rate=0.10,
     )
-    # Live components show real values:
+    # Live Phase-4 components always present:
     assert "RS=" in md
     assert "Trend=" in md and "/8" in md
     assert "Volume=" in md
-    # Zeroed components show placeholder:
-    assert "Pattern=" in md and "(Phase 6)" in md
-    assert "Earnings=" in md and "(Phase 6)" in md
-    assert "Catalyst=" in md and "(Phase 6)" in md
-    # Playbook + catalysts placeholder lines from the per-pick block:
-    assert "**Playbook:** " in md and "(Phase 6)" in md
-    assert "**Catalysts:** " in md and "(Phase 6)" in md
+    # Phase 6 D-16: PHASE_4_ZEROED is empty so no 'Pattern=--(Phase 6)' in breakdown.
+    # The _format_breakdown function skips keys not in the live elif branches.
+    assert "Pattern=--(Phase 6)" not in md, (
+        "Expected no 'Pattern=--(Phase 6)' in breakdown after D-16 activation"
+    )
+    assert "Earnings=--(Phase 6)" not in md, (
+        "Expected no 'Earnings=--(Phase 6)' in breakdown after D-16 activation"
+    )
+    assert "Catalyst=--(Phase 6)" not in md, (
+        "Expected no 'Catalyst=--(Phase 6)' in breakdown after D-16 activation"
+    )
 
 
 def test_pivot_zone_labels() -> None:
