@@ -110,9 +110,3 @@ markers = [
   "slow: tests that take more than a couple seconds (deselect with -m 'not slow')",
   "integration: tests requiring external services (deselect with -m 'not integration')",
 ]
-
-[dependency-groups]
-dev = [
-    "pytest>=8.4.2",
-    "pytest-cov>=6.3.0",
-]

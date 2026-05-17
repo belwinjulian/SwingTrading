@@ -1019,24 +1019,3 @@ def read_insider_cluster_buy(
                     tickers.add(str(ticker))
                     break
         return tickers
-
-
-# --- Phase 6: pattern audit (D-05) -------------------------------------------
-
-
-def write_pattern_audit_atomic(df: pd.DataFrame, snapshot_date: str) -> Path:
-    """Validate + atomically write per-leg pattern audit to data/pattern_audit/<date>.parquet.
-
-    Per D-05: VCP picks emit per-leg rows (leg_idx, start_date, end_date, high,
-    low, depth, avg_volume); flag picks emit a single row with leg_idx=0.
-    Called by publishers/pipeline.py after the pattern-detection step.
-
-    T-06-25 mitigation: _assert_safe_snapshot_date gates the path before
-    any filesystem operation (strict YYYY-MM-DD regex).
-    """
-    _assert_safe_snapshot_date(snapshot_date)
-    validated = validate_at_write(PatternAuditSchema, df)
-    target = _pattern_audit_dir() / f"{snapshot_date}.parquet"
-    _write_parquet_atomic(validated, target)
-    log.info("pattern_audit_written", path=str(target), n_rows=len(validated), snapshot_date=snapshot_date)
-    return target

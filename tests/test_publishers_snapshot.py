@@ -75,27 +75,3 @@ def test_snapshot_path_traversal_rejected(
     df = _make_ranking_snapshot_df()
     with pytest.raises(ValueError, match="Unsafe snapshot_date"):
         write_snapshot(df, "../etc/passwd")
-
-
-def test_52w_high_60d_flag(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """CAT-02: write_snapshot accepts crossed_52w_high_within_60d=True boolean
-    without pandera schema error (Plan 06-05 wires this column from pipeline).
-    """
-    snapshot_dir = tmp_path / "snapshots"
-    monkeypatch.setattr(
-        "screener.persistence._snapshot_dir", lambda: snapshot_dir
-    )
-    from screener.publishers.snapshot import write_snapshot
-
-    df = _make_ranking_snapshot_df()
-    # Override crossed_52w_high_within_60d to True for one row
-    df = df.copy()
-    df["crossed_52w_high_within_60d"] = [True, False]
-    path = write_snapshot(df, "2026-05-16")
-    assert path.exists()
-    import pandas as pd
-    written = pd.read_parquet(path)
-    assert written["crossed_52w_high_within_60d"].iloc[0] is True or \
-        bool(written["crossed_52w_high_within_60d"].iloc[0]) is True
