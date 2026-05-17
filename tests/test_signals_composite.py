@@ -59,14 +59,21 @@ def test_weight_sum_assertion() -> None:
 
 
 def test_zeroed_components() -> None:
-    """D-01: pattern, earnings, catalyst are 0.0 in Phase 4 output."""
+    """D-01 / D-16: pattern, earnings, catalyst default to 0.0 on minimal panels.
+
+    Phase 6 D-16 activates all three components when the Phase 6 columns are
+    present. On Phase-4-era minimal panels (rs_rating, trend_template_score,
+    dryup_ratio only), the component helpers degrade gracefully to 0.0.
+    PHASE_4_ZEROED is now frozenset() per D-16 (all components live).
+    """
     panel = _make_panel()
     out = score(panel, DEFAULT_WEIGHTS)
+    # Graceful degradation: Phase 6 columns absent -> components default to 0.0
     assert out["pattern_component"].iloc[0] == 0.0
     assert out["earnings_component"].iloc[0] == 0.0
     assert out["catalyst_component"].iloc[0] == 0.0
-    # And PHASE_4_ZEROED enumerates exactly these:
-    assert frozenset({"pattern", "earnings", "catalyst"}) == PHASE_4_ZEROED
+    # Phase 6 D-16: PHASE_4_ZEROED is now empty (all six components are live)
+    assert PHASE_4_ZEROED == frozenset()
 
 
 def test_extension_seam() -> None:
