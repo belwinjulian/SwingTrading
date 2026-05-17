@@ -26,9 +26,10 @@ from __future__ import annotations
 
 import os
 import re
+import sqlite3
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import pandas as pd
 import pandera.pandas as pa
@@ -814,3 +815,207 @@ def read_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
         panel = pd.concat(frames)
         panel.index.names = ["ticker", "date"]
     return validate_at_read(OhlcvPanelSchema, panel)
+
+
+# --- Phase 6: fundamentals (D-13b) -------------------------------------------
+
+
+def write_fundamentals_atomic(df: pd.DataFrame, ticker: str) -> Path:
+    """Validate + atomically write fundamentals to data/fundamentals/<ticker>.parquet.
+
+    Enforces D-13b: every row written here carries a ``knowable_from`` column
+    computed by the caller as ``fiscal_quarter_end + 45 days``.
+    ``read_fundamentals(as_of_date)`` then filters on this column so signals/
+    cannot accidentally consume not-yet-knowable EPS data.
+    """
+    _assert_safe_ticker(ticker)
+    validated = validate_at_write(FundamentalsSchema, df)
+    target = _fundamentals_dir() / f"{ticker}.parquet"
+    _write_parquet_atomic(validated, target)
+    log.info("fundamentals_written", ticker=ticker, n_rows=len(validated), path=str(target))
+    return target
+
+
+def read_fundamentals(as_of_date: "str | pd.Timestamp") -> pd.DataFrame:
+    """Read fundamentals filtered to rows knowable as of ``as_of_date`` (D-13b).
+
+    Signals MUST go through this read path (architecture test enforces D-23).
+    Filters WHERE ``knowable_from <= as_of_date`` so the CANSLIM signal cannot
+    accidentally consume same-quarter EPS that fund managers won't know about
+    for another 45 days.
+
+    Returns an empty schema-shaped DataFrame when no rows are knowable yet.
+    """
+    as_of = pd.Timestamp(as_of_date)
+    base = _fundamentals_dir()
+    if not base.exists():
+        return _empty_fundamentals()
+    frames = []
+    for p in sorted(base.glob("*.parquet")):
+        try:
+            df = pd.read_parquet(p)
+        except Exception as e:
+            log.warning("fundamentals_read_skip", file=str(p), error_type=type(e).__name__)
+            continue
+        # Ensure knowable_from is datetime-typed before comparison
+        if "knowable_from" in df.columns:
+            df["knowable_from"] = pd.to_datetime(df["knowable_from"])
+        df = df[df["knowable_from"] <= as_of]
+        if not df.empty:
+            frames.append(df)
+    if not frames:
+        return _empty_fundamentals()
+    full = pd.concat(frames, ignore_index=True)
+    return validate_at_read(FundamentalsSchema, full)
+
+
+def _empty_fundamentals() -> pd.DataFrame:
+    """Return a zero-row DataFrame with FundamentalsSchema-compatible dtypes."""
+    return pd.DataFrame(
+        {
+            "ticker": pd.Series([], dtype=object),
+            "fiscal_quarter_end": pd.Series([], dtype="datetime64[ns]"),
+            "eps_actual": pd.Series([], dtype=float),
+            "eps_yoy_growth": pd.Series([], dtype=float),
+            "knowable_from": pd.Series([], dtype="datetime64[ns]"),
+            "next_earnings_date": pd.Series([], dtype="datetime64[ns]"),
+            "next_earnings_hour": pd.Series([], dtype=object),
+            "source": pd.Series([], dtype=object),
+            "ingested_at": pd.Series([], dtype="datetime64[ns]"),
+        }
+    )
+
+
+# --- Phase 6: insider (D-08, D-10, Pitfall 7) --------------------------------
+
+_FORM4_DDL: Final[str] = """
+CREATE TABLE IF NOT EXISTS form4 (
+    filing_id TEXT PRIMARY KEY,
+    ticker TEXT NOT NULL,
+    insider TEXT NOT NULL,
+    transaction_date TEXT NOT NULL,
+    type TEXT NOT NULL,
+    shares REAL NOT NULL,
+    value_usd REAL NOT NULL,
+    ingested_at TEXT NOT NULL
+);
+"""
+
+_FORM4_IDX: Final[str] = (
+    "CREATE INDEX IF NOT EXISTS idx_form4_ticker_date ON form4(ticker, transaction_date);"
+)
+
+
+def _ensure_insider_schema(db_path: "Path | None" = None) -> Path:
+    """Idempotent form4 table + index setup. Returns the resolved db path."""
+    path = Path(db_path) if db_path is not None else _insider_db_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as conn:
+        conn.executescript(_FORM4_DDL)
+        conn.execute(_FORM4_IDX)
+    return path
+
+
+def append_form4_rows(db_path: "Path | None", rows: list[dict]) -> int:
+    """Idempotent append — ON CONFLICT(filing_id) DO NOTHING per D-10.
+
+    ``rows`` is a list of dicts with keys: filing_id, ticker, insider,
+    transaction_date, type, shares, value_usd, ingested_at.
+
+    The caller MUST pandera-validate as InsiderSchema BEFORE calling this
+    function (Pattern B — schema-at-write boundary). This function trusts
+    that validation has already run and performs only the SQL insert.
+
+    Returns the rowcount inserted (0 on full-duplicate batch).
+    """
+    if not rows:
+        return 0
+    path = _ensure_insider_schema(db_path)
+    with sqlite3.connect(path) as conn:
+        cur = conn.executemany(
+            """INSERT INTO form4(filing_id, ticker, insider, transaction_date,
+                                   type, shares, value_usd, ingested_at)
+               VALUES (:filing_id, :ticker, :insider, :transaction_date,
+                       :type, :shares, :value_usd, :ingested_at)
+               ON CONFLICT(filing_id) DO NOTHING""",
+            rows,
+        )
+        conn.commit()
+        return cur.rowcount
+
+
+def read_insider_cluster_buy(
+    window_days: int = 30,
+    cluster_size: int = 2,
+    dt: int = 5,
+    db_path: "Path | None" = None,
+) -> "set[str]":
+    """Return tickers where >= cluster_size distinct insiders BUY within any
+    dt-day rolling window in the last window_days (CAT-03 / D-10).
+
+    Strategy:
+    - Recommendation A (preferred): SQLite julianday() numeric RANGE window.
+      ``window_days`` and ``dt`` are int-cast before any SQL interpolation
+      (SQL injection defense per T-06-13). ``cluster_size`` and the RANGE
+      bound are passed as ``?`` parameters.
+    - Recommendation B (fallback): Python rolling-window post-process when
+      Recommendation A raises ``sqlite3.OperationalError`` (Pitfall 7 —
+      SQLite < 3.41 does not support numeric RANGE for window functions).
+
+    Note: ``window_days`` and ``dt`` are embedded as integer literals in the
+    SQL string, not via ``?`` parameters, because SQLite does not support
+    ``?`` in the ``date('now', ?)`` function or in the RANGE bound syntax.
+    Both are int-cast immediately on function entry to prevent injection.
+    """
+    # Defense against injection for the two values we interpolate as literals.
+    window_days = int(window_days)
+    dt = int(dt)
+
+    path = _ensure_insider_schema(db_path)
+
+    # Recommendation A — julianday numeric RANGE
+    sql_a = f"""
+        WITH numeric AS (
+            SELECT ticker, transaction_date, insider,
+                   julianday(transaction_date) AS jd
+            FROM form4
+            WHERE type = 'BUY'
+              AND transaction_date >= date('now', '-{window_days} days')
+        ), windowed AS (
+            SELECT ticker, jd,
+                   COUNT(DISTINCT insider) OVER (
+                       PARTITION BY ticker ORDER BY jd
+                       RANGE BETWEEN ? PRECEDING AND CURRENT ROW
+                   ) AS cluster_size
+            FROM numeric
+        )
+        SELECT DISTINCT ticker FROM windowed WHERE cluster_size >= ?;
+    """
+    try:
+        with sqlite3.connect(path) as conn:
+            rows = conn.execute(sql_a, (float(dt - 1), int(cluster_size))).fetchall()
+        return {r[0] for r in rows}
+    except sqlite3.OperationalError:
+        log.warning("insider_cluster_buy_sql_fallback", reason="julianday_RANGE_unsupported")
+        # Recommendation B — Python rolling fallback
+        with sqlite3.connect(path) as conn:
+            df = pd.read_sql_query(
+                f"SELECT ticker, transaction_date, insider FROM form4 "
+                f"WHERE type='BUY' AND transaction_date >= date('now', '-{window_days} days')",
+                conn,
+            )
+        if df.empty:
+            return set()
+        df["transaction_date"] = pd.to_datetime(df["transaction_date"])
+        df = df.sort_values(["ticker", "transaction_date"])
+        tickers: set[str] = set()
+        for ticker, g in df.groupby("ticker"):
+            dates = g["transaction_date"].to_numpy()
+            insiders = g["insider"].to_numpy()
+            for i in range(len(dates)):
+                lo = dates[i] - pd.Timedelta(days=dt - 1)
+                mask = (dates >= lo) & (dates <= dates[i])
+                if len(set(insiders[mask])) >= cluster_size:
+                    tickers.add(str(ticker))
+                    break
+        return tickers

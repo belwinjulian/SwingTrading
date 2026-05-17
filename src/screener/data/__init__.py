@@ -5,6 +5,8 @@ Parquet/SQLite via `persistence`. Downstream layers consume DataFrames and
 never call back into `data/` from inside indicators/signals/regime/sizing.
 """
 
+from screener.data import fundamentals as fundamentals  # noqa: F401
+from screener.data import insider as insider  # noqa: F401
 from screener.data import macro
 from screener.data.ohlcv import (
     append_incremental,
@@ -30,6 +32,8 @@ __all__ = [
     "fetch_ohlcv_with_pacing",
     "fetch_splits",
     "fetch_stooq_ohlcv",
+    "fundamentals",
+    "insider",
     "iso_week_monday",
     "macro",
     "normalize_ticker",
