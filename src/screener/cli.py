@@ -49,6 +49,24 @@ def _stub(command: str) -> None:
     log.info("stub", command=command, message=f"[stub] {command} not yet implemented")
 
 
+def _ensure_edgar_identity() -> None:
+    """Fail loud at startup if EDGAR_IDENTITY env var is unset. (CAT-04 + Pitfall 3)
+
+    Called at the top of any subcommand that will make EDGAR network calls.
+    SEC requires a 'Name <email>' User-Agent string; omitting it causes rate
+    blocks and is a ToS violation. Raises SystemExit with a message pointing
+    to .env.example so the operator knows exactly what to set.
+    """
+    from edgar import set_identity
+    identity = get_settings().EDGAR_IDENTITY
+    if not identity:
+        raise SystemExit(
+            "EDGAR_IDENTITY env var is unset. SEC requires 'Name <email>' "
+            "for User-Agent. See .env.example."
+        )
+    set_identity(identity)
+
+
 # --- refresh-universe (Phase 2 real body) -----------------------------------
 
 
@@ -190,9 +208,68 @@ def refresh_macro(
 
 
 @app.command("refresh-fundamentals")
-def refresh_fundamentals() -> None:
-    """Refresh fundamentals (Finnhub earnings + EPS); 45-day post-quarter-end lag enforced."""
-    _stub("refresh-fundamentals")
+def refresh_fundamentals(
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Re-fetch from the beginning even if cache exists."),
+    ] = False,
+    skip_insider: Annotated[
+        bool,
+        typer.Option("--skip-insider", help="Skip EDGAR Form 4 insider pull (e.g., EDGAR outage day)."),
+    ] = False,
+    insider_only: Annotated[
+        bool,
+        typer.Option("--insider-only", help="Refresh only EDGAR Form 4; skip Finnhub/yfinance EPS."),
+    ] = False,
+) -> None:
+    """Refresh fundamentals (Finnhub earnings + EPS history + EDGAR Form 4).
+
+    3-step orchestration (D-09):
+      1. Finnhub /calendar/earnings -> upcoming dates + BMO/AMC (unless --insider-only)
+      2. yfinance quarterly EPS history (unless --insider-only)
+      3. EDGAR Form 4 bulk nightly pull -> data/insider/form4.sqlite (unless --skip-insider)
+
+    45-day post-quarter-end lag is enforced at persistence read (D-13b); writing
+    the fundamentals row with a `knowable_from` column computed as
+    `fiscal_quarter_end + 45 days` ensures downstream signals cannot violate the lag.
+
+    Flags:
+      --skip-insider: omit EDGAR step (e.g., EDGAR is down)
+      --insider-only: skip Finnhub + yfinance; only refresh insider data
+
+    Mutual-exclusion: both flags together behaves as --skip-insider (skip EDGAR, no-op the run).
+    EDGAR_IDENTITY env var must be set; otherwise this command exits 1 with an explicit
+    reference to .env.example (CAT-04 + T-06-23).
+    """
+    configure_logging()
+    # CAT-04 / T-06-23: EDGAR identity MUST be set before any EDGAR calls.
+    # We validate early (even when --insider-only might not call EDGAR) because
+    # it is safer to fail loud at startup than to fail mid-run after side effects.
+    if not skip_insider:
+        _ensure_edgar_identity()
+    today = date.today()
+    try:
+        if not insider_only:
+            from screener.data.fundamentals import refresh_fundamentals as ref_fund
+            ref_fund(today=today, force=force)
+        if not skip_insider:
+            # Second call is a no-op if identity was already set above; safe to repeat.
+            _ensure_edgar_identity()
+            from screener.data.insider import refresh_insider as ref_ins
+            ref_ins(today=today)
+        log.info(
+            "refresh_fundamentals_ok",
+            skip_insider=skip_insider,
+            insider_only=insider_only,
+        )
+    except SystemExit:
+        # _ensure_edgar_identity raises SystemExit; let it propagate (T-06-23).
+        raise
+    except Exception as e:
+        # T-3-02 carry-forward: NEVER log error=str(e); log only error_type so
+        # FINNHUB_API_KEY fragments in exception messages cannot leak to log aggregators.
+        log.error("refresh_fundamentals_failed", error_type=type(e).__name__)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("score")
