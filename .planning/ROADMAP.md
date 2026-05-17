@@ -29,7 +29,7 @@ A fourth: **Phase 6 (Sizing + Journal) ships together** — sizing dispatches by
 - [x] **Phase 3: Indicator Panel & Regime** — SMA/ATR/ADR%/RS-percentile panel, macro data layer, three-state regime gate with continuous regime_score (completed 2026-05-10)
 - [x] **Phase 4: Trend Template, Composite Skeleton & First Report** — Minervini 8-condition gate, composite skeleton (weights pre-registered), ATR-based sizing, first daily markdown report (completed 2026-05-10)
 - [x] **Phase 5: Backtest Harness & No-Look-Ahead Gate** — vectorbt walk-forward harness, CI-blocking no-look-ahead test, slippage tiers, forensic audit CLI, per-playbook + per-regime breakdowns (completed 2026-05-16; 6 plans; 3 items pending human ratification in 05-HUMAN-UAT.md)
-- [ ] **Phase 6: Pattern Detection, Full Signal Stack & Playbook Tagging** — VCP + continuation-flag + post-gap-continuation detectors, Qullamaggie Setup A scan, CANSLIM C+L+M overlay, composite playbook tagger, catalyst flags
+- [ ] **Phase 6: Pattern Detection, Full Signal Stack & Playbook Tagging** — VCP + continuation-flag + post-gap-continuation detectors, Qullamaggie Setup A scan, CANSLIM C+L+M overlay, composite playbook tagger, catalyst flags (Plan 06-01 ✓ 2026-05-17 — Wave 0 foundation)
 - [ ] **Phase 7: Sizing Finalization & Paper-Trade Journal** — per-playbook stop/trail rules, auto-rejection at 1×ADR risk, append-only SQLite journal with `features_json` blob — the v2 ML contract
 - [ ] **Phase 8: GitHub Actions Cron & Operations** — nightly refresh workflow, heartbeat job, structured run log, manual workflow_dispatch trigger
 
@@ -213,12 +213,12 @@ Plans:
 
 **Estimated Complexity:** L
 
-**Plans:** 5 plans in 4 waves
+**Plans:** 5 plans in 4 waves (1/5 complete — Plan 06-01 shipped 2026-05-17)
 
 Plans:
 
 **Wave 0 — Foundation**
-- [ ] 06-01-PLAN.md — 12 test skeletons + 3 pandera schemas (Fundamentals/Insider/PatternAudit) + 10-col RankingSnapshotSchema extension + 5 Settings fields + 7 fixtures + architecture/CLI smoke extensions + make fundamentals target + persistence.read_universe_latest() helper (DAT-05, PAT-06, SIG-02, SIG-03, CMP-01..05, CAT-01, CAT-04)
+- [x] 06-01-PLAN.md — 12 test skeletons (37 named pytest.skip stubs) + 3 pandera schemas (Fundamentals/Insider/PatternAudit) + 11-col RankingSnapshotSchema extension (incl. eps_knowable_from W11) + 3 Settings fields + 7 fixtures + architecture/CLI smoke extensions + make fundamentals target + persistence.read_universe_latest() helper. 151 passed / 41 skipped; FND-04 gate green. (DAT-05, PAT-06, SIG-02, SIG-03, CMP-01..05, CAT-01, CAT-04 — seams shipped; bodies in 06-02..06-05)
 
 **Wave 1 — Detection + Data Adapters *(blocked on Wave 0; 06-02 and 06-03 run in parallel — zero file overlap)***
 - [ ] 06-02-PLAN.md — indicators/patterns.py with VCP + flag + post-gap-continuation (scipy.signal.argrelextrema; 13 Final constants per D-03/D-04/D-06; legs sub-field per D-05); 4 golden-file tests + split-pivot continuity test + breakout_strength edge cases (PAT-01..06)
@@ -285,7 +285,7 @@ Plans:
 | 3. Indicator Panel & Regime | 5/5 | Complete | 2026-05-10 |
 | 4. Trend Template, Composite Skeleton & First Report | 5/5 | Complete | 2026-05-10 |
 | 5. Backtest Harness & No-Look-Ahead Gate | 6/6 | Complete (human ratify pending) | 2026-05-16 |
-| 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 0/5 | Planned   | - |
+| 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 1/5 | Executing (Wave 0 ✓) | - |
 | 7. Sizing Finalization & Paper-Trade Journal | 0/? | Not started | - |
 | 8. GitHub Actions Cron & Operations | 0/? | Not started | - |
 
