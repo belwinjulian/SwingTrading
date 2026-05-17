@@ -194,3 +194,31 @@ def test_indicators_signals_pure_no_io_imports(src_screener: Path) -> None:
                         f"'{name}' — pure-function discipline violated "
                         f"(D-13, ARCHITECTURE.md Pattern 2)."
                     )
+
+
+def test_signals_indicators_cannot_import_data(src_screener: Path) -> None:
+    """D-23 structural defense of D-13b lag enforcement.
+
+    signals/ and indicators/ MUST NOT import from screener.data.* — the 45-day
+    knowable_from lag lives at persistence.read_fundamentals (Plan 06-03);
+    signals receive pre-filtered data via the publishers/pipeline bridge.
+    Adding this as an explicit-named test makes the Phase 6 structural defense
+    unmissable in PR review (belt-and-suspenders to the existing
+    test_layer_import_contract scan).
+    """
+    for layer in ("signals", "indicators"):
+        layer_dir = src_screener / layer
+        if not layer_dir.exists():
+            continue
+        for py in layer_dir.rglob("*.py"):
+            if "__pycache__" in py.parts:
+                continue
+            src = py.read_text(encoding="utf-8")
+            assert "from screener.data" not in src, (
+                f"{py}: layer '{layer}' imports screener.data — "
+                f"D-23 forbids it (D-13b structural defense)."
+            )
+            assert "import screener.data" not in src, (
+                f"{py}: layer '{layer}' imports screener.data — "
+                f"D-23 forbids it (D-13b structural defense)."
+            )

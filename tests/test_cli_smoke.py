@@ -36,7 +36,9 @@ D14_SUBCOMMANDS = [
 # so it is removed too — see test_backtest_audit_subcommand_no_longer_stub
 # below).
 PHASE_1_STUBS = [
-    "refresh-fundamentals",
+    # Phase 6 (Plan 06-01) removed `refresh-fundamentals` from this list — its
+    # body is filled by Plan 06-05 (Wave 4); see test_refresh_fundamentals_
+    # subcommand_no_longer_stub below.
     "journal",
 ]
 
@@ -282,3 +284,67 @@ def test_backtest_audit_subcommand_no_longer_stub() -> None:
         if ev.get("command") == "backtest-audit" and "[stub]" in ev.get("message", "")
     ]
     assert not stub_events, f"`screener backtest-audit` still emits a [stub] line: {stub_events!r}"
+
+
+# --- Phase 6 Wave 0 (Plan 06-01) D-24 lock + CAT-04 ------------------------
+
+
+def test_subcommand_surface_locked() -> None:
+    """D-24 hard lock: D14_SUBCOMMANDS list is bytewise-frozen at the 9-name
+    Phase 1 surface. Adding or renaming a subcommand requires amending CONTEXT.md
+    D-14 (Phase 1) AND CONTEXT.md D-24 (Phase 6) AND this list together.
+
+    Phase 6 fills bodies for `refresh-fundamentals`, `score`, `report` but adds
+    NO new subcommand. Verified separately from the help-surface test so a
+    failure on either side is unambiguous in CI summary.
+    """
+    expected = [
+        "refresh-universe",
+        "refresh-ohlcv",
+        "refresh-macro",
+        "refresh-fundamentals",
+        "score",
+        "report",
+        "journal",
+        "backtest",
+        "backtest-audit",
+    ]
+    assert D14_SUBCOMMANDS == expected, (
+        f"D-24 / D-14 lock broken: D14_SUBCOMMANDS == {D14_SUBCOMMANDS!r}, "
+        f"expected {expected!r}. Amend the lock decision in CONTEXT.md "
+        f"before changing the list."
+    )
+
+
+def test_refresh_fundamentals_subcommand_no_longer_stub() -> None:
+    """Phase 6 (plan 06-05): `refresh-fundamentals` will ship a real body —
+    Plan 06-01 (Wave 0) removes it from PHASE_1_STUBS so the stub-log iterator
+    no longer asserts a `[stub]` line. The real assertion (no `[stub]` log on
+    invocation) lands when Plan 06-05 implements the body — until then this
+    test SKIPs to document the deferred regression target.
+    """
+    import pytest
+
+    pytest.skip(
+        "Phase 6 Wave 4 stub — Plan 06-05 fills body. "
+        "Will assert that `screener refresh-fundamentals` no longer emits a "
+        "'[stub] refresh-fundamentals not yet implemented' log event."
+    )
+
+
+def test_edgar_identity_required() -> None:
+    """Phase 6 (plan 06-05) / CAT-04 / Pitfall 3: when EDGAR_IDENTITY='',
+    invoking `refresh-fundamentals` (which calls the EDGAR Form 4 fetch) must
+    exit non-zero with an error mentioning EDGAR_IDENTITY AND .env.example.
+
+    Plan 06-05 (Wave 4) lands the `_ensure_edgar_identity()` startup hook in
+    cli.py that produces this behavior; until then this test SKIPs.
+    """
+    import pytest
+
+    pytest.skip(
+        "Phase 6 Wave 4 stub — Plan 06-05 adds _ensure_edgar_identity hook. "
+        "Will set EDGAR_IDENTITY='' via monkeypatch, invoke "
+        "`refresh-fundamentals`, assert exit_code != 0 AND output contains "
+        "'EDGAR_IDENTITY' AND '.env.example'."
+    )
