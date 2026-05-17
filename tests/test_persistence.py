@@ -50,7 +50,14 @@ def _make_panel(close_vals: list[float], open_vals: list[float] | None = None) -
 
 
 def _make_ranking_snapshot_df() -> pd.DataFrame:
-    """Minimal valid frame for RankingSnapshotSchema."""
+    """Minimal valid frame for RankingSnapshotSchema.
+
+    Phase 6 (Plan 06-01): includes the 11 new RankingSnapshotSchema columns
+    with safe placeholder defaults (playbook_tag='none', binary scores=0,
+    pattern_diagnostics='{"type": "none"}', breakout_strength=0.0, catalyst
+    flags=False). Plans 06-02/06-03/06-04 populate them with real values
+    via the production code path (`_add_publisher_columns`).
+    """
     return pd.DataFrame(
         {
             "ticker": ["AAA", "BBB"],
@@ -70,6 +77,18 @@ def _make_ranking_snapshot_df() -> pd.DataFrame:
             "pivot_zone": ["in-zone", "in-zone"],
             "regime_state": ["Confirmed Uptrend", "Confirmed Uptrend"],
             "regime_score": [0.82, 0.82],
+            # Phase 6 extension (Plan 06-01) — safe placeholders.
+            "playbook_tag": ["none", "none"],
+            "qullamaggie_score": pd.array([0, 0], dtype=pd.Int64Dtype()),
+            "minervini_score": pd.array([0, 0], dtype=pd.Int64Dtype()),
+            "leader_hold_score": pd.array([0, 0], dtype=pd.Int64Dtype()),
+            "pattern_diagnostics": ['{"type": "none"}', '{"type": "none"}'],
+            "breakout_strength": [0.0, 0.0],
+            "days_to_next_earnings": pd.array([pd.NA, pd.NA], dtype=pd.Int64Dtype()),
+            "crossed_52w_high_within_60d": [False, False],
+            "insider_cluster_buy": [False, False],
+            "earnings_in_3d_warn": [False, False],
+            "eps_knowable_from": pd.array([None, None], dtype=object),
         }
     )
 

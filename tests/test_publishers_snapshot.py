@@ -10,7 +10,7 @@ import pytest
 
 def _make_ranking_snapshot_df() -> pd.DataFrame:
     """Minimal valid frame for RankingSnapshotSchema (mirrors test_persistence
-    helper from Plan 04-01)."""
+    helper from Plan 04-01; extended for Phase 6 in Plan 06-01)."""
     return pd.DataFrame(
         {
             "ticker": ["AAA", "BBB"],
@@ -30,6 +30,18 @@ def _make_ranking_snapshot_df() -> pd.DataFrame:
             "pivot_zone": ["in-zone", "in-zone"],
             "regime_state": ["Confirmed Uptrend", "Confirmed Uptrend"],
             "regime_score": [0.82, 0.82],
+            # Phase 6 extension (Plan 06-01) — safe placeholders.
+            "playbook_tag": ["none", "none"],
+            "qullamaggie_score": pd.array([0, 0], dtype=pd.Int64Dtype()),
+            "minervini_score": pd.array([0, 0], dtype=pd.Int64Dtype()),
+            "leader_hold_score": pd.array([0, 0], dtype=pd.Int64Dtype()),
+            "pattern_diagnostics": ['{"type": "none"}', '{"type": "none"}'],
+            "breakout_strength": [0.0, 0.0],
+            "days_to_next_earnings": pd.array([pd.NA, pd.NA], dtype=pd.Int64Dtype()),
+            "crossed_52w_high_within_60d": [False, False],
+            "insider_cluster_buy": [False, False],
+            "earnings_in_3d_warn": [False, False],
+            "eps_knowable_from": pd.array([None, None], dtype=object),
         }
     )
 

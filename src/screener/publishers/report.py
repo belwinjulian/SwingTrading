@@ -68,6 +68,14 @@ def _add_publisher_columns(
     """Add pivot_distance_atr, pivot_zone, regime_state, regime_score, rank
     columns to a cross-section frame. Used by run_pipeline before snapshot
     write so the snapshot satisfies RankingSnapshotSchema.
+
+    Phase 6 (Plan 06-01) extension: emit safe defaults for the 11 new
+    RankingSnapshotSchema columns when callers (Phase 4 fixtures, Phase 5
+    backfill, this Wave-0 plan) have not yet wired the pattern / playbook /
+    catalyst layers. Plans 06-02/06-03/06-04 replace these defaults with the
+    real values upstream; the column-add here only runs when the column is
+    missing, so once the new computations exist the placeholders are silently
+    superseded.
     """
     out = cross.copy()
     # Pitfall 5: replace 0 ATR with NA before division.
@@ -89,6 +97,36 @@ def _add_publisher_columns(
         .astype("Int64"),
         dtype=pd.Int64Dtype(),
     )
+
+    # Phase 6 Wave-0 (Plan 06-01) placeholder defaults for the extended
+    # RankingSnapshotSchema. Each is set only if absent so downstream Phase 6
+    # plans can populate the real values upstream without colliding.
+    n = len(out)
+    if "playbook_tag" not in out.columns:
+        out["playbook_tag"] = ["none"] * n
+    if "qullamaggie_score" not in out.columns:
+        out["qullamaggie_score"] = pd.array([0] * n, dtype=pd.Int64Dtype())
+    if "minervini_score" not in out.columns:
+        out["minervini_score"] = pd.array([0] * n, dtype=pd.Int64Dtype())
+    if "leader_hold_score" not in out.columns:
+        out["leader_hold_score"] = pd.array([0] * n, dtype=pd.Int64Dtype())
+    if "pattern_diagnostics" not in out.columns:
+        # JSON-encoded "no pattern" dict; Plan 06-02 swaps in real diagnostics.
+        out["pattern_diagnostics"] = ['{"type": "none"}'] * n
+    if "breakout_strength" not in out.columns:
+        out["breakout_strength"] = [0.0] * n
+    if "days_to_next_earnings" not in out.columns:
+        out["days_to_next_earnings"] = pd.array([pd.NA] * n, dtype=pd.Int64Dtype())
+    if "crossed_52w_high_within_60d" not in out.columns:
+        out["crossed_52w_high_within_60d"] = [False] * n
+    if "insider_cluster_buy" not in out.columns:
+        out["insider_cluster_buy"] = [False] * n
+    if "earnings_in_3d_warn" not in out.columns:
+        out["earnings_in_3d_warn"] = [False] * n
+    if "eps_knowable_from" not in out.columns:
+        # Nullable string column; pandas keeps as object dtype.
+        out["eps_knowable_from"] = pd.array([None] * n, dtype=object)
+
     if out.index.name != "ticker":
         # Cross-section is indexed by ticker; reset for snapshot column shape.
         out.index.name = "ticker"

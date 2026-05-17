@@ -249,6 +249,101 @@ class RankingSnapshotSchema(pa.DataFrameModel):
     )
     regime_score: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=False)
 
+    # Phase 6 extension (D-12 / D-15 / D-19) — playbook tag, three binary
+    # scores, pattern_diagnostics JSON, breakout_strength, three catalyst
+    # flags, earnings warn flag, eps_knowable_from report hint (checker W11).
+    playbook_tag: Series[str] = pa.Field(
+        isin=["qullamaggie_continuation", "minervini_vcp", "leader_hold", "none"],
+        nullable=False,
+    )
+    qullamaggie_score: Series[pd.Int64Dtype] = pa.Field(ge=0, le=1, nullable=False)
+    minervini_score: Series[pd.Int64Dtype] = pa.Field(ge=0, le=1, nullable=False)
+    leader_hold_score: Series[pd.Int64Dtype] = pa.Field(ge=0, le=1, nullable=False)
+    pattern_diagnostics: Series[str] = pa.Field(nullable=False)  # JSON-encoded dict (Pitfall 8)
+    breakout_strength: Series[float] = pa.Field(ge=0.0, le=1.0, nullable=False)
+    days_to_next_earnings: Series[pd.Int64Dtype] = pa.Field(ge=0, nullable=True)
+    crossed_52w_high_within_60d: Series[bool] = pa.Field(nullable=False)
+    insider_cluster_buy: Series[bool] = pa.Field(nullable=False)
+    earnings_in_3d_warn: Series[bool] = pa.Field(nullable=False)
+    eps_knowable_from: Series[str] = pa.Field(nullable=True)  # ISO YYYY-MM-DD; empty when fundamentals row missing (W11)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
+# --- Phase 6 schemas (D-05, D-12, D-13b, D-19) -------------------------------
+
+
+class FundamentalsSchema(pa.DataFrameModel):
+    """Per-ticker fundamentals row (EPS history + upcoming earnings).
+
+    Written by data/fundamentals.py via persistence.write_fundamentals_atomic
+    (Plan 06-03 lands the writer). Pre-filtered at read time by
+    persistence.read_fundamentals(as_of_date) which enforces D-13b's 45-day
+    knowable_from gate — signals/canslim.py consumes the pre-filtered view
+    and structurally cannot violate the lag (architecture-test D-23).
+    """
+
+    ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
+    fiscal_quarter_end: Series[pd.Timestamp] = pa.Field(nullable=False)
+    eps_actual: Series[float] = pa.Field(nullable=True)
+    eps_yoy_growth: Series[float] = pa.Field(nullable=True)
+    knowable_from: Series[pd.Timestamp] = pa.Field(nullable=False)
+    next_earnings_date: Series[pd.Timestamp] = pa.Field(nullable=True)
+    next_earnings_hour: Series[str] = pa.Field(
+        isin=["bmo", "amc", "dmh", "unknown"], nullable=False
+    )
+    source: Series[str] = pa.Field(isin=["finnhub", "yfinance"], nullable=False)
+    ingested_at: Series[pd.Timestamp] = pa.Field(nullable=False)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
+class InsiderSchema(pa.DataFrameModel):
+    """Per-Form-4 insider transaction row.
+
+    Used as the DataFrame view validated BEFORE the SQLite INSERT in
+    data/insider.py (Plan 06-03). The SQLite schema (D-10) is the actual
+    storage; this pandera class is the eager-validation contract enforced
+    at the write boundary.
+    """
+
+    filing_id: Series[str] = pa.Field(nullable=False, unique=True)
+    ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
+    insider: Series[str] = pa.Field(nullable=False)
+    transaction_date: Series[pd.Timestamp] = pa.Field(nullable=False)
+    type: Series[str] = pa.Field(isin=["BUY", "SELL"], nullable=False)
+    shares: Series[float] = pa.Field(ge=0, nullable=False)
+    value_usd: Series[float] = pa.Field(ge=0, nullable=False)
+    ingested_at: Series[pd.Timestamp] = pa.Field(nullable=False)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
+class PatternAuditSchema(pa.DataFrameModel):
+    """Per-leg pattern audit row (VCP contractions + flag bars).
+
+    Written by data/pattern_audit/YYYY-MM-DD.parquet via
+    persistence.write_pattern_audit_atomic (Plan 06-02 lands the writer).
+    Gitignored per D-05.
+    """
+
+    ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
+    snapshot_date: Series[pd.Timestamp] = pa.Field(nullable=False)
+    pattern_type: Series[str] = pa.Field(isin=["vcp", "flag"], nullable=False)
+    leg_idx: Series[pd.Int64Dtype] = pa.Field(ge=0, nullable=False)
+    start_date: Series[pd.Timestamp] = pa.Field(nullable=False)
+    end_date: Series[pd.Timestamp] = pa.Field(nullable=False)
+    high: Series[float] = pa.Field(gt=0, nullable=False)
+    low: Series[float] = pa.Field(gt=0, nullable=False)
+    depth: Series[float] = pa.Field(ge=0, le=1, nullable=False)
+    avg_volume: Series[float] = pa.Field(ge=0, nullable=False)
+
     class Config:
         strict = True
         coerce = False
@@ -354,6 +449,24 @@ def _snapshot_dir() -> Path:
     """Resolve the daily ranking-snapshot directory, with cross-wave fallback."""
     s: Any = get_settings()
     return Path(getattr(s, "SNAPSHOT_DIR", "data/snapshots"))
+
+
+def _fundamentals_dir() -> Path:
+    """Resolve the fundamentals cache directory (Phase 6 D-09), with cross-wave fallback."""
+    s: Any = get_settings()
+    return Path(getattr(s, "FUNDAMENTALS_CACHE_DIR", "data/fundamentals"))
+
+
+def _insider_db_path() -> Path:
+    """Resolve the insider Form 4 SQLite path (Phase 6 D-08/D-10), with cross-wave fallback."""
+    s: Any = get_settings()
+    return Path(getattr(s, "INSIDER_CACHE_PATH", "data/insider/form4.sqlite"))
+
+
+def _pattern_audit_dir() -> Path:
+    """Resolve the per-leg pattern audit directory (Phase 6 D-05), with cross-wave fallback."""
+    s: Any = get_settings()
+    return Path(getattr(s, "PATTERN_AUDIT_DIR", "data/pattern_audit"))
 
 
 # --- Public writers (eager validation + atomic write) ------------------------
@@ -487,6 +600,36 @@ def read_universe(snapshot_date: str) -> pd.DataFrame:
     path = _universe_dir() / f"{snapshot_date}.parquet"
     df = pd.read_parquet(path)
     return validate_at_read(UniverseSchema, df)
+
+
+def read_universe_latest() -> list[str]:
+    """Return tickers from the most recent universe snapshot.
+
+    Walks ``_universe_dir()`` for the lexicographically-largest
+    ``YYYY-MM-DD.parquet`` (ISO-date filenames sort correctly). Returns the
+    validated ``ticker`` column as a list. Raises ``FileNotFoundError`` if no
+    snapshot exists yet (callers should treat this as a hard error: run
+    ``make data`` first).
+
+    Used by Plan 06-03's ``data.fundamentals.refresh_fundamentals(today)``
+    when the ``tickers`` argument is ``None`` (closes the ergonomics gap
+    surfaced by checker B1 — single source of truth for the active universe
+    at the data layer).
+    """
+    base = _universe_dir()
+    if not base.exists():
+        raise FileNotFoundError(
+            f"read_universe_latest: universe dir does not exist: {base}"
+        )
+    candidates = sorted(base.glob("*.parquet"))
+    if not candidates:
+        raise FileNotFoundError(
+            f"read_universe_latest: no universe snapshot in {base}"
+        )
+    latest = candidates[-1]
+    snapshot_date = latest.stem  # YYYY-MM-DD
+    df = read_universe(snapshot_date)
+    return df["ticker"].astype(str).tolist()
 
 
 def read_rs_snapshot(snapshot_date: str) -> pd.DataFrame:

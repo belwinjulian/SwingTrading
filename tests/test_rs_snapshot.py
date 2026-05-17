@@ -164,7 +164,8 @@ def test_snapshot_atomic_write_crash_no_residue(
 
     from screener.persistence import write_snapshot_atomic
 
-    # Build a minimal valid frame for RankingSnapshotSchema.
+    # Build a minimal valid frame for RankingSnapshotSchema
+    # (Phase 6 extension applied: Plan 06-01 added 11 new columns).
     df = pd.DataFrame(
         {
             "ticker": ["AAA"],
@@ -184,6 +185,18 @@ def test_snapshot_atomic_write_crash_no_residue(
             "pivot_zone": ["in-zone"],
             "regime_state": ["Confirmed Uptrend"],
             "regime_score": [0.8],
+            # Phase 6 extension (Plan 06-01) — safe placeholders.
+            "playbook_tag": ["none"],
+            "qullamaggie_score": pd.array([0], dtype=pd.Int64Dtype()),
+            "minervini_score": pd.array([0], dtype=pd.Int64Dtype()),
+            "leader_hold_score": pd.array([0], dtype=pd.Int64Dtype()),
+            "pattern_diagnostics": ['{"type": "none"}'],
+            "breakout_strength": [0.0],
+            "days_to_next_earnings": pd.array([pd.NA], dtype=pd.Int64Dtype()),
+            "crossed_52w_high_within_60d": [False],
+            "insider_cluster_buy": [False],
+            "earnings_in_3d_warn": [False],
+            "eps_knowable_from": pd.array([None], dtype=object),
         }
     )
 
