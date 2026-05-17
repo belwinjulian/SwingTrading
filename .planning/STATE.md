@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 Plan 01 complete — ready for Plan 02
-last_updated: "2026-05-17T09:10:00.000Z"
+stopped_at: Phase 6 Plan 02 complete — ready for Plan 03
+last_updated: "2026-05-17T13:12:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 31
-  completed_plans: 27
-  percent: 87
+  completed_plans: 28
+  percent: 90
 ---
 
 # Project State
 
-**Last updated:** 2026-05-17 (Phase 6 Plan 01 executed — Wave 0 foundation: schemas, fixtures, test skeletons, D-23/D-24 locks; 151 passed / 41 skipped)
+**Last updated:** 2026-05-17 (Phase 6 Plan 02 executed — Wave 1 pattern detection: VCP + flag + post-gap-continuation + breakout_strength; 163 passed / 29 skipped)
 
 ## Project Reference
 
@@ -28,7 +28,7 @@ progress:
 ## Current Position
 
 Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING
-Plan: 2 of 5 (Plan 06-01 COMPLETE 2026-05-17; Plans 06-02..06-05 pending)
+Plan: 3 of 5 (Plans 06-01..06-02 COMPLETE 2026-05-17; Plans 06-03..06-05 pending)
 Phase: 02 (data-foundation) — COMPLETE (2026-05-03)
 Phase: 03 (indicator-panel-&-regime) — COMPLETE (2026-05-10; 5 plans)
 Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05-10 executed; 2026-05-16 UAT verified; 5 plans)
@@ -36,11 +36,11 @@ Phase: 05 (backtest-harness-no-lookahead-gate) — COMPLETE (2026-05-16; 6 plans
 Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING (Plan 01 / Wave 0 complete 2026-05-17)
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** 6 (executing — Wave 0 foundation shipped)
-- **Plan:** 27 / 31 executed (Plan 06-01 closed; 06-02..06-05 pending)
-- **Status:** Executing Phase 06 — Wave 1 next
-- **Resume file:** .planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-02-PLAN.md
-- **Progress:** [█████████████░░] 87%
+- **Phase:** 6 (executing — Wave 1 patterns shipped)
+- **Plan:** 28 / 31 executed (Plans 06-01..06-02 closed; 06-03..06-05 pending)
+- **Status:** Executing Phase 06 — Wave 1 data adapters next (06-03)
+- **Resume file:** .planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-03-PLAN.md
+- **Progress:** [█████████████░░] 90%
 
 ### Phase 3 Plan Summary
 
@@ -57,7 +57,7 @@ Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING (
 | Wave | Plan | Objective |
 |------|------|-----------|
 | 0 | 06-01 ✓ | Foundation — 3 new pandera schemas + RankingSnapshotSchema 11-col extension, read_universe_latest helper, 3 Phase 6 Settings paths, .env.example REQUIRED, .gitignore + .gitkeep, `make fundamentals` target, 12 named test skeletons + 7 fixtures, D-23 + D-24 structural locks (PASS — 151/41 split) |
-| 1 | 06-02 | Pattern detection — `indicators/patterns.py` with VCP + flag detectors + post-gap-continuation flag (D-04) + breakout_strength (D-06) + Final-locked thresholds + `write_pattern_audit_atomic` |
+| 1 | 06-02 ✓ | Pattern detection — `indicators/patterns.py` with VCP + flag + post-gap-continuation (D-04) + breakout_strength (D-06) + 13 Final-locked thresholds + 6 build_panel columns + per-leg `legs` sub-field (D-05); 12 GREEN tests (163/29 split) |
 | 1 | 06-03 | Data adapters — `data/fundamentals.py` (Finnhub + yfinance) + `data/insider.py` (edgartools + SQLite append-only) + persistence `write_fundamentals_atomic`/`read_fundamentals`/`read_insider_cluster_buy` (D-13b lag enforcement) |
 | 2 | 06-04 | Composite full activation + playbook tagger — shrink `PHASE_4_ZEROED` to `frozenset()`, add 3 component helpers, `signals/qullamaggie.py` + `signals/canslim.py`, `tag_playbook(panel)` (D-14 tie-breaker, D-15 leader_hold) |
 | 4 | 06-05 | CLI wire-up — fill `refresh-fundamentals` body, add `_ensure_edgar_identity` startup hook, extend `score`/`report` to call patterns/qullamaggie/canslim/tagger, add report "Currently Held / Leaders" section |
@@ -80,7 +80,7 @@ Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING (
 | Plans complete | 27 / 31 | 01-01..01-05, 02-01..02-05, 03-01..03-05, 04-01..04-05, 05-00..05-05, 06-01 shipped |
 | Requirements mapped | 64 / 64 | 100% coverage |
 | Requirements completed | 34 / 64 | FND-01..05, DAT-01..04, DAT-06..09, IND-01..05, REG-01..04, SIG-01, SIG-04, OUT-01..03, BCK-01..07 (BCK-04 partial-by-design per D-12). Phase 6 reqs (DAT-05, PAT-06, SIG-02/03, CMP-01..05, CAT-01/04) have skel + schema seams shipped via Plan 06-01 but mark complete only when the bodies land (Plans 06-02..06-05). |
-| Last test run | 151 passed, 41 skipped | `uv run pytest --no-cov -q` 2026-05-17 (Plan 06-01 end-of-execution) |
+| Last test run | 163 passed, 29 skipped | `uv run pytest --no-cov -q` 2026-05-17 (Plan 06-02 end-of-execution) |
 | Last lint pass | clean (touched files) | ruff + mypy passing on Phase 5 files; pre-existing repo-wide format drift on 38 files deferred |
 | Phase 01 P04 | 2min | 2 tasks | 2 files |
 | Phase 01 P05 | 3min | 2 tasks | 6 files |
@@ -167,15 +167,15 @@ None.
 
 ### Last Session
 
-- **Activity:** `/gsd-execute-phase 6` plan 06-01 — Wave 0 foundation (3 tasks, all atomic commits). Task 1: Settings + .env.example + .gitignore + Makefile. Task 2: 3 pandera schemas (FundamentalsSchema/InsiderSchema/PatternAuditSchema) + RankingSnapshotSchema 11-col extension + read_universe_latest helper + 3 _dir helpers. Task 3: 12 named test skeletons + 7 fixtures + D-23 + D-24 structural locks.
-- **Outcome:** Plan 06-01 complete (2026-05-17). 151 passed / 41 skipped (was 149/2). 1 auto-fix deviation: extended `_add_publisher_columns` with placeholder defaults for the 11 new RankingSnapshotSchema columns (Rule 3 blocking — strict schema rejected existing snapshot frames). FND-04 no-look-ahead gate green.
-- **Resume file:** `.planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-02-PLAN.md`
-- **Stopped at:** Phase 6 Plan 01 complete — ready for Plan 02
+- **Activity:** `/gsd-execute-phase 6` plan 06-02 — Wave 1 pattern detection. Committed uncommitted working-tree changes (CLAUDE.md trim + golden-file test bodies + patterns.py helper additions). Tasks 1+2 already committed as e7f984f and dbee783. Task 3 (golden-file tests + tuning log): commits 830d630 (CLAUDE.md) + e8e65ef (tests + patterns.py helpers).
+- **Outcome:** Plan 06-02 complete (2026-05-17). 163 passed / 29 skipped (was 151/41). 4 auto-fix deviations documented in SUMMARY. FND-04 no-look-ahead gate green. mypy --strict clean on patterns.py. D-23/D-24 architecture locks intact.
+- **Resume file:** `.planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-03-PLAN.md`
+- **Stopped at:** Phase 6 Plan 02 complete — ready for Plan 03
 
 ### Next Session
 
-- `/gsd-execute-phase 6` continuing — execute Plan 06-02 (pattern detector: VCP + flag + post-gap-continuation + breakout_strength). Wave 1 in parallel: 06-02 (patterns) + 06-03 (data adapters) operate on disjoint files (`indicators/patterns.py` + tests/test_patterns_*.py + tests/test_breakout_strength.py vs `data/fundamentals.py` + `data/insider.py` + tests/test_canslim_lag.py + tests/test_fundamentals_io.py + tests/test_insider_*.py).
-- USER ACTIONS pending from Phase 5 (do not block Phase 6 Plans 02-04): (a) ratify D-07 recalibration in `05-CONTEXT.md`, (b) `gh api` branch-protection update for `no-lookahead-gate` check, (c) decide audit check #1 coverage-gate disposition.
+- `/gsd-execute-phase 6` continuing — execute Plan 06-03 (data adapters: `data/fundamentals.py` + `data/insider.py` + persistence helpers). Wave 1 plans 06-02 and 06-03 operate on disjoint files (no overlap).
+- USER ACTIONS pending from Phase 5 (do not block Phase 6 Plans 03-05): (a) ratify D-07 recalibration in `05-CONTEXT.md`, (b) `gh api` branch-protection update for `no-lookahead-gate` check, (c) decide audit check #1 coverage-gate disposition.
 
 ---
 *State initialized: 2026-04-27*
