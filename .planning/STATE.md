@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 Plan 02 complete — ready for Plan 03
-last_updated: "2026-05-17T13:12:00.000Z"
+stopped_at: Phase 6 Wave 1 complete — Plans 06-02 + 06-03 done; ready for Wave 2 Plan 06-04
+last_updated: "2026-05-17T14:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 31
-  completed_plans: 28
-  percent: 90
+  completed_plans: 29
+  percent: 94
 ---
 
 # Project State
 
-**Last updated:** 2026-05-17 (Phase 6 Plan 02 executed — Wave 1 pattern detection: VCP + flag + post-gap-continuation + breakout_strength; 163 passed / 29 skipped)
+**Last updated:** 2026-05-17 (Phase 6 Wave 1 complete — Plans 06-02 + 06-03 executed; 173 passed / 19 skipped)
 
 ## Project Reference
 
@@ -28,19 +28,19 @@ progress:
 ## Current Position
 
 Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING
-Plan: 3 of 5 (Plans 06-01..06-02 COMPLETE 2026-05-17; Plans 06-03..06-05 pending)
+Plan: 4 of 5 (Plans 06-01..06-03 COMPLETE 2026-05-17; Plans 06-04..06-05 pending)
 Phase: 02 (data-foundation) — COMPLETE (2026-05-03)
 Phase: 03 (indicator-panel-&-regime) — COMPLETE (2026-05-10; 5 plans)
 Phase: 04 (trend-template-composite-skeleton-first-report) — COMPLETE (2026-05-10 executed; 2026-05-16 UAT verified; 5 plans)
 Phase: 05 (backtest-harness-no-lookahead-gate) — COMPLETE (2026-05-16; 6 plans; 5/5 SCs verified; 3 items in 05-HUMAN-UAT.md)
-Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING (Plan 01 / Wave 0 complete 2026-05-17)
+Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING (Wave 1 complete 2026-05-17: Plans 06-01..06-03)
 
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
-- **Phase:** 6 (executing — Wave 1 patterns shipped)
-- **Plan:** 28 / 31 executed (Plans 06-01..06-02 closed; 06-03..06-05 pending)
-- **Status:** Executing Phase 06 — Wave 1 data adapters next (06-03)
-- **Resume file:** .planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-03-PLAN.md
-- **Progress:** [█████████████░░] 90%
+- **Phase:** 6 (executing — Wave 1 complete; Wave 2 composite+tagger next)
+- **Plan:** 29 / 31 executed (Plans 06-01..06-03 closed; 06-04..06-05 pending)
+- **Status:** Executing Phase 06 — Wave 2 composite activation next (06-04)
+- **Resume file:** .planning/phases/06-pattern-detection-full-signal-stack-playbook-tagging/06-04-PLAN.md
+- **Progress:** [██████████████░] 94%
 
 ### Phase 3 Plan Summary
 
