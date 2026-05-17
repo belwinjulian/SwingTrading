@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from screener.indicators.patterns import detect_all_patterns
 from screener.indicators.relative_strength import rs_panel
 from screener.indicators.trend import high_52w_panel, low_52w_panel, sma_panel
 from screener.indicators.volatility import adr_pct_panel, atr_panel
@@ -36,4 +37,5 @@ def build_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
     panel = rs_panel(panel)
     panel = high_52w_panel(panel, length=252)
     panel = low_52w_panel(panel, length=252)
+    panel = detect_all_patterns(panel)   # Phase 6 PAT-01..06 + D-01..D-06
     return panel
