@@ -224,3 +224,61 @@ def test_report_atomic_write_crash_no_residue(
     assert not target.exists()
     leftover = list(tmp_path.glob(".2026-05-10.md.*.tmp"))
     assert leftover == [], f"No tmp residue should remain; found {leftover}"
+
+
+def test_render_report_includes_sizing_fields_and_skipped_section() -> None:
+    """Plan 07-04: render_report emits Entry/Stop/Trail/Shares/Zone per pick AND
+    ## Skipped Picks section when skipped_picks is non-empty."""
+    import pandas as pd
+    from screener.publishers.report import render_report
+
+    actionable = pd.DataFrame(
+        {
+            "ticker": ["AAPL"],
+            "composite_score": [85.0], "rs_rating": [92], "trend_template_score": [8],
+            "volume_component": [0.7],
+            "pivot_distance_atr": [0.5], "pivot_zone": ["in-zone"],
+            "playbook_tag": ["minervini_vcp"],
+            "pattern_diagnostics": ['{"type":"vcp","pivot_price":175.5,"final_contraction_depth":0.08}'],
+            "qullamaggie_score": [0], "minervini_score": [1], "leader_hold_score": [0],
+            "breakout_strength": [0.85],
+            "days_to_next_earnings": [pd.NA], "crossed_52w_high_within_60d": [False],
+            "insider_cluster_buy": [False], "earnings_in_3d_warn": [False],
+            "eps_knowable_from": [None], "rank": pd.array([1], dtype=pd.Int64Dtype()),
+            "regime_state": ["Confirmed Uptrend"], "regime_score": [0.82],
+            # Phase 7 sizing cols populated by Plan 07-04 step 5.5.
+            "stop_price": [161.46],   # 175.5 * (1 - 0.08)
+            "entry_price": [180.0],
+            "shares": pd.array([50], dtype=pd.Int64Dtype()),
+            "risk_per_share": [18.54],
+            "atr_zone": ["in-zone"],
+            "pivot_distance_atr_breakout": [0.25],
+            "trail_rule_label": ["21d EMA (then 50d SMA after 15 bars)"],
+            "adr_rejected": [False], "rejection_reason": [""],
+        }
+    )
+    skipped = pd.DataFrame(
+        {
+            "rejection_reason": ["adr_exceeded"],
+            "risk_per_share": [1.4], "adr_pct": [1.0], "entry_price": [100.0],
+            "close": [100.0],
+        },
+        index=pd.Index(["BADTICK"], name="ticker"),
+    )
+    regime_row = pd.Series({"regime_state": "Confirmed Uptrend", "regime_score": 0.82})
+
+    md = render_report(
+        actionable, regime_row, snapshot_date="2026-05-18",
+        top_n=15, pass_rate=0.10, skipped_picks=skipped,
+    )
+
+    # Sizing per-pick fields present.
+    assert "**Entry:** $180.00" in md
+    assert "**Stop:** $161.46" in md
+    assert "**Trail:** 21d EMA" in md
+    assert "**Shares:** 50" in md
+    assert "**Zone:** in-zone" in md
+    # ## Skipped Picks section rendered.
+    assert "## Skipped Picks" in md
+    assert "BADTICK" in md
+    assert "R/R broken" in md
