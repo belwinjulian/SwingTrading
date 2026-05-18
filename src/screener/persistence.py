@@ -376,6 +376,59 @@ class InsiderSchema(pa.DataFrameModel):
         coerce = False
 
 
+class PicksSchema(pa.DataFrameModel):
+    """Pre-insert validation contract for the picks SQLite table (Phase 7 / OUT-04..05).
+
+    Caller (publishers/pipeline._build_journal_rows_df in Plan 07-04, and
+    cli.journal in Plan 07-05) MUST validate the DataFrame view through this
+    schema BEFORE invoking persistence.append_picks_rows — mirrors the
+    InsiderSchema "Pattern B" contract documented on append_form4_rows.
+
+    The schema covers the 13 decision columns required by INSERT OR IGNORE
+    plus ingested_at (the 14th NOT NULL column in the table). The 6 outcome
+    columns (entry_filled, exit_price, exit_date, hold_days, mfe, mae) are
+    NOT part of this schema — they are NULL on initial insert and updated by
+    the deferred v1.x journal-update flow (CONTEXT D-10).
+
+    Pandera regex on snapshot_date is the path-traversal defense (T-06-25
+    carry-forward) — there is no separate _assert_safe call.
+    """
+
+    ticker: Series[str] = pa.Field(
+        nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$"
+    )
+    snapshot_date: Series[str] = pa.Field(
+        nullable=False, str_matches=r"^\d{4}-\d{2}-\d{2}$"
+    )
+    playbook_tag: Series[str] = pa.Field(
+        isin=["qullamaggie_continuation", "minervini_vcp", "leader_hold"],
+        nullable=False,
+    )
+    composite_score: Series[float] = pa.Field(ge=0.0, le=100.0, nullable=False)
+    regime_state: Series[str] = pa.Field(
+        isin=["Confirmed Uptrend", "Uptrend Under Pressure", "Correction"],
+        nullable=False,
+    )
+    entry_price: Series[float] = pa.Field(gt=0.0, nullable=False)
+    stop_price: Series[float] = pa.Field(gt=0.0, nullable=False)
+    shares: Series[int] = pa.Field(ge=0, nullable=False)
+    risk_per_share: Series[float] = pa.Field(ge=0.0, nullable=False)
+    atr_zone: Series[str] = pa.Field(
+        isin=["in-zone", "extended", "chase, skip"], nullable=False,
+    )
+    # Phase 7 revision iteration 1 Warning #5: column name aligned with the
+    # value source (sizing.py emits `pivot_distance_atr_breakout` = (close - pivot)/atr;
+    # this is the breakout sign convention, distinct from Phase 4's snapshot
+    # `pivot_distance_atr` which is (high_52w - close)/atr).
+    pivot_distance_atr_breakout: Series[float] = pa.Field(nullable=True)
+    features_json: Series[str] = pa.Field(nullable=False)
+    ingested_at: Series[str] = pa.Field(nullable=False)
+
+    class Config:
+        strict = True
+        coerce = False
+
+
 class PatternAuditSchema(pa.DataFrameModel):
     """Per-leg pattern audit row (VCP contractions + flag bars).
 
@@ -964,6 +1017,134 @@ def _ensure_insider_schema(db_path: "Path | None" = None) -> Path:
         conn.executescript(_FORM4_DDL)
         conn.execute(_FORM4_IDX)
     return path
+
+
+# --- Phase 7: picks journal table (CONTEXT D-01 / D-02 / OUT-04..06) -----
+
+_PICKS_DDL: Final[str] = """
+CREATE TABLE IF NOT EXISTS picks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- Decision columns (NOT NULL, immutable via trigger below)
+    ticker TEXT NOT NULL,
+    snapshot_date TEXT NOT NULL,
+    playbook_tag TEXT NOT NULL CHECK (playbook_tag IN
+        ('qullamaggie_continuation', 'minervini_vcp', 'leader_hold')),
+    composite_score REAL NOT NULL,
+    regime_state TEXT NOT NULL,
+    entry_price REAL NOT NULL,
+    stop_price REAL NOT NULL,
+    shares INTEGER NOT NULL,
+    risk_per_share REAL NOT NULL,
+    atr_zone TEXT NOT NULL CHECK (atr_zone IN ('in-zone', 'extended', 'chase, skip')),
+    pivot_distance_atr_breakout REAL,
+    features_json TEXT NOT NULL,
+    ingested_at TEXT NOT NULL,
+    -- Outcome columns (nullable, updatable — explicitly excluded from trigger)
+    entry_filled INTEGER,
+    exit_price REAL,
+    exit_date TEXT,
+    hold_days INTEGER,
+    mfe REAL,
+    mae REAL,
+    -- Idempotency key for INSERT OR IGNORE (CONTEXT D-01).
+    -- Note: AUTOINCREMENT id WILL have gaps on idempotent re-runs (Pitfall 2);
+    -- use (ticker, snapshot_date) as the natural key for any downstream queries.
+    UNIQUE (ticker, snapshot_date)
+);
+CREATE INDEX IF NOT EXISTS idx_picks_snapshot_date ON picks (snapshot_date);
+CREATE INDEX IF NOT EXISTS idx_picks_ticker ON picks (ticker);
+CREATE TRIGGER IF NOT EXISTS picks_immutable_decision_cols
+BEFORE UPDATE OF
+    ticker, snapshot_date, playbook_tag, composite_score, regime_state,
+    entry_price, stop_price, shares, risk_per_share, atr_zone,
+    pivot_distance_atr_breakout, features_json, ingested_at
+ON picks
+BEGIN
+    SELECT RAISE(ABORT, 'decision column immutable');
+END;
+"""
+
+
+def _journal_db_path() -> Path:
+    """Resolve the picks journal SQLite path (Phase 7 D-01/D-02), with fallback."""
+    s: Any = get_settings()
+    return Path(getattr(s, "JOURNAL_DB_PATH", "data/journal.sqlite"))
+
+
+def _ensure_picks_schema(db_path: "Path | None" = None) -> Path:
+    """Idempotent picks table + indexes + immutability trigger.
+
+    All four DDL statements (table, 2 indexes, trigger) run inside ONE
+    `executescript` so a future table-rebuild migration (DROP + CREATE)
+    cannot leave the trigger missing (RESEARCH Pitfall 1). All four
+    statements use `CREATE ... IF NOT EXISTS` so re-invocation is a no-op.
+    """
+    path = Path(db_path) if db_path is not None else _journal_db_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as conn:
+        conn.executescript(_PICKS_DDL)
+    return path
+
+
+def append_picks_rows(rows: list[dict], db_path: "Path | None" = None) -> int:
+    """Idempotent append — INSERT OR IGNORE on UNIQUE(ticker, snapshot_date).
+
+    Caller MUST pandera-validate as PicksSchema BEFORE calling (Pattern B —
+    same contract documented on append_form4_rows). This function trusts that
+    validation has already run and performs only the SQL insert.
+
+    Returns the rowcount actually inserted (0 on a full-duplicate batch);
+    skipped duplicates are silent (Pitfall 2 — AUTOINCREMENT id WILL still
+    advance for skipped rows; do NOT rely on id semantically).
+
+    Args:
+        rows: list of dicts with the 13 decision keys required by INSERT OR
+            IGNORE INTO picks plus ingested_at. Each row's keys must match
+            the named placeholders exactly.
+        db_path: optional path override (test fixtures pass `tmp_path / 'j.sqlite'`).
+    """
+    if not rows:
+        return 0
+    path = _ensure_picks_schema(db_path)
+    with sqlite3.connect(path) as conn:
+        cur = conn.executemany(
+            """INSERT OR IGNORE INTO picks
+               (ticker, snapshot_date, playbook_tag, composite_score,
+                regime_state, entry_price, stop_price, shares,
+                risk_per_share, atr_zone, pivot_distance_atr_breakout,
+                features_json, ingested_at)
+               VALUES (:ticker, :snapshot_date, :playbook_tag, :composite_score,
+                       :regime_state, :entry_price, :stop_price, :shares,
+                       :risk_per_share, :atr_zone, :pivot_distance_atr_breakout,
+                       :features_json, :ingested_at)""",
+            rows,
+        )
+        conn.commit()
+        n_inserted = cur.rowcount
+    log.info(
+        "journal_appended",
+        n_attempted=len(rows),
+        n_inserted=n_inserted,
+        n_idempotent_skip=len(rows) - n_inserted,
+    )
+    return n_inserted
+
+
+def read_picks_for_date(
+    snapshot_date: str, db_path: "Path | None" = None
+) -> pd.DataFrame:
+    """Read picks rows for a single snapshot_date, ordered by composite_score DESC.
+
+    Returns an empty DataFrame (with the picks table columns) if no rows match.
+    Mirrors `read_insider_cluster_buy`'s `pd.read_sql_query` idiom.
+    """
+    path = _ensure_picks_schema(db_path)
+    with sqlite3.connect(path) as conn:
+        return pd.read_sql_query(
+            "SELECT * FROM picks WHERE snapshot_date = ? ORDER BY composite_score DESC",
+            conn,
+            params=(snapshot_date,),
+        )
 
 
 def append_form4_rows(db_path: "Path | None", rows: list[dict]) -> int:
