@@ -633,8 +633,14 @@ def _build_journal_rows_df(
                 row.get("pattern_diagnostics", '{"type":"none"}')
             ),
         }
+        # After _add_publisher_columns (pipeline step 7) resets the index,
+        # 'ticker' becomes a column and the iter key is an integer position.
+        # Prefer row["ticker"] (column) when present; fall back to the index
+        # value for callers that pass a ticker-indexed actionable_view directly
+        # (e.g. _build_journal_rows_df_from_snapshot).
+        ticker_val = str(row["ticker"]) if "ticker" in row.index else str(ticker)
         rows.append({
-            "ticker": str(ticker),
+            "ticker": ticker_val,
             "snapshot_date": str(snapshot_date),
             "playbook_tag": str(row["playbook_tag"]),
             "composite_score": float(row["composite_score"]),
