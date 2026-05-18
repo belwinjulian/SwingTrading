@@ -267,7 +267,12 @@ def compute_sizing(
         if not panel_has_ticker_index:
             return pd.DataFrame(columns=["high", "low"])
         try:
-            return panel.xs(t, level="ticker", drop_level=True)
+            result = panel.xs(t, level="ticker", drop_level=True)
+            # panel.xs returns DataFrame when drop_level=True and level is not
+            # the only level; mypy stubs say DataFrame | Series -- cast for strict.
+            if isinstance(result, pd.DataFrame):
+                return result
+            return pd.DataFrame(columns=["high", "low"])
         except KeyError:
             return pd.DataFrame(columns=["high", "low"])
 
