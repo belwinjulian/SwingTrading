@@ -186,6 +186,102 @@ def test_picks_schema_rejects_invalid_atr_zone() -> None:
         PicksSchema.validate(bad, lazy=False)
 
 
-def test_journal_cli_idempotent() -> None:
-    """OUT-04: invoke `screener journal` twice → second invocation inserts 0 rows (filled by Plan 07-05)."""
-    pytest.skip("Plan 07-05")
+def test_journal_cli_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """OUT-04: invoke `screener journal` twice → second invocation inserts 0 rows."""
+    import json as _json
+    from datetime import date
+
+    from typer.testing import CliRunner
+
+    # 1. Configure tmp paths for journal DB + snapshots dir.
+    db_path = tmp_path / "journal.sqlite"
+    snap_dir = tmp_path / "snapshots"
+    snap_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("JOURNAL_DB_PATH", str(db_path))
+    monkeypatch.setenv("SNAPSHOT_DIR", str(snap_dir))
+    monkeypatch.setenv("JOURNAL_THRESHOLD", "50.0")
+    monkeypatch.setenv("RISK_PCT", "0.01")
+    monkeypatch.setenv("ACCOUNT_EQUITY", "100000")
+    from screener.config import get_settings
+    get_settings.cache_clear()
+
+    # 2. Write a real snapshot parquet that _build_journal_rows_df_from_snapshot
+    # can read. Mirror the RankingSnapshotSchema-projected shape (only columns
+    # that exist in the schema + the new Phase 7 sizing cols).
+    today_iso = date.today().isoformat()
+    snap_df = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "rank": 1,
+                "composite_score": 75.0,
+                "composite_score_raw": 75.0,  # pre-gate raw composite (Plan 07-04 Pitfall 3)
+                "rs_component": 0.92, "trend_component": 1.0,
+                "volume_component": 0.7, "pattern_component": 0.7,
+                "earnings_component": 0.5, "catalyst_component": 0.3,
+                "passes_trend_template": True, "trend_template_score": 8,
+                "rs_rating": 92, "dryup_ratio": 0.85,
+                "pivot_distance_atr": 0.5,  # Phase 4 sign convention
+                "pivot_zone": "in-zone",
+                "regime_state": "Confirmed Uptrend", "regime_score": 0.85,
+                "playbook_tag": "minervini_vcp",
+                "qullamaggie_score": 0, "minervini_score": 1, "leader_hold_score": 0,
+                "pattern_diagnostics": (
+                    '{"type":"vcp","pivot_price":175.5,"final_contraction_depth":0.08,'
+                    '"depth_sequence":[0.25,0.15,0.08],"n_contractions":3,'
+                    '"first_leg_depth":0.25,"breakout_vol_multiple":1.7,'
+                    '"breakout_strength":0.85,"days_in_consolidation":18}'
+                ),
+                "breakout_strength": 0.85,
+                "days_to_next_earnings": None,
+                "crossed_52w_high_within_60d": False,
+                "insider_cluster_buy": False,
+                "earnings_in_3d_warn": False,
+                "eps_knowable_from": None,
+                # Phase 7 sizing cols (Plan 07-04 step 5.5 populates these in the
+                # live pipeline; here we mimic that for the catch-up path).
+                "stop_price": 161.46, "entry_price": 180.0, "shares": 50,
+                "risk_per_share": 18.54, "atr_zone": "in-zone",
+                "pivot_distance_atr_breakout": 0.25,
+                "trail_rule_label": "21d EMA (then 50d SMA after 15 bars)",
+                # Phase 7 revision iter 1: adr_rejected + rejection_reason are real
+                # snapshot columns (Plan 07-01 revised). Catch-up helper reads
+                # adr_rejected directly — Warning #6 single-source-of-truth.
+                "adr_rejected": False, "rejection_reason": "",
+            },
+        ]
+    )
+    snap_df.to_parquet(snap_dir / f"{today_iso}.parquet", index=False)
+
+    # 3. First invocation — inserts 1 row.
+    from screener.cli import app
+    runner = CliRunner()
+    result1 = runner.invoke(app, ["journal"])
+    assert result1.exit_code == 0, f"first invoke failed: {result1.stdout}"
+    assert db_path.exists()
+    with sqlite3.connect(db_path) as conn:
+        count_after_first = conn.execute("SELECT COUNT(*) FROM picks").fetchone()[0]
+    assert count_after_first == 1, f"expected 1 row after first invoke, got {count_after_first}"
+
+    # 4. Second invocation — INSERT OR IGNORE → zero inserts.
+    result2 = runner.invoke(app, ["journal"])
+    assert result2.exit_code == 0, f"second invoke failed: {result2.stdout}"
+    with sqlite3.connect(db_path) as conn:
+        count_after_second = conn.execute("SELECT COUNT(*) FROM picks").fetchone()[0]
+    assert count_after_second == count_after_first, (
+        f"idempotency violated: {count_after_first} → {count_after_second}"
+    )
+
+    # 5. Structlog events sanity: second invocation should report
+    # n_idempotent_skip == n_attempted (everything was a duplicate).
+    events2 = [
+        _json.loads(line) for line in result2.stdout.splitlines()
+        if line.strip().startswith("{")
+    ]
+    catchup_events = [
+        ev for ev in events2 if ev.get("event") == "journal_catchup_complete"
+    ]
+    assert catchup_events, f"expected journal_catchup_complete event; got events: {events2!r}"
+    ev = catchup_events[-1]
+    assert ev["n_inserted"] == 0, f"expected n_inserted=0; got {ev!r}"
+    assert ev["n_idempotent_skip"] == ev["n_attempted"], f"expected full skip; got {ev!r}"
