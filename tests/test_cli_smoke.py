@@ -35,11 +35,14 @@ D14_SUBCOMMANDS = [
 # fills `backtest` so it is removed; Phase 5 plan 05-05 fills `backtest-audit`
 # so it is removed too — see test_backtest_audit_subcommand_no_longer_stub
 # below).
-PHASE_1_STUBS = [
+PHASE_1_STUBS: list[str] = [
     # Phase 6 (Plan 06-01) removed `refresh-fundamentals` from this list — its
-    # body is filled by Plan 06-05 (Wave 4); see test_refresh_fundamentals_
-    # subcommand_no_longer_stub below.
-    "journal",
+    # body is filled by Plan 06-05 (Wave 4).
+    # Phase 7 (Plan 07-05) removed `journal` from this list — its body is filled
+    # by Plan 07-05; see test_journal_subcommand_no_longer_stub below.
+    # The list is intentionally empty now; the iterator
+    # test_each_phase1_stub_exits_zero_with_stub_log becomes a no-op (zero
+    # iterations, zero assertions) — harmless.
 ]
 
 
@@ -284,6 +287,23 @@ def test_backtest_audit_subcommand_no_longer_stub() -> None:
         if ev.get("command") == "backtest-audit" and "[stub]" in ev.get("message", "")
     ]
     assert not stub_events, f"`screener backtest-audit` still emits a [stub] line: {stub_events!r}"
+
+
+def test_journal_subcommand_no_longer_stub() -> None:
+    """Phase 7 (Plan 07-05): `journal` ships a real body — invoking it does
+    NOT emit a '[stub] journal not yet implemented' line. Real run will fail
+    without data/snapshots/<today>.parquet (handled gracefully by
+    _build_journal_rows_df_from_snapshot returning empty + emitting
+    'journal_catchup_empty'), but the absence of [stub] is what this test
+    asserts. Mirror line-for-line of test_score_subcommand_no_longer_stub.
+    """
+    runner = CliRunner()
+    result = runner.invoke(app, ["journal"])
+    events = _parse_json_events(result.stdout)
+    stub_events = [
+        ev for ev in events if ev.get("command") == "journal" and "[stub]" in ev.get("message", "")
+    ]
+    assert not stub_events, f"`screener journal` still emits a [stub] line: {stub_events!r}"
 
 
 # --- Phase 6 Wave 0 (Plan 06-01) D-24 lock + CAT-04 ------------------------
