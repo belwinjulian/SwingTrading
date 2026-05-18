@@ -72,7 +72,7 @@ def classify_atr_zone(pivot_distance_atr: float) -> str:
 
 # --- Trail-rule label dispatch (SIZ-04 / D-08) ---------------------------
 
-def _trail_rule_label(row: "pd.Series") -> str:
+def _trail_rule_label(row: pd.Series) -> str:
     """Return D-08 trail rule as a display string for the report.
 
     Sizing emits the LABEL ONLY (RESEARCH §Pattern 3); the report renders it
@@ -97,7 +97,7 @@ def _trail_rule_label(row: "pd.Series") -> str:
 
 # --- Per-playbook stop helpers (SIZ-03 / D-07) ---------------------------
 
-def _stop_qullamaggie(row: "pd.Series", ticker_history: "pd.DataFrame") -> float:
+def _stop_qullamaggie(row: pd.Series, ticker_history: pd.DataFrame) -> float:
     """D-07: entry-day low = the D-0 'low' bar (same bar that triggered breakout).
 
     The cross-section row is the snapshot-day OHLC by construction (the caller
@@ -106,8 +106,8 @@ def _stop_qullamaggie(row: "pd.Series", ticker_history: "pd.DataFrame") -> float
     return float(row["low"])
 
 
-def _stop_minervini_vcp(row: "pd.Series", ticker_history: "pd.DataFrame") -> float:
-    """D-07: final_contraction_low = pivot_price × (1 − final_contraction_depth).
+def _stop_minervini_vcp(row: pd.Series, ticker_history: pd.DataFrame) -> float:
+    """D-07: final_contraction_low = pivot_price * (1 - final_contraction_depth).
 
     Pitfall 5 guard: assert diag['type'] == 'vcp' AND required keys present.
     If diagnostics are malformed (corrupt blob with type='none' on a vcp-tagged
@@ -127,19 +127,19 @@ def _stop_minervini_vcp(row: "pd.Series", ticker_history: "pd.DataFrame") -> flo
 
 
 def _recent_swing_low_distance(
-    ticker_history: "pd.DataFrame",
+    ticker_history: pd.DataFrame,
     entry_price: float,
     atr: float,
 ) -> float:
-    """Return (entry_price − most_recent_swing_low) over the last 20 bars.
+    """Return (entry_price - most_recent_swing_low) over the last 20 bars.
 
     Reuses screener.indicators.patterns.find_pivots with order=3 (same as
     FLAG_PIVOT_ORDER). RESEARCH §Pattern 2.
 
     Fallback when no trough is found in the window OR history is too short
-    (< 2 × order + 1 bars): return 2.0 × atr — net effect with the outer
-    `max(1.5×atr, ...)` and `min(..., 2×atr)` clamps in `_stop_leader_hold`
-    is a stop at `entry_price − 2×atr`.
+    (< 2 * order + 1 bars): return 2.0 * atr -- net effect with the outer
+    `max(1.5*atr, ...)` and `min(..., 2*atr)` clamps in `_stop_leader_hold`
+    is a stop at `entry_price - 2*atr`.
     """
     if "low" not in ticker_history.columns or "high" not in ticker_history.columns:
         return 2.0 * atr
@@ -155,8 +155,8 @@ def _recent_swing_low_distance(
     return max(0.0, entry_price - last_trough_low)
 
 
-def _stop_leader_hold(row: "pd.Series", ticker_history: "pd.DataFrame") -> float:
-    """D-07: entry_price − clamp(max(1.5×ATR, recent_swing_low_distance), max=2×ATR)."""
+def _stop_leader_hold(row: pd.Series, ticker_history: pd.DataFrame) -> float:
+    """D-07: entry_price - clamp(max(1.5*ATR, recent_swing_low_distance), max=2*ATR)."""
     entry = float(row["close"])
     atr = float(row["atr_14"])
     swing_dist = _recent_swing_low_distance(ticker_history, entry, atr)
@@ -167,7 +167,7 @@ def _stop_leader_hold(row: "pd.Series", ticker_history: "pd.DataFrame") -> float
 
 # --- Dispatch registry (SC-2 satisfaction) -------------------------------
 
-STOP_HELPERS: Final[dict[str, Callable[["pd.Series", "pd.DataFrame"], float]]] = {
+STOP_HELPERS: Final[dict[str, Callable[[pd.Series, pd.DataFrame], float]]] = {
     "qullamaggie_continuation": _stop_qullamaggie,
     "minervini_vcp": _stop_minervini_vcp,
     "leader_hold": _stop_leader_hold,
@@ -179,15 +179,15 @@ STOP_HELPERS: Final[dict[str, Callable[["pd.Series", "pd.DataFrame"], float]]] =
 def _compute_pivot_distance_atr_breakout(
     close: float, atr: float, pattern_diagnostics: str
 ) -> float:
-    """Distance ABOVE breakout pivot in ATR units: (close − pivot_price) / atr.
+    """Distance ABOVE breakout pivot in ATR units: (close - pivot_price) / atr.
 
-    Phase 7 NEW column (RESEARCH Open Question 3 / Assumption A3) — distinct
-    from Phase 4's `pivot_distance_atr` which is (high_52w − close) / atr
+    Phase 7 NEW column (RESEARCH Open Question 3 / Assumption A3) -- distinct
+    from Phase 4's `pivot_distance_atr` which is (high_52w - close) / atr
     (distance BELOW the 52w high). The new column feeds the D-09 atr_zone
     3-bucket classifier; the Phase 4 column feeds Phase 4's 2-state pivot_zone.
 
     Returns NaN when atr is 0 or pivot_price is missing from diagnostics
-    (e.g. type='none' for leader_hold picks — they have no breakout pivot).
+    (e.g. type='none' for leader_hold picks -- they have no breakout pivot).
     """
     if atr <= 0:
         return float("nan")
@@ -297,7 +297,7 @@ def compute_sizing(
             rejection = "invalid_stop"
             risk_per_share = max(0.0, risk_per_share)
 
-        # --- 1×ADR auto-reject (D-06 / SIZ-02) ------------------------
+        # --- 1xADR auto-reject (D-06 / SIZ-02) ------------------------
         adr_dollars = (adr_pct / 100.0) * close_price
         if rejection == "" and risk_per_share > adr_dollars and adr_dollars > 0:
             rejection = "adr_exceeded"
