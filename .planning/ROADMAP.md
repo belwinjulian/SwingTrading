@@ -255,7 +255,30 @@ Plans:
 
 **Estimated Complexity:** M
 
-**Plans:** TBD
+**Plans:** 5 plans
+
+Plans:
+
+**Wave 0 — Foundation**
+- [ ] 07-01-foundation-settings-schemas-fixtures-PLAN.md — Settings (RISK_PCT=0.01, JOURNAL_THRESHOLD=50.0, JOURNAL_DB_PATH) + RankingSnapshotSchema +7 sizing cols + .gitignore allowlist for data/journal.sqlite + sized_input_cross() fixture + 25 named pytest.skip skeletons across 3 new test files (SIZ-01, SIZ-05, OUT-04..06)
+
+**Wave 1 — Sizing + Persistence** *(blocked on 07-01; 07-02 and 07-03 run in parallel — zero file overlap)*
+- [ ] 07-02-sizing-module-PLAN.md — sizing.py body: compute_sizing() + STOP_HELPERS dict registry + 3 _stop_* helpers + classify_atr_zone (3-bucket per D-09) + _trail_rule_label + _recent_swing_low_distance + architecture-test ALLOWED dict extension (sizing → indicators); 11 unit tests pass (SIZ-01..05)
+- [ ] 07-03-journal-persistence-PLAN.md — persistence.py: _PICKS_DDL (table + 2 indexes + immutability trigger in ONE executescript per Pitfall 1) + _journal_db_path + _ensure_picks_schema + append_picks_rows (INSERT OR IGNORE) + read_picks_for_date + PicksSchema (pandera DataFrameModel); 9 of 10 tests in test_journal.py pass (OUT-04..06; test_journal_cli_idempotent deferred to 07-05)
+
+**Wave 2 — Pipeline + Report Wiring** *(blocked on 07-02 + 07-03)*
+- [ ] 07-04-pipeline-report-wiring-PLAN.md — publishers/pipeline.run_pipeline injects sizing step 5.5 + journal append step 8.5 + _build_journal_rows_df + _build_journal_rows_df_from_snapshot helpers; pre-gate composite_score_raw captured per Pitfall 3; publishers/report.render_report gains Entry/Stop/Trail/Shares/Zone per-pick lines + `## Skipped Picks` footer; 4 integration tests in test_pipeline_journal.py pass (SIZ-01..05, OUT-04..05)
+
+**Wave 3 — CLI Body + Surface Lock Defense** *(blocked on 07-04)*
+- [ ] 07-05-cli-journal-body-PLAN.md — cli.journal body filled (idempotent catch-up using _build_journal_rows_df_from_snapshot) + PHASE_1_STUBS list emptied + new test_journal_subcommand_no_longer_stub mirror test + test_journal_cli_idempotent body filled; D-24 9-subcommand surface UNCHANGED; ends with checkpoint:human-verify smoke test (OUT-04)
+
+Cross-cutting constraints (truths shared by ≥ 2 plans):
+- All sizing logic dispatches by `playbook_tag` from Phase 6 (CONTEXT D-13 — snapshot already carries it)
+- `data/journal.sqlite` is git-committed via `.gitignore` allowlist (RESEARCH A4 — paper-trade history IS the v1.x performance contract)
+- pivot_distance_atr (Phase 4 sign convention) UNTOUCHED; new pivot_distance_atr_breakout column added for D-09 3-bucket atr_zone classifier (RESEARCH Open Question 3)
+- composite_score threshold for journal append uses the PRE-gate raw composite (Pitfall 3) — captured as composite_score_raw before apply_regime_gate
+- Every plan re-runs FND-04 no-look-ahead mutation gate in <verify>
+- D-24 9-subcommand CLI surface LOCKED — `journal` fills its body; no 10th subcommand
 
 ### Phase 8: GitHub Actions Cron & Operations
 
@@ -286,7 +309,7 @@ Plans:
 | 4. Trend Template, Composite Skeleton & First Report | 5/5 | Complete | 2026-05-10 |
 | 5. Backtest Harness & No-Look-Ahead Gate | 6/6 | Complete (human ratify pending) | 2026-05-16 |
 | 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 2/5 | Executing (Waves 0–1 patterns ✓) | - |
-| 7. Sizing Finalization & Paper-Trade Journal | 0/? | Not started | - |
+| 7. Sizing Finalization & Paper-Trade Journal | 0/5 | Planned | - |
 | 8. GitHub Actions Cron & Operations | 0/? | Not started | - |
 
 ## Coverage Report
