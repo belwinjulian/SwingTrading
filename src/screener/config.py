@@ -74,6 +74,15 @@ class Settings(BaseSettings):
     INSIDER_CACHE_PATH: Path = Path("data/insider/form4.sqlite")
     PATTERN_AUDIT_DIR: Path = Path("data/pattern_audit")
 
+    # Phase 7 — sizing finalization + journal (D-05 / D-01 / OUT-04).
+    # ACCOUNT_EQUITY already declared at line 39; do NOT duplicate.
+    # RISK_PCT_PER_TRADE (line 38, default 0.0075) is the EXISTING Phase 4 field; per D-05
+    # the Phase 7 sizing formula reads a NEW field `RISK_PCT` with default 0.01 (1%).
+    # The legacy RISK_PCT_PER_TRADE field is preserved as a deprecation buffer.
+    RISK_PCT: float = 0.01
+    JOURNAL_THRESHOLD: float = 50.0
+    JOURNAL_DB_PATH: Path = Path("data/journal.sqlite")
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
