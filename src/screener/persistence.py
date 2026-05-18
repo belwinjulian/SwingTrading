@@ -1086,6 +1086,67 @@ def _ensure_picks_schema(db_path: "Path | None" = None) -> Path:
     return path
 
 
+def append_picks_rows(rows: list[dict], db_path: "Path | None" = None) -> int:
+    """Idempotent append — INSERT OR IGNORE on UNIQUE(ticker, snapshot_date).
+
+    Caller MUST pandera-validate as PicksSchema BEFORE calling (Pattern B —
+    same contract documented on append_form4_rows). This function trusts that
+    validation has already run and performs only the SQL insert.
+
+    Returns the rowcount actually inserted (0 on a full-duplicate batch);
+    skipped duplicates are silent (Pitfall 2 — AUTOINCREMENT id WILL still
+    advance for skipped rows; do NOT rely on id semantically).
+
+    Args:
+        rows: list of dicts with the 13 decision keys required by INSERT OR
+            IGNORE INTO picks plus ingested_at. Each row's keys must match
+            the named placeholders exactly.
+        db_path: optional path override (test fixtures pass `tmp_path / 'j.sqlite'`).
+    """
+    if not rows:
+        return 0
+    path = _ensure_picks_schema(db_path)
+    with sqlite3.connect(path) as conn:
+        cur = conn.executemany(
+            """INSERT OR IGNORE INTO picks
+               (ticker, snapshot_date, playbook_tag, composite_score,
+                regime_state, entry_price, stop_price, shares,
+                risk_per_share, atr_zone, pivot_distance_atr_breakout,
+                features_json, ingested_at)
+               VALUES (:ticker, :snapshot_date, :playbook_tag, :composite_score,
+                       :regime_state, :entry_price, :stop_price, :shares,
+                       :risk_per_share, :atr_zone, :pivot_distance_atr_breakout,
+                       :features_json, :ingested_at)""",
+            rows,
+        )
+        conn.commit()
+        n_inserted = cur.rowcount
+    log.info(
+        "journal_appended",
+        n_attempted=len(rows),
+        n_inserted=n_inserted,
+        n_idempotent_skip=len(rows) - n_inserted,
+    )
+    return n_inserted
+
+
+def read_picks_for_date(
+    snapshot_date: str, db_path: "Path | None" = None
+) -> pd.DataFrame:
+    """Read picks rows for a single snapshot_date, ordered by composite_score DESC.
+
+    Returns an empty DataFrame (with the picks table columns) if no rows match.
+    Mirrors `read_insider_cluster_buy`'s `pd.read_sql_query` idiom.
+    """
+    path = _ensure_picks_schema(db_path)
+    with sqlite3.connect(path) as conn:
+        return pd.read_sql_query(
+            "SELECT * FROM picks WHERE snapshot_date = ? ORDER BY composite_score DESC",
+            conn,
+            params=(snapshot_date,),
+        )
+
+
 def append_form4_rows(db_path: "Path | None", rows: list[dict]) -> int:
     """Idempotent append — ON CONFLICT(filing_id) DO NOTHING per D-10.
 
