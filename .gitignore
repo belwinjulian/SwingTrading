@@ -65,6 +65,10 @@ data/pattern_audit/
 /data/pattern_audit/*
 !/data/pattern_audit/.gitkeep
 
+# Phase 7 (RESEARCH A4 — paper-trade history IS the v1.x performance contract;
+# commit the SQLite file, mirror the splits.parquet allowlist idiom).
+!/data/journal.sqlite
+
 # IDE
 .vscode/
 .idea/

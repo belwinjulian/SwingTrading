@@ -268,6 +268,56 @@ class RankingSnapshotSchema(pa.DataFrameModel):
     earnings_in_3d_warn: Series[bool] = pa.Field(nullable=False)
     eps_knowable_from: Series[str] = pa.Field(nullable=True)  # ISO YYYY-MM-DD; empty when fundamentals row missing (W11)
 
+    # Phase 7 extension (CONTEXT.md D-04 / D-09 / SIZ-01..05) — sizing columns
+    # populated by sizing.compute_sizing() in Plan 07-02 and projected to the
+    # snapshot at the write boundary by publishers/pipeline.py (Plan 07-04
+    # extends the existing W-Plan05-1 projection from Phase 6 Plan 06-05).
+    #
+    # NULLABILITY (revision iteration 1 Blocker #2 fix): compute_sizing runs on
+    # the FULL universe in pipeline.py. Rows where playbook_tag='none' (~95% of
+    # universe per signals/composite.py:261 default branch) have no actionable
+    # sizing — those columns land as NaN. The snapshot MUST retain the full row
+    # set to preserve OUT-03 (full ranked universe in snapshot) and the Phase 5
+    # backtest reader contract. Therefore: nullable=True on all 7 sizing cols.
+    #
+    # pivot_distance_atr (line 243 above) keeps the Phase 4 sign convention
+    # `(high_52w - close)/atr` (positive when close is BELOW 52w high) — this
+    # is the "distance from 52w high" measurement used by Phase 4's pivot_zone.
+    # Phase 7 introduces a NEW column `pivot_distance_atr_breakout` with sign
+    # `(close - pivot_price)/atr` (positive when close is ABOVE breakout pivot),
+    # which feeds the D-09 3-bucket atr_zone classifier (RESEARCH Assumption
+    # A3 / Open Question 3).
+    #
+    # atr_zone: `"not_applicable"` sentinel (vs nullable=True) — chosen so the
+    # `isin` enum still enforces value integrity on actionable rows; rows with
+    # playbook_tag='none' or no breakout pivot receive the sentinel.
+    stop_price: Series[float] = pa.Field(gt=0.0, nullable=True)
+    entry_price: Series[float] = pa.Field(gt=0.0, nullable=True)
+    shares: Series[pd.Int64Dtype] = pa.Field(ge=0, nullable=True)
+    risk_per_share: Series[float] = pa.Field(ge=0.0, nullable=True)
+    atr_zone: Series[str] = pa.Field(
+        isin=["in-zone", "extended", "chase, skip", "not_applicable"], nullable=True,
+    )
+    pivot_distance_atr_breakout: Series[float] = pa.Field(nullable=True)
+    trail_rule_label: Series[str] = pa.Field(nullable=True)
+
+    # Phase 7 revision iteration 1 Blocker #2 / Warning #6: composite_score_raw
+    # is the PRE-regime-gate composite score. Captured BEFORE apply_regime_gate
+    # in run_pipeline (Plan 07-04 Task 1) and used as the SINGLE SOURCE OF TRUTH
+    # for the JOURNAL_THRESHOLD filter in BOTH the live pipeline AND the catch-up
+    # flow (cli.journal — Plan 07-05). Eliminates the per-flow divergence flagged
+    # by revision Warning #6.
+    composite_score_raw: Series[float] = pa.Field(ge=0.0, le=100.0, nullable=True)
+
+    # Phase 7 revision iteration 1 Blocker #1: actionable-pick derivation moved
+    # out of pipeline.py mutation and into a derived VIEW. The snapshot retains
+    # these two columns so cli.journal (Plan 07-05) can re-derive the actionable
+    # set from the snapshot alone (no need to re-run sizing).
+    adr_rejected: Series[bool] = pa.Field(nullable=True)
+    rejection_reason: Series[str] = pa.Field(
+        isin=["", "adr_exceeded", "invalid_stop", "missing_diagnostics"], nullable=True,
+    )
+
     class Config:
         strict = True
         coerce = False
