@@ -197,6 +197,17 @@ def test_snapshot_atomic_write_crash_no_residue(
             "insider_cluster_buy": [False],
             "earnings_in_3d_warn": [False],
             "eps_knowable_from": pd.array([None], dtype=object),
+            # Phase 7 extension (Plan 07-01) — nullable sizing columns, all null for schema tests.
+            "stop_price": [float("nan")],
+            "entry_price": [float("nan")],
+            "shares": pd.array([pd.NA], dtype=pd.Int64Dtype()),
+            "risk_per_share": [float("nan")],
+            "atr_zone": pd.array([None], dtype=object),
+            "pivot_distance_atr_breakout": [float("nan")],
+            "trail_rule_label": pd.array([None], dtype=object),
+            "composite_score_raw": [float("nan")],
+            "adr_rejected": [False],
+            "rejection_reason": pd.array([None], dtype=object),
         }
     )
 
