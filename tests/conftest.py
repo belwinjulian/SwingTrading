@@ -557,3 +557,79 @@ def form4_cluster_db_path() -> Path:
 def form4_no_cluster_db_path() -> Path:
     """Path to the synthetic Form 4 SQLite with a single-insider GOOGL row."""
     return Path(__file__).parent / "fixtures" / "form4_no_cluster.sqlite"
+
+
+# --- Phase 7 Wave 0 fixtures (Plan 07-01) ------------------------------------
+
+
+@pytest.fixture(scope="function")
+def sized_input_cross() -> pd.DataFrame:
+    """5-ticker cross-section with ALL columns sizing.compute_sizing() requires.
+
+    Mitigates RESEARCH §Pitfall 7 (Phase-4 fixtures lack Phase-6+7 columns).
+    Function-scope: tests MAY mutate this frame.
+
+    Ticker layout (covers every dispatch branch in Plan 07-02):
+      - QULL  → qullamaggie_continuation; ADR%=5.5 (medium tier → 20d SMA trail)
+      - VCP1  → minervini_vcp with full depth_sequence diagnostics
+      - LEAD  → leader_hold (no pattern; sizing falls back to 1.5×ATR / swing-low)
+      - REJC  → qullamaggie_continuation with adr_pct=0.3 → triggers D-06 reject
+      - INVS  → leader_hold; tail-risk close==low (Pitfall 6: entry==stop guard)
+
+    Returns a DataFrame indexed by 'ticker' with these columns:
+      close, low, high, atr_14, adr_pct, playbook_tag, pattern_diagnostics,
+      composite_score, regime_state, regime_score, passes_trend_template,
+      rs_rating, trend_template_score, volume_component.
+    """
+    from screener.indicators.patterns import encode_pattern_diagnostics
+
+    vcp_diag = encode_pattern_diagnostics({
+        "type": "vcp",
+        "n_contractions": 3,
+        "depth_sequence": [0.25, 0.15, 0.08],
+        "first_leg_depth": 0.25,
+        "final_contraction_depth": 0.08,
+        "breakout_vol_multiple": 1.7,
+        "breakout_strength": 0.85,
+        "pivot_price": 100.0,
+        "days_in_consolidation": 18,
+    })
+    none_diag = encode_pattern_diagnostics({"type": "none"})
+    flag_diag = encode_pattern_diagnostics({
+        "type": "flag",
+        "n_contractions": 0,
+        "depth_sequence": [],
+        "first_leg_depth": 0.0,
+        "final_contraction_depth": 0.0,
+        "breakout_vol_multiple": 1.6,
+        "breakout_strength": 0.72,
+        "pivot_price": 120.0,
+        "days_in_consolidation": 12,
+    })
+
+    df = pd.DataFrame(
+        {
+            "ticker": ["QULL", "VCP1", "LEAD", "REJC", "INVS"],
+            "close":  [120.0, 100.0, 200.0,  80.0, 50.0],
+            "low":    [118.0,  99.0, 198.0,  79.5, 50.0],  # INVS close==low → Pitfall 6
+            "high":   [121.5, 101.0, 202.0,  80.5, 50.5],
+            "atr_14": [  2.0,   1.5,   4.0,   0.5,  1.0],
+            "adr_pct":[  5.5,   4.2,   2.1,   0.3,  3.0],  # REJC adr_pct=0.3 → reject
+            "playbook_tag": [
+                "qullamaggie_continuation",
+                "minervini_vcp",
+                "leader_hold",
+                "qullamaggie_continuation",
+                "leader_hold",
+            ],
+            "pattern_diagnostics": [flag_diag, vcp_diag, none_diag, flag_diag, none_diag],
+            "composite_score": [72.0, 68.5, 65.0, 55.0, 51.0],
+            "regime_state": ["Confirmed Uptrend"] * 5,
+            "regime_score": [0.85] * 5,
+            "passes_trend_template": [True, True, True, True, True],
+            "rs_rating": pd.array([92, 88, 95, 82, 80], dtype=pd.Int64Dtype()),
+            "trend_template_score": pd.array([8, 7, 8, 6, 6], dtype=pd.Int64Dtype()),
+            "volume_component": [0.7, 0.6, 0.5, 0.3, 0.4],
+        }
+    ).set_index("ticker")
+    return df
