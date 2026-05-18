@@ -231,8 +231,45 @@ def report() -> None:
 
 @app.command("journal")
 def journal() -> None:
-    """Append actionable picks to data/journal.sqlite (the v2 ML training contract)."""
-    _stub("journal")
+    """Append actionable picks to data/journal.sqlite (the v2 ML training contract).
+
+    Idempotent catch-up: reads data/snapshots/<today>.parquet, filters to
+    actionable picks (composite_score >= JOURNAL_THRESHOLD AND regime_state
+    != 'Correction'), and re-appends via persistence.append_picks_rows.
+    INSERT OR IGNORE on UNIQUE(ticker, snapshot_date) makes re-runs zero-insert
+    (CONTEXT D-01).
+    """
+    configure_logging()
+    try:
+        from screener.persistence import (
+            PicksSchema,
+            append_picks_rows,
+            validate_at_write,
+        )
+        from screener.publishers.pipeline import _build_journal_rows_df_from_snapshot
+
+        today_iso = date.today().isoformat()
+        journal_rows_df = _build_journal_rows_df_from_snapshot(today_iso)
+        if journal_rows_df.empty:
+            log.info("journal_catchup_empty", snapshot_date=today_iso)
+            return
+        validated = validate_at_write(PicksSchema, journal_rows_df)
+        n_inserted = append_picks_rows(validated.to_dict(orient="records"))
+        log.info(
+            "journal_catchup_complete",
+            snapshot_date=today_iso,
+            n_attempted=len(journal_rows_df),
+            n_inserted=n_inserted,
+            n_idempotent_skip=len(journal_rows_df) - n_inserted,
+        )
+    except typer.Exit:
+        # Pitfall 7: typer.Exit from validate_at_write or append_picks_rows
+        # MUST propagate to set process exit code.
+        raise
+    except Exception as e:
+        # T-3-02 carry-forward: log only error_type, never str(e).
+        log.error("journal_failed", error_type=type(e).__name__)
+        raise typer.Exit(code=1) from e
 
 
 @app.command("backtest")
