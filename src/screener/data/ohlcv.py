@@ -86,6 +86,8 @@ def fetch_ohlcv(ticker: str, start: str | date, today: date) -> pd.DataFrame:
     df = df.rename(columns=str.lower)
     if df.index.name is None or df.index.name.lower() != "date":
         df.index.name = "date"
+    if df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
 
     last = df.index[-1].date()
     if last < today - timedelta(days=4):
