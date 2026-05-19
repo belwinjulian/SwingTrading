@@ -210,7 +210,9 @@ def fetch_splits(ticker: str) -> pd.DataFrame:
             "ratio": actions.get("Stock Splits", pd.Series(0.0, index=actions.index)).astype(float).values,
             "dividend": actions.get("Dividends", pd.Series(0.0, index=actions.index)).astype(float).values,
         },
-        index=pd.DatetimeIndex(actions.index, name="date"),
+        index=pd.DatetimeIndex(actions.index, name="date").tz_localize(None)
+        if actions.index.tz is not None
+        else pd.DatetimeIndex(actions.index, name="date"),
     )
     # Keep only rows where at least one of ratio/dividend is non-zero.
     keep = (df["ratio"] > 0) | (df["dividend"] > 0)
