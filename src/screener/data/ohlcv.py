@@ -75,6 +75,7 @@ def fetch_ohlcv(ticker: str, start: str | date, today: date) -> pd.DataFrame:
         threads=False,              # D-10: no batch/parallel
         actions=False,              # splits fetched separately via Ticker.actions
         multi_level_index=False,    # Pitfall 9: yf 1.3.x default is True
+        timeout=15,                 # prevent indefinite network hang
     )
     if df is None or len(df) == 0:
         raise StaleOrEmptyError(f"yf returned empty for {ticker}")
