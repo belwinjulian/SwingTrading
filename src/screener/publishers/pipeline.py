@@ -177,7 +177,7 @@ def _add_catalyst_columns(
     out["earnings_in_3d_warn"] = (
         (out["days_to_next_earnings"].fillna(999) <= 3)
         & (out["days_to_next_earnings"].fillna(-1) >= 0)
-    )
+    ).astype(bool)
 
     # 1b. eps_knowable_from — ISO date string per ticker (W11)
     def _knowable(t: str) -> str:

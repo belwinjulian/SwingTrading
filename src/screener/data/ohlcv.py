@@ -85,7 +85,7 @@ def fetch_ohlcv(ticker: str, start: str | date, today: date) -> pd.DataFrame:
     # is the single source of truth for column casing — append_incremental and
     # run_with_breaker MUST NOT rename columns again (issue 2 reconciliation).
     df = df.rename(columns=str.lower)
-    if df.index.name is None or df.index.name.lower() != "date":
+    if df.index.name != "date":
         df.index.name = "date"
     if df.index.tz is not None:
         df.index = df.index.tz_localize(None)

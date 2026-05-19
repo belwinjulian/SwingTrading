@@ -98,11 +98,8 @@ def post_gap_continuation_panel(panel: pd.DataFrame) -> pd.Series:
     gap_pct = panel["open"] / prev_close - 1.0
     high_low = panel["high"] - panel["low"]
     held = panel["close"] >= panel["low"] + POST_GAP_UPPER_THIRD_THRESHOLD * high_low
-    sma_vol_50 = (
-        panel.groupby(level="ticker")["volume"]
-        .rolling(SMA_VOLUME_BASELINE_DAYS)
-        .mean()
-        .droplevel(0)
+    sma_vol_50 = panel.groupby(level="ticker")["volume"].transform(
+        lambda x: x.rolling(SMA_VOLUME_BASELINE_DAYS).mean()
     )
     vol_confirm = panel["volume"] > POST_GAP_MIN_VOL_MULTIPLE * sma_vol_50
     return ((gap_pct >= POST_GAP_MIN_PCT) & held & vol_confirm).fillna(False)

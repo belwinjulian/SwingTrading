@@ -82,7 +82,7 @@ def _fetch_yf_macro(ticker: str, start: str | date, today: date) -> pd.DataFrame
     if df is None or len(df) == 0:
         raise StaleOrEmptyError(f"yf returned empty for {ticker}")
     df = df.rename(columns=str.lower)
-    if df.index.name is None or df.index.name.lower() != "date":
+    if df.index.name != "date":
         df.index.name = "date"
     last = df.index[-1].date()
     if last < today - timedelta(days=4):
