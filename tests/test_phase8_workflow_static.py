@@ -46,17 +46,36 @@ PINNED_HASH_RE = re.compile(
 
 def test_refresh_workflow_exists_and_yaml_valid() -> None:
     """OPS-01: .github/workflows/refresh.yml exists and parses as valid YAML."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    import yaml
+    assert REFRESH_YML.exists(), f"missing file: {REFRESH_YML}"
+    data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
+    assert isinstance(data, dict), f"YAML root is not a mapping: {type(data)!r}"
+    assert data.get("name") == "refresh", f"name != 'refresh': {data.get('name')!r}"
 
 
 def test_refresh_cron_schedule() -> None:
     """OPS-01: refresh.yml schedules on cron '30 22 * * 1-5' (UTC, weekdays)."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    import yaml
+    data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
+    # PyYAML parses bareword `on:` as boolean True.
+    on_block = data.get(True, data.get("on"))
+    assert isinstance(on_block, dict), f"`on:` block missing: {on_block!r}"
+    schedule = on_block.get("schedule", [])
+    crons = [entry.get("cron") for entry in schedule if isinstance(entry, dict)]
+    assert "30 22 * * 1-5" in crons, (
+        f"refresh.yml cron must be '30 22 * * 1-5' (OPS-01); got {crons!r}"
+    )
 
 
 def test_refresh_has_workflow_dispatch() -> None:
     """OPS-04: refresh.yml has `workflow_dispatch:` for manual re-runs."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    import yaml
+    data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
+    on_block = data.get(True, data.get("on"))
+    assert isinstance(on_block, dict), f"`on:` block missing: {on_block!r}"
+    assert "workflow_dispatch" in on_block, (
+        f"refresh.yml must declare workflow_dispatch (OPS-04); on: keys = {list(on_block.keys())!r}"
+    )
 
 
 def test_refresh_workflow_pins_actions_by_sha() -> None:
@@ -64,25 +83,62 @@ def test_refresh_workflow_pins_actions_by_sha() -> None:
     commit SHA with a `# vX.Y.Z` trailing comment. Asserts the four required
     pins (checkout v4.2.2, setup-uv v6.8.0, cache v4.3.0, git-auto-commit v5.2.0)
     are present."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    text = REFRESH_YML.read_text(encoding="utf-8")
+    pins = PINNED_HASH_RE.findall(text)
+    # checkout(1) + setup-uv(1) + cache(1) + git-auto-commit(2 — success + failure)
+    assert len(pins) >= 5, (
+        f"refresh.yml must pin at least 5 action references by SHA; got {len(pins)}: {pins!r}"
+    )
+    required = {
+        "11bd71901bbe5b1630ceea73d27597364c9af683": "actions/checkout v4.2.2",
+        "d0cc045d04ccac9d8b7881df0226f9e82c39688e": "astral-sh/setup-uv v6.8.0",
+        "0057852bfaa89a56745cba8c7296529d2fc39830": "actions/cache v4.3.0",
+        "b863ae1933cb653a53c021fe36dbb774e1fb9403": "stefanzweifel/git-auto-commit-action v5.2.0",
+    }
+    for sha, name in required.items():
+        assert sha in text, f"refresh.yml missing required SHA pin for {name}: {sha!r}"
 
 
 def test_refresh_permissions_contents_write() -> None:
     """T-08-overscope-perms / D-09: refresh.yml declares
     `permissions: contents: write` at workflow level (not job level), no
     additional scopes."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    import yaml
+    data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
+    perms = data.get("permissions")
+    assert isinstance(perms, dict), f"permissions block missing or wrong shape: {perms!r}"
+    assert perms.get("contents") == "write", (
+        f"refresh.yml permissions.contents must be 'write' (D-09); got {perms!r}"
+    )
+    # Defense: no extra over-scoped permissions slipped in.
+    assert set(perms.keys()) <= {"contents"}, (
+        f"refresh.yml has unexpected extra permission scopes: {set(perms.keys())!r}; "
+        f"only 'contents: write' should be present"
+    )
 
 
 def test_refresh_timeout_120_minutes() -> None:
     """D-07: refresh.yml job sets `timeout-minutes: 120`."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    import yaml
+    data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
+    job = data.get("jobs", {}).get("refresh", {})
+    assert job.get("timeout-minutes") == 120, (
+        f"refresh job timeout-minutes must be 120 (D-07 cold-cache headroom); "
+        f"got {job.get('timeout-minutes')!r}"
+    )
 
 
 def test_refresh_cancel_in_progress_false() -> None:
     """Pitfall #3: refresh.yml concurrency block has `cancel-in-progress: false`
     (long cold-cache runs must not be killed by manual workflow_dispatch)."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    import yaml
+    data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
+    concurrency = data.get("concurrency", {})
+    assert isinstance(concurrency, dict), f"concurrency block missing: {concurrency!r}"
+    assert concurrency.get("cancel-in-progress") is False, (
+        f"refresh.yml concurrency.cancel-in-progress must be False (Pitfall #3); "
+        f"got {concurrency!r}"
+    )
 
 
 def test_refresh_no_github_event_interpolation_in_run_blocks() -> None:
@@ -90,14 +146,69 @@ def test_refresh_no_github_event_interpolation_in_run_blocks() -> None:
     `run:` blocks (would be a code-injection vector). Only safe contexts
     permitted: ${{ runner.os }}, ${{ secrets.* }}, ${{ github.run_number }},
     ${{ steps.*.outputs.* }}."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    text = REFRESH_YML.read_text(encoding="utf-8")
+    import re
+
+    # Find every interpolation expression in the file.
+    interpolations = re.findall(r"\$\{\{\s*([^}]+?)\s*\}\}", text)
+    forbidden = [
+        expr for expr in interpolations
+        if "github.event." in expr or expr.strip().startswith("github.event")
+    ]
+    assert not forbidden, (
+        f"refresh.yml contains forbidden `${{{{ github.event.* }}}}` interpolation "
+        f"(T-08-script-injection vector): {forbidden!r}"
+    )
 
 
 def test_refresh_two_step_commit_pattern() -> None:
     """OPS-02 + D-05: refresh.yml has TWO git-auto-commit steps with mutually
     exclusive guards — `if: success()` for full artifact commit, `if: failure()`
-    for runs.jsonl-only failure commit."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    for runs.jsonl-only failure commit. Defense-in-depth: walks parsed YAML
+    steps and asserts exactly one auto-commit step is guarded by `success()`
+    and exactly one by `failure()` (W-04 from gsd-plan-checker — replaces the
+    earlier SHA-count heuristic with a structural assertion)."""
+    import yaml
+    text = REFRESH_YML.read_text(encoding="utf-8")
+    # Coarse SHA-count guard (cheap, catches obvious regressions).
+    sha_count = text.count("b863ae1933cb653a53c021fe36dbb774e1fb9403")
+    assert sha_count == 2, (
+        f"refresh.yml must have exactly 2 stefanzweifel/git-auto-commit-action SHA pins "
+        f"(success + failure); got {sha_count}"
+    )
+    # Structural assertion: walk every step, count auto-commit steps by `if:` guard.
+    data = yaml.safe_load(text)
+    AUTO_COMMIT_SHA = (
+        "stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403"
+    )
+    success_steps = []
+    failure_steps = []
+    for job_name, job in data.get("jobs", {}).items():
+        for step in job.get("steps", []) or []:
+            uses = step.get("uses", "") or ""
+            if AUTO_COMMIT_SHA in uses:
+                guard = step.get("if", "") or ""
+                if "success()" in guard:
+                    success_steps.append((job_name, step.get("name", "?")))
+                elif "failure()" in guard:
+                    failure_steps.append((job_name, step.get("name", "?")))
+    assert len(success_steps) == 1, (
+        f"expected exactly 1 auto-commit step guarded by `if: success()`; "
+        f"got {len(success_steps)}: {success_steps!r}"
+    )
+    assert len(failure_steps) == 1, (
+        f"expected exactly 1 auto-commit step guarded by `if: failure()`; "
+        f"got {len(failure_steps)}: {failure_steps!r}"
+    )
+    # Sanity belt-and-suspenders: text-level checks still hold.
+    assert "if: success()" in text, (
+        "refresh.yml missing explicit `if: success()` guard on success-path commit "
+        "(Pitfall #2 — be explicit even though it's the default)"
+    )
+    assert text.count("if: failure()") >= 2, (
+        f"refresh.yml needs `if: failure()` on BOTH write-record + failure-commit steps; "
+        f"got {text.count('if: failure()')} occurrences"
+    )
 
 
 def test_refresh_file_pattern_includes_reports_and_runs_jsonl() -> None:
@@ -105,7 +216,27 @@ def test_refresh_file_pattern_includes_reports_and_runs_jsonl() -> None:
     `data/runs.jsonl`, `data/snapshots/`, `data/universe/`, `data/journal.sqlite`,
     `data/ohlcv/**/splits.parquet`, and `reports/`. The failure-path commit's
     `file_pattern` is `data/runs.jsonl` ONLY."""
-    pytest.skip("body filled by Plan 08-06 (Wave 3)")
+    text = REFRESH_YML.read_text(encoding="utf-8")
+    required_paths_success_path = [
+        "data/runs.jsonl",
+        "data/snapshots/",
+        "data/universe/",
+        "data/journal.sqlite",
+        "data/ohlcv/**/splits.parquet",
+        "reports/",
+    ]
+    for path in required_paths_success_path:
+        assert path in text, (
+            f"refresh.yml success file_pattern missing {path!r} "
+            f"(OPS-02); see RESEARCH §Implementation Approach refresh.yml skeleton"
+        )
+    # Failure path commits ONLY data/runs.jsonl — the trailing
+    # `file_pattern: data/runs.jsonl` must appear (the success path has it
+    # in a multi-line block, the failure path inlines it).
+    assert "file_pattern: data/runs.jsonl" in text, (
+        "refresh.yml failure-path commit must declare `file_pattern: data/runs.jsonl` "
+        "(D-05: failure path commits ONLY runs.jsonl, no partial artifacts)"
+    )
 
 
 # === heartbeat.yml assertions (filled by Plan 08-04) ===

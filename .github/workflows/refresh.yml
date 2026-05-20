@@ -1,0 +1,152 @@
+name: refresh
+
+# OPS-01: nightly at 22:30 UTC weekdays (Mon-Fri).
+# OPS-04: workflow_dispatch enables manual re-runs from the Actions tab.
+# NO `push:` or `pull_request:` triggers — T-08-commit-loop mitigation:
+# the auto-commit step pushes to main; ci.yml runs on that push (intended
+# validation), but ci.yml does NOT trigger refresh.yml. No loop.
+on:
+  schedule:
+    - cron: "30 22 * * 1-5"
+  workflow_dispatch:
+
+# D-09: write permission scoped to this workflow only. T-08-overscope-perms
+# mitigated by per-workflow scope (not org-level, not PAT-backed).
+permissions:
+  contents: write
+
+# Pitfall #3: cancel-in-progress: false — a manual workflow_dispatch while
+# the nightly is still running (90-min cold-cache worst case) must NOT kill
+# the running job. The newer dispatch queues and starts after the current
+# finishes (or after timeout-minutes: 120 elapses).
+concurrency:
+  group: refresh-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: refresh
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # D-07: cold-cache full OHLCV refresh can take ~90 min
+    env:
+      # D-10: GitHub Secrets injected as env vars at the JOB level.
+      # pydantic-settings reads these as fallback when .env is absent.
+      # GitHub Actions auto-masks values from `secrets.*` in logs.
+      # T-08-secrets mitigation: NEVER echo these; NEVER `set -x`.
+      FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+      EDGAR_IDENTITY: ${{ secrets.EDGAR_IDENTITY }}
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      # OPS-05 / run_log integration: forward an ISO start_time to the
+      # failure-record writer if the pipeline step fails before run_pipeline
+      # has a chance to record its own.
+      RUN_START_TIME: ""
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python from pyproject
+        run: uv python install
+
+      - name: Install dependencies (frozen)
+        run: uv sync --frozen --extra dev
+
+      # D-02: compute cache keys (daily primary, weekly fallback via restore-keys).
+      # Pitfall #6: %V is ISO 8601 week — safe Mon-Fri cron; weekend manual
+      # dispatch may pick a different week but restore-keys chain falls through.
+      - name: Compute cache keys
+        id: cache_keys
+        run: |
+          set -e
+          echo "daily=ohlcv-data-${{ runner.os }}-$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+          echo "weekly=ohlcv-data-${{ runner.os }}-$(date -u +%Y-W%V)" >> "$GITHUB_OUTPUT"
+          # Capture start time for the failure-record fallback (OPS-05).
+          echo "RUN_START_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      # D-01 / D-03: cache OHLCV + fundamentals + insider. NOT data/macro
+      # (macro re-fetched every night per D-03 — only 5 tickers, fast,
+      # ensures regime detection always uses the latest bar).
+      - name: Restore data caches
+        id: cache_restore
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: |
+            data/ohlcv
+            data/fundamentals
+            data/insider
+          key: ${{ steps.cache_keys.outputs.daily }}
+          restore-keys: |
+            ${{ steps.cache_keys.outputs.weekly }}
+            ohlcv-data-${{ runner.os }}-
+
+      # OPS-01: the nightly DAG.
+      # `set -e` aborts the chain on any non-zero exit -> step fails ->
+      # `if: failure()` fires -> failure record + commit path runs.
+      # T-08-secrets: NO `set -x` (would leak FINNHUB_API_KEY / EDGAR_IDENTITY
+      # to logs via uv subprocess environment dumps).
+      # `screener journal` is the 9th locked typer subcommand (Phase 7 / D-24).
+      - name: Run nightly pipeline
+        id: pipeline
+        run: |
+          set -e
+          uv run screener refresh-universe
+          uv run screener refresh-ohlcv
+          uv run screener refresh-macro
+          uv run screener refresh-fundamentals
+          uv run screener score
+          uv run screener report
+          uv run screener journal
+
+      # OPS-02 success path: auto-commit the day's artifacts.
+      # The success record was already appended to data/runs.jsonl by
+      # publishers/pipeline.run_pipeline() (Plan 08-05) — no extra Python step.
+      # file_pattern enumerates exactly what's allowed past .gitignore
+      # (Plan 08-02 carve-outs make this possible).
+      - name: Auto-commit success artifacts
+        if: success()
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403  # v5.2.0
+        with:
+          commit_message: "chore(nightly): refresh ${{ github.run_number }}"
+          file_pattern: |
+            data/runs.jsonl
+            data/snapshots/
+            data/universe/
+            data/journal.sqlite
+            data/ohlcv/**/splits.parquet
+            reports/
+
+      # OPS-05 failure path: write the failure record BEFORE committing,
+      # then surface the failure in $GITHUB_STEP_SUMMARY (OPS-05 SC#5).
+      # `if: failure()` and `if: success()` are mutually exclusive — exactly
+      # one of the two commit steps runs.
+      - name: Write failure run-log record
+        if: failure()
+        env:
+          RUN_ERROR_REASON: "nightly pipeline step failed (see preceding logs)"
+        run: |
+          set -e
+          uv run python -m screener.publishers.run_log failure
+          {
+            echo "## Nightly refresh FAILED"
+            echo ""
+            echo "**Run number:** ${{ github.run_number }}"
+            echo "**UTC time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+            echo "See the pipeline step logs above for the error reason."
+            echo "The failure record is committed to \`data/runs.jsonl\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # OPS-02 / D-05 failure-path commit: ONLY data/runs.jsonl.
+      # No reports/, no snapshots/, no journal — failure means we deliberately
+      # do NOT commit partial artifacts. The failure record alone is enough
+      # to make the failure traceable in the repo.
+      - name: Auto-commit failure run-log
+        if: failure()
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403  # v5.2.0
+        with:
+          commit_message: "chore(nightly): refresh ${{ github.run_number }} FAILED"
+          file_pattern: data/runs.jsonl
