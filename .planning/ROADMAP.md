@@ -297,16 +297,16 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 
 **Estimated Complexity:** S
 
-**Plans:** 6 plans in 4 waves
+**Plans:** 3/6 plans executed
 
 Plans:
 
 **Wave 0 — Foundation** *(no dependencies)*
-- [ ] 08-01-PLAN.md — Test scaffolding (4 new test files with 28 named pytest.skip skeletons) + src/screener/publishers/run_log.py module signature (TypedDict + _RUNS_PATH + stubs) — D-06 / D-24 9-subcommand CLI surface stays LOCKED (OPS-05)
+- [x] 08-01-PLAN.md — Test scaffolding (4 new test files with 28 named pytest.skip skeletons) + src/screener/publishers/run_log.py module signature (TypedDict + _RUNS_PATH + stubs) — D-06 / D-24 9-subcommand CLI surface stays LOCKED (OPS-05)
 
 **Wave 1 — Independent parallelizable** *(blocked on 08-01)*
-- [ ] 08-02-PLAN.md — .gitignore carve-outs (data/runs.jsonl, data/heartbeat.txt, reports/*.md) + fill 4 gitignore test bodies (OPS-02, OPS-03, OPS-05)
-- [ ] 08-03-PLAN.md — run_log.py append_record() + _cli_failure_entry() real bodies (fsync per Pitfall #5; json.dumps sort_keys; structlog event) + fill 5 unit test bodies (OPS-05)
+- [x] 08-02-PLAN.md — .gitignore carve-outs (data/runs.jsonl, data/heartbeat.txt, reports/*.md) + fill 4 gitignore test bodies (OPS-02, OPS-03, OPS-05)
+- [x] 08-03-PLAN.md — run_log.py append_record() + _cli_failure_entry() real bodies (fsync per Pitfall #5; json.dumps sort_keys; structlog event) + fill 5 unit test bodies (OPS-05)
 
 **Wave 2 — Heartbeat workflow + pipeline integration** *(blocked on 08-01 + 08-02 (carve-out) + 08-03 (run_log))*
 - [ ] 08-04-PLAN.md — .github/workflows/heartbeat.yml (cron 0 9 * * 1; permissions: contents: write — DEVIATES FROM CONTEXT D-09 per Pitfall #8 / Open Question A) + fill 7 heartbeat static test bodies incl. T-08-script-injection + T-08-secrets regression guards (OPS-03)
@@ -333,7 +333,7 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 | 5. Backtest Harness & No-Look-Ahead Gate | 6/6 | Complete (human ratify pending) | 2026-05-16 |
 | 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 2/5 | Executing (Waves 0–1 patterns ✓) | - |
 | 7. Sizing Finalization & Paper-Trade Journal | 0/5 | Planned | - |
-| 8. GitHub Actions Cron & Operations | 0/6 | Planned (6 plans, 4 waves; checkpoint:human-verify gates phase completion) | - |
+| 8. GitHub Actions Cron & Operations | 3/6 | In Progress|  |
 
 ## Coverage Report
 
