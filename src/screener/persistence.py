@@ -858,7 +858,24 @@ def read_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
         settings field read through `get_settings()` in this module.
     """
     snapshot_str = str(snapshot_date)[:10] if not isinstance(snapshot_date, str) else snapshot_date
-    universe = read_universe(snapshot_str)
+    # Universe snapshots are keyed by ISO week Monday (refresh_universe writes
+    # YYYY-MM-DD.parquet where the date is always Monday). Try Monday first,
+    # then the exact date, then the latest available so score/report never fails
+    # with a FileNotFoundError just because today is not a Monday.
+    from datetime import date as _d
+    from datetime import timedelta as _td
+
+    _snap = _d.fromisoformat(snapshot_str)
+    _monday_str = (_snap - _td(days=_snap.isoweekday() - 1)).isoformat()
+    if (_universe_dir() / f"{_monday_str}.parquet").exists():
+        universe = read_universe(_monday_str)
+    elif (_universe_dir() / f"{snapshot_str}.parquet").exists():
+        universe = read_universe(snapshot_str)
+    else:
+        _candidates = sorted(_universe_dir().glob("*.parquet"))
+        if not _candidates:
+            raise FileNotFoundError(f"No universe snapshot found in {_universe_dir()}")
+        universe = read_universe(_candidates[-1].stem)
     frames: list[pd.DataFrame] = []
     for t in universe["ticker"]:
         prices_path = _ohlcv_dir() / t / "prices.parquet"
