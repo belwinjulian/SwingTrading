@@ -1,0 +1,43 @@
+name: heartbeat
+
+# OPS-03 / D-11: weekly Monday 09:00 UTC. The heartbeat commits a real
+# timestamp to data/heartbeat.txt — empty commits and tags do NOT count
+# toward GitHub's 60-day idle rule (community discussion #57858).
+# Without this workflow the nightly refresh.yml is silently disabled
+# ~60 days after any commit drought.
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+# DEVIATION from CONTEXT D-09 ("CI and heartbeat stay `contents: read`"):
+# the heartbeat MUST `git push` data/heartbeat.txt, which requires write.
+# D-09 is a slip (Pitfall #8 / RESEARCH Open Question A). Without write,
+# the auto-commit step fails with "Permission denied to github-actions[bot]"
+# and the 60-day defense doesn't work.
+permissions:
+  contents: write
+
+# Cancel superseded heartbeat runs on the same branch (weekly cron — safe).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  heartbeat:
+    name: heartbeat
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Write heartbeat timestamp
+        run: |
+          mkdir -p data
+          date -u +%Y-%m-%dT%H:%M:%SZ > data/heartbeat.txt
+
+      - name: Auto-commit heartbeat
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403  # v5.2.0
+        with:
+          commit_message: "chore: weekly heartbeat"
+          file_pattern: data/heartbeat.txt

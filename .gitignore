@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtualenv
+.venv/
+
+# uv
+# (uv.lock IS committed; .venv is not)
+
+# Test / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+
+# Secrets and local env
+.env
+.env.local
+
+# Output directories — selective carve-out for committed audit artifacts.
+# Anchored to repo root so source-layer dirs (src/screener/data/) are NOT
+# ignored. Universe Parquet snapshots and per-ticker splits ledgers ARE
+# committed (small, audit-relevant); per-ticker prices.parquet stays local.
+# Phase 1 originally said `/data/`; Phase 2 (D-19 reconciled with D-06 per
+# Amendment 2026-05-02) carves out two committed paths.
+/data/*
+!/data/universe/
+!/data/universe/.gitkeep
+!/data/ohlcv/
+/data/ohlcv/**/prices.parquet
+!/data/ohlcv/**/splits.parquet
+!/data/ohlcv/**/.gitkeep
+!/data/snapshots/
+/data/snapshots/*.parquet
+!/data/snapshots/.gitkeep
+
+# Phase 8 (OPS-05 / D-04 / D-11): observability artifacts.
+# data/runs.jsonl — relocated from /runs.jsonl per D-04 (was repo-root).
+# data/heartbeat.txt — weekly heartbeat per D-11 (defeats 60-day idle disable).
+# Both files are committed; the auto-commit action's file_pattern in
+# refresh.yml + heartbeat.yml relies on these carve-outs to pass git add.
+!/data/runs.jsonl
+!/data/heartbeat.txt
+
+# Phase 8 (OPS-02 fix / Pitfall #4): reports/<date>.md MUST be committable
+# past the blanket /reports/ ignore. Mirror the data/universe/ carve-out
+# idiom. Without these two carve-outs the OPS-02 auto-commit silently no-ops.
+!/reports/
+!/reports/*.md
+
+# Phase 6 — fundamentals + insider + pattern audit (gitignored per D-05).
+# Literal blanket-ignore lines so the Wave 0 verifier finds the expected
+# `^data/<dir>/$` patterns. Anchor each directory with a committed
+# `.gitkeep` so the runtime dir exists even when contents are absent
+# (mirrors the Phase 2 snapshots carve-out).
+data/fundamentals/
+data/insider/
+data/pattern_audit/
+!/data/fundamentals/
+/data/fundamentals/*
+!/data/fundamentals/.gitkeep
+!/data/insider/
+/data/insider/*
+!/data/insider/.gitkeep
+!/data/pattern_audit/
+/data/pattern_audit/*
+!/data/pattern_audit/.gitkeep
+
+# Phase 7 (RESEARCH A4 — paper-trade history IS the v1.x performance contract;
+# commit the SQLite file, mirror the splits.parquet allowlist idiom).
+!/data/journal.sqlite
+
+# IDE
+.vscode/
+.idea/
