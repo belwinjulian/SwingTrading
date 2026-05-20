@@ -45,4 +45,4 @@ jobs:
         run: uv sync --frozen --extra dev
 
       - name: No-look-ahead mutation test (FND-04)
-        run: uv run pytest tests/test_backtest_no_lookahead.py -v --tb=short
+        run: uv run pytest tests/test_backtest_no_lookahead.py -v --tb=short --no-cov
