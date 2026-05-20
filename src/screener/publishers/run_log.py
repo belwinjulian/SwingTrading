@@ -73,25 +73,55 @@ def append_record(record: RunLogRecord) -> None:
     The caller (run_pipeline) constructs the dict with all required fields.
     This function ONLY writes; it does not collect metrics.
 
-    Body filled by Plan 08-03 (Wave 1).
+    Crash-safety (Pitfall #5): flush + os.fsync are BOTH required. flush
+    pushes Python's text-mode buffer to the OS; fsync forces the OS to
+    persist to disk. Without fsync, a runner timeout / OOM can lose the
+    last record even though Python returned from write().
     """
-    raise NotImplementedError("Plan 08-03 fills this body")
+    _RUNS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps(record, sort_keys=True) + "\n"
+    with open(_RUNS_PATH, "a", encoding="utf-8") as f:
+        f.write(line)
+        f.flush()
+        os.fsync(f.fileno())  # force OS write — critical for the failure path
+    log.info(
+        "run_log_appended",
+        status=record.get("status"),
+        path=str(_RUNS_PATH),
+    )
 
 
 def _cli_failure_entry(status: str) -> None:
     """`python -m screener.publishers.run_log {success|failure}` entrypoint.
 
     Reads minimal metrics from environment (set by the workflow):
-      RUN_START_TIME  — ISO timestamp from the workflow step (optional)
+      RUN_START_TIME  — ISO timestamp from the workflow step (optional;
+                        defaults to now)
       RUN_ERROR_REASON — defaults to "pipeline step failed"
 
     The success path is NOT invoked via this CLI in v1 — run_pipeline writes
     its own record directly via append_record(...). The success branch
-    exists for symmetry / future use.
-
-    Body filled by Plan 08-03 (Wave 1).
+    here exists for symmetry / future use; calling it produces a record
+    with picks_count=None which is INCORRECT for a real success path. v1
+    workflow YAML invokes ONLY the failure branch.
     """
-    raise NotImplementedError("Plan 08-03 fills this body")
+    start_time = os.environ.get(
+        "RUN_START_TIME",
+        datetime.now(UTC).isoformat(timespec="seconds"),
+    )
+    record: RunLogRecord = {
+        "status": status,
+        "start_time": start_time,
+        "duration_seconds": 0.0,
+        "fetch_success_rate": 0.0,
+        "regime_state": None,
+        "picks_count": None,
+        "n_429_responses": 0,
+        "error_reason": os.environ.get(
+            "RUN_ERROR_REASON", "pipeline step failed"
+        ),
+    }
+    append_record(record)
 
 
 if __name__ == "__main__":
