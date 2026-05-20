@@ -59,7 +59,7 @@ uv run screener backtest   # walk-forward backtest (3-yr IS / 1-yr OOS)
 FINNHUB_API_KEY=your_key               # free at finnhub.io — news, earnings calendar
 EDGAR_IDENTITY=Name email@example.com  # required by SEC EDGAR fair-use policy
 FRED_API_KEY=your_key                  # free at fred.stlouisfed.org — macro data
-ACCOUNT_VALUE=25000                    # optional — enables real share-count sizing
+ACCOUNT_EQUITY=25000                   # optional — enables real share-count sizing
 ```
 
 ---
