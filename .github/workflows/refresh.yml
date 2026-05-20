@@ -111,13 +111,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403  # v5.2.0
         with:
           commit_message: "chore(nightly): refresh ${{ github.run_number }}"
-          file_pattern: |
-            data/runs.jsonl
-            data/snapshots/
-            data/universe/
-            data/journal.sqlite
-            data/ohlcv/**/splits.parquet
-            reports/
+          file_pattern: "data/runs.jsonl data/snapshots/ data/universe/ data/journal.sqlite data/ohlcv/**/splits.parquet reports/"
 
       # OPS-05 failure path: write the failure record BEFORE committing,
       # then surface the failure in $GITHUB_STEP_SUMMARY (OPS-05 SC#5).

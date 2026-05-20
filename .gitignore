@@ -56,8 +56,9 @@ htmlcov/
 
 # Phase 8 (OPS-02 fix / Pitfall #4): reports/<date>.md MUST be committable
 # past the blanket /reports/ ignore. Mirror the data/universe/ carve-out
-# idiom. Without these two carve-outs the OPS-02 auto-commit silently no-ops.
-!/reports/
+# idiom. Without the ignore + carve-outs the OPS-02 auto-commit silently no-ops.
+/reports/*
+!/reports/.gitkeep
 !/reports/*.md
 
 # Phase 6 — fundamentals + insider + pattern audit (gitignored per D-05).
