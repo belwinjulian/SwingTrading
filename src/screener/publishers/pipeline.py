@@ -324,6 +324,22 @@ def run_pipeline(
         typer.Exit: from validate_run on D-08 data-quality combination.
     """
     settings = get_settings()
+
+    # === Phase 8 (OPS-05): capture timing for the run-log record ===
+    # Inline import matches the existing Phase 6/7 idiom (lines 336, 343,
+    # 348, 362, 395, 443, 454, 484). The success-record append happens at
+    # the very end of this function, AFTER log.info("pipeline_complete").
+    # The failure path is owned by refresh.yml's `if: failure()` step which
+    # runs `python -m screener.publishers.run_log failure` — D-05 / D-06.
+    import time as _time
+    from datetime import UTC as _UTC, datetime as _datetime
+
+    from screener.publishers.run_log import append_record
+
+    _t_start = _time.perf_counter()
+    _start_iso = _datetime.now(_UTC).isoformat(timespec="seconds")
+    # === END Phase 8 step 0 (timing capture) ===
+
     snap_ts = pd.Timestamp(snapshot_date)
 
     # 1. Build the indicator panel for the snapshot date.
@@ -548,6 +564,32 @@ def run_pipeline(
         wrote_report=write_report,
         wrote_journal=write_journal,
     )
+
+    # === Phase 8 (OPS-05): append success record to data/runs.jsonl ===
+    # Single atomic-on-disk append at the end of the function — RESEARCH
+    # §Integration Points: "single append at the end is atomic on disk".
+    # If any prior step raised, control never reaches here; the failure
+    # record is written by `python -m screener.publishers.run_log failure`
+    # in refresh.yml's `if: failure()` step (D-05).
+    _ticker_universe_size = max(
+        1, len(panel.index.get_level_values("ticker").unique())
+    )
+    _picks_count = int(
+        (today_panel["composite_score_raw"] >= settings.JOURNAL_THRESHOLD).sum()
+    )
+    append_record(
+        {
+            "status": "success",
+            "start_time": _start_iso,
+            "duration_seconds": round(_time.perf_counter() - _t_start, 2),
+            "fetch_success_rate": float(len(today_panel) / _ticker_universe_size),
+            "regime_state": regime_state_value,
+            "picks_count": _picks_count,
+            "n_429_responses": 0,  # v1 placeholder per RESEARCH.md Open Question 2 (RESOLVED); real counter deferred to v1.x — TypedDict + JSONL schema keep the field name stable
+            "error_reason": None,
+        }
+    )
+    # === END Phase 8 (OPS-05) ===
 
 
 # --- Phase 7 journal helper functions ------------------------------------

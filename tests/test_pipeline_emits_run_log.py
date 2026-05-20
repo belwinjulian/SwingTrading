@@ -12,7 +12,7 @@ or copied verbatim — Plan 08-05 decides at body-fill time.
 No network. No real Settings reads (monkeypatch.setenv + cache_clear).
 """
 
-# Wave: 0  (named-stub skeletons; body filled by Plan 08-05 — see 08-VALIDATION.md "New test files")
+# Wave: 2  (bodies filled by Plan 08-05)
 
 from __future__ import annotations
 
@@ -35,7 +35,41 @@ def test_pipeline_emits_run_log_success(
       - record['picks_count'] is an int (not None)
       - record['duration_seconds'] > 0.0
     """
-    pytest.skip("body filled by Plan 08-05 (Wave 2)")
+    # Reuse helpers from tests/test_pipeline_journal.py — same shape required.
+    from tests.test_pipeline_journal import (
+        _install_pipeline_mocks,
+        _make_synthetic_multiindex_panel,
+        _setup_settings,
+    )
+
+    _setup_settings(tmp_path, monkeypatch)
+    runs_target = tmp_path / "runs.jsonl"
+    monkeypatch.setattr(
+        "screener.publishers.run_log._RUNS_PATH", runs_target
+    )
+    panel = _make_synthetic_multiindex_panel()
+    _install_pipeline_mocks(monkeypatch, panel)
+
+    from screener.publishers.pipeline import run_pipeline
+
+    run_pipeline("2026-05-18", write_report=False, write_journal=False)
+
+    assert runs_target.exists(), f"runs.jsonl not written to {runs_target!r}"
+    lines = runs_target.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1, (
+        f"expected exactly 1 record, got {len(lines)}: {lines!r}"
+    )
+    record = json.loads(lines[0])
+    assert record["status"] == "success", f"status: {record!r}"
+    assert record["regime_state"] == "Confirmed Uptrend", (
+        f"regime_state mismatch: {record!r}"
+    )
+    assert isinstance(record["picks_count"], int), (
+        f"picks_count must be int (not None) on success path: {record!r}"
+    )
+    assert record["duration_seconds"] > 0.0, (
+        f"duration_seconds must be > 0 (perf_counter delta): {record!r}"
+    )
 
 
 def test_pipeline_run_log_record_has_all_required_fields(
@@ -47,4 +81,44 @@ def test_pipeline_run_log_record_has_all_required_fields(
     picks_count, n_429_responses, error_reason. Field presence is asserted
     via `assert set(record.keys()) >= {<expected>}` so future field additions
     don't break this test."""
-    pytest.skip("body filled by Plan 08-05 (Wave 2)")
+    from tests.test_pipeline_journal import (
+        _install_pipeline_mocks,
+        _make_synthetic_multiindex_panel,
+        _setup_settings,
+    )
+
+    _setup_settings(tmp_path, monkeypatch)
+    runs_target = tmp_path / "runs.jsonl"
+    monkeypatch.setattr(
+        "screener.publishers.run_log._RUNS_PATH", runs_target
+    )
+    panel = _make_synthetic_multiindex_panel()
+    _install_pipeline_mocks(monkeypatch, panel)
+
+    from screener.publishers.pipeline import run_pipeline
+
+    run_pipeline("2026-05-18", write_report=False, write_journal=False)
+
+    record = json.loads(runs_target.read_text(encoding="utf-8").strip())
+    expected_fields = {
+        "status",
+        "start_time",
+        "duration_seconds",
+        "fetch_success_rate",
+        "regime_state",
+        "picks_count",
+        "n_429_responses",
+        "error_reason",
+    }
+    missing = expected_fields - set(record.keys())
+    assert not missing, (
+        f"run_log record missing OPS-05 fields {missing!r}; "
+        f"actual fields: {set(record.keys())!r}; "
+        f"full record: {record!r}"
+    )
+    # Spot-check types where Python primitives matter.
+    assert isinstance(record["start_time"], str)
+    assert isinstance(record["duration_seconds"], (int, float))
+    assert isinstance(record["fetch_success_rate"], (int, float))
+    assert isinstance(record["n_429_responses"], int)
+    assert record["error_reason"] is None  # success path
