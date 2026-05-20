@@ -9,7 +9,6 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from screener import persistence
 from screener.persistence import (
     PicksSchema,
     _ensure_picks_schema,

@@ -329,7 +329,7 @@ def test_subcommand_surface_locked() -> None:
         "backtest",
         "backtest-audit",
     ]
-    assert D14_SUBCOMMANDS == expected, (
+    assert expected == D14_SUBCOMMANDS, (
         f"D-24 / D-14 lock broken: D14_SUBCOMMANDS == {D14_SUBCOMMANDS!r}, "
         f"expected {expected!r}. Amend the lock decision in CONTEXT.md "
         f"before changing the list."

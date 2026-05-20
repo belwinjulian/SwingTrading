@@ -2,20 +2,12 @@
 from __future__ import annotations
 
 import math
-import json
 
-import numpy as np
 import pandas as pd
-import pytest
 
 from screener.sizing import (
     EXTENDED_ATR,
     IN_ZONE_ATR,
-    LEADER_SWING_LOOKBACK_BARS,
-    LEADER_SWING_PIVOT_ORDER,
-    MAX_POSITION_FRACTION,
-    QULL_TRAIL_FAST_ADR,
-    QULL_TRAIL_MEDIUM_ADR,
     STOP_HELPERS,
     _stop_leader_hold,
     _stop_minervini_vcp,

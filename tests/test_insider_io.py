@@ -10,15 +10,12 @@ No real EDGAR network calls are made in any test.
 
 import sqlite3
 from datetime import date
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
-import pandera.errors as pa_errors
 import pytest
 
 from screener import persistence
-
 
 # ---------------------------------------------------------------------------
 # Shared helpers / mock factories

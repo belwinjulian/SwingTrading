@@ -73,7 +73,7 @@ def test_zeroed_components() -> None:
     assert out["earnings_component"].iloc[0] == 0.0
     assert out["catalyst_component"].iloc[0] == 0.0
     # Phase 6 D-16: PHASE_4_ZEROED is now empty (all six components are live)
-    assert PHASE_4_ZEROED == frozenset()
+    assert frozenset() == PHASE_4_ZEROED
 
 
 def test_extension_seam() -> None:

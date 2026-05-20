@@ -23,7 +23,6 @@ from screener.data.universe import (
     sanity_check,
 )
 
-
 # --- DAT-01: parse + normalize tests ----------------------------------------
 
 

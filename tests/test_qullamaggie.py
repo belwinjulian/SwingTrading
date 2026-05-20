@@ -8,12 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from screener.signals.qullamaggie import (
-    QULL_MIN_ADR_PCT_SCAN,
-    QULL_MIN_DOLLAR_VOLUME,
-    QULL_TOP_PCT_THRESHOLD,
     passes_qullamaggie_setup_a,
 )
 

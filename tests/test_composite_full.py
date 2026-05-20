@@ -12,7 +12,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 from screener.signals.composite import PHASE_4_ZEROED, score
 
@@ -50,7 +49,7 @@ def _make_full_panel() -> pd.DataFrame:
 
 def test_phase_4_zeroed_empty() -> None:
     """D-16: after Phase 6, PHASE_4_ZEROED == frozenset() — all six components are live."""
-    assert PHASE_4_ZEROED == frozenset(), (
+    assert frozenset() == PHASE_4_ZEROED, (
         f"Expected PHASE_4_ZEROED == frozenset() after Phase 6 D-16 activation, "
         f"got {PHASE_4_ZEROED!r}"
     )

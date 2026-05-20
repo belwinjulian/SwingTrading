@@ -17,14 +17,12 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-from screener.config import get_settings
 from screener.data.ohlcv import (
     append_incremental,
     fetch_ohlcv,
-    fetch_splits,
     run_with_breaker,
 )
-from screener.persistence import StaleOrEmptyError, make_empty_splits
+from screener.persistence import StaleOrEmptyError
 
 REF_DATE = date(2026, 4, 30)
 
@@ -66,17 +64,15 @@ def test_fetch_stale_fails(synthetic_ohlcv_stale_df: pd.DataFrame) -> None:
 def test_fetch_non_monotonic_fails(synthetic_ohlcv_non_monotonic_df: pd.DataFrame) -> None:
     with mock.patch(
         "screener.data.ohlcv.yf.download", return_value=synthetic_ohlcv_non_monotonic_df
-    ):
-        with pytest.raises(StaleOrEmptyError, match="non-monotonic"):
-            fetch_ohlcv("AAPL", "2024-01-01", REF_DATE)
+    ), pytest.raises(StaleOrEmptyError, match="non-monotonic"):
+        fetch_ohlcv("AAPL", "2024-01-01", REF_DATE)
 
 
 def test_fetch_null_close_fails(synthetic_ohlcv_null_close_df: pd.DataFrame) -> None:
     with mock.patch(
         "screener.data.ohlcv.yf.download", return_value=synthetic_ohlcv_null_close_df
-    ):
-        with pytest.raises(StaleOrEmptyError, match="null close"):
-            fetch_ohlcv("AAPL", "2024-01-01", REF_DATE)
+    ), pytest.raises(StaleOrEmptyError, match="null close"):
+        fetch_ohlcv("AAPL", "2024-01-01", REF_DATE)
 
 
 # --- DAT-03: sentinel-bar refetch ------------------------------------------
@@ -171,7 +167,7 @@ def test_sentinel_mismatch_full_refetch(
         return full_backfill_df.copy()
 
     with mock.patch("screener.data.ohlcv.yf.download", side_effect=_yf):
-        df, full_refetched = append_incremental("AAPL", REF_DATE)
+        _df, full_refetched = append_incremental("AAPL", REF_DATE)
     assert full_refetched is True, "Sentinel mismatch must trigger a full re-fetch"
     assert call_count["n"] == 2
 
@@ -231,7 +227,7 @@ def test_structured_log_on_fail(
 
     with mock.patch("screener.data.ohlcv.append_incremental", side_effect=_fail_append):
         with structlog.testing.capture_logs() as cap_logs:
-            yf_ok, stooq_ok, failed = run_with_breaker(["FAKE1"], REF_DATE)
+            _yf_ok, _stooq_ok, failed = run_with_breaker(["FAKE1"], REF_DATE)
     assert "FAKE1" in failed
     # Single hard assertion: capture_logs must have recorded a fetch_fail
     # event for ticker FAKE1. No disjunctive fallback — the fixture is the
@@ -304,7 +300,7 @@ def test_circuit_breaker_trip(
     ):
         empty_actions = pd.DataFrame(index=pd.DatetimeIndex([]))
         ticker_mock.return_value.actions = empty_actions
-        yf_ok, stooq_ok, failed = run_with_breaker(tickers, REF_DATE)
+        yf_ok, stooq_ok, _failed = run_with_breaker(tickers, REF_DATE)
 
     assert yf_ok <= 1, f"Expected ≤ 1 yf successes (only the first); got {yf_ok}"
     assert stooq_ok >= 40, f"Expected stooq fallback to handle most of tickers 50..99; got {stooq_ok}"

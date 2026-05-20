@@ -60,9 +60,14 @@ packages = ["src/screener"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
+exclude = [".claude", ".git", "__pycache__", ".venv"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF", "PD", "NPY"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501", "SIM117", "RUF002", "RUF003", "RUF059", "N806", "E712", "B017"]
+"scripts/**" = ["E501", "RUF002", "RUF003"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -10,10 +10,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 from screener.signals.canslim import (
-    CANSLIM_C_MIN_EPS_YOY,
     canslim_c_overlay,
 )
 
@@ -56,7 +54,7 @@ def test_c_component_eps_yoy_25pct_passes() -> None:
     out = canslim_c_overlay(panel, fundamentals, as_of)
 
     assert "canslim_c_passes" in out.columns
-    assert out["canslim_c_passes"].iloc[0] is True or out["canslim_c_passes"].iloc[0] == True, (
+    assert out["canslim_c_passes"].iloc[0] is True or out["canslim_c_passes"].iloc[0], (
         f"Expected canslim_c_passes=True for eps_yoy_growth=0.30, "
         f"got {out['canslim_c_passes'].iloc[0]}"
     )

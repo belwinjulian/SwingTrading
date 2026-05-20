@@ -230,6 +230,7 @@ def test_render_report_includes_sizing_fields_and_skipped_section() -> None:
     """Plan 07-04: render_report emits Entry/Stop/Trail/Shares/Zone per pick AND
     ## Skipped Picks section when skipped_picks is non-empty."""
     import pandas as pd
+
     from screener.publishers.report import render_report
 
     actionable = pd.DataFrame(

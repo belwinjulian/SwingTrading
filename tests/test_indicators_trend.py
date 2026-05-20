@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from screener.indicators.trend import _safe_sma, sma_panel
 

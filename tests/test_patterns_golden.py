@@ -21,7 +21,6 @@ Fixture / detector tuning notes (CONTEXT.md D-03 + Plan 06-02 tuning log):
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from screener.indicators.patterns import (
     BREAKOUT_VOLUME_MIN_MULTIPLE,

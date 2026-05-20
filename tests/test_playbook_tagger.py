@@ -9,12 +9,11 @@ thresholds are LOCKED.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
+from screener.indicators.patterns import encode_pattern_diagnostics
 from screener.signals.composite import (
     LEADER_MIN_RS,
     MINERVINI_MAX_FINAL_CONTRACTION_PCT,
@@ -23,7 +22,6 @@ from screener.signals.composite import (
     QULL_MIN_ADR_PCT,
     tag_playbook,
 )
-from screener.indicators.patterns import encode_pattern_diagnostics
 
 
 def _make_tag_panel(
