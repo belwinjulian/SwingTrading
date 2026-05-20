@@ -44,8 +44,20 @@ htmlcov/
 !/data/snapshots/
 /data/snapshots/*.parquet
 !/data/snapshots/.gitkeep
-/reports/
-/runs.jsonl
+
+# Phase 8 (OPS-05 / D-04 / D-11): observability artifacts.
+# data/runs.jsonl — relocated from /runs.jsonl per D-04 (was repo-root).
+# data/heartbeat.txt — weekly heartbeat per D-11 (defeats 60-day idle disable).
+# Both files are committed; the auto-commit action's file_pattern in
+# refresh.yml + heartbeat.yml relies on these carve-outs to pass git add.
+!/data/runs.jsonl
+!/data/heartbeat.txt
+
+# Phase 8 (OPS-02 fix / Pitfall #4): reports/<date>.md MUST be committable
+# past the blanket /reports/ ignore. Mirror the data/universe/ carve-out
+# idiom. Without these two carve-outs the OPS-02 auto-commit silently no-ops.
+!/reports/
+!/reports/*.md
 
 # Phase 6 — fundamentals + insider + pattern audit (gitignored per D-05).
 # Literal blanket-ignore lines so the Wave 0 verifier finds the expected
