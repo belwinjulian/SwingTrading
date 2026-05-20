@@ -62,9 +62,7 @@ def _classify_pivot_zone(close: float, high_52w: float, atr: float) -> PivotZone
     return "in-zone" if 0.0 <= distance <= 1.0 else "chase, skip"
 
 
-def _add_publisher_columns(
-    cross: pd.DataFrame, regime_row: pd.Series
-) -> pd.DataFrame:
+def _add_publisher_columns(cross: pd.DataFrame, regime_row: pd.Series) -> pd.DataFrame:
     """Add pivot_distance_atr, pivot_zone, regime_state, regime_score, rank
     columns to a cross-section frame. Used by run_pipeline before snapshot
     write so the snapshot satisfies RankingSnapshotSchema.
@@ -181,14 +179,10 @@ def _format_breakdown(row: pd.Series) -> str:
             pat_type = diag.get("type", "none")
             if pat_type == "vcp":
                 detail = (
-                    f"VCP, {diag.get('n_contractions', 0)} contractions, "
-                    f"brk_vol={brk_vol:.1f}x"
+                    f"VCP, {diag.get('n_contractions', 0)} contractions, brk_vol={brk_vol:.1f}x"
                 )
             elif pat_type == "flag":
-                detail = (
-                    f"flag, {diag.get('flag_bars', 0)} bars, "
-                    f"brk_vol={brk_vol:.1f}x"
-                )
+                detail = f"flag, {diag.get('flag_bars', 0)} bars, brk_vol={brk_vol:.1f}x"
             else:
                 detail = "no pattern"
             parts.append(f"Pattern={pat_val:.2f} ({detail})")
@@ -206,16 +200,14 @@ def _format_breakdown(row: pd.Series) -> str:
         elif key == "catalyst":
             cat_val = float(row.get("catalyst_component", 0.0) or 0.0)
             days_raw = row.get("days_to_next_earnings")
-            days_int = (
-                int(days_raw)
-                if days_raw is not None and not pd.isna(days_raw)
-                else 999
+            days_int = int(days_raw) if days_raw is not None and not pd.isna(days_raw) else 999
+            flags = sum(
+                [
+                    int(0 <= days_int <= 14),
+                    int(bool(row.get("crossed_52w_high_within_60d", False))),
+                    int(bool(row.get("insider_cluster_buy", False))),
+                ]
             )
-            flags = sum([
-                int(0 <= days_int <= 14),
-                int(bool(row.get("crossed_52w_high_within_60d", False))),
-                int(bool(row.get("insider_cluster_buy", False))),
-            ])
             parts.append(f"Catalyst={cat_val:.2f} ({flags}/3 flags)")
     return " | ".join(parts)
 
@@ -269,9 +261,7 @@ def _write_text_atomic(content: str, target: Path) -> None:
 # --- Render + write -------------------------------------------------------
 
 
-def _render_per_pick_block(
-    i: int, row: pd.Series, lines: list[str]
-) -> None:
+def _render_per_pick_block(i: int, row: pd.Series, lines: list[str]) -> None:
     """Render a single per-pick detail block (D-04 / D-19) into `lines`.
 
     Called from both the top-N and the Currently Held / Leaders sections.
@@ -307,11 +297,7 @@ def _render_per_pick_block(
     # Catalyst flags (D-19)
     cat_flags: list[str] = []
     days_raw2 = row.get("days_to_next_earnings")
-    days_int2 = (
-        int(days_raw2)
-        if days_raw2 is not None and not pd.isna(days_raw2)
-        else 999
-    )
+    days_int2 = int(days_raw2) if days_raw2 is not None and not pd.isna(days_raw2) else 999
     if 0 <= days_int2 <= 14:
         cat_flags.append(f"earnings in {days_int2}d")
     if bool(row.get("crossed_52w_high_within_60d", False)):
@@ -393,10 +379,7 @@ def render_report(
             .sort_values("composite_score", ascending=False)
             .head(top_n)
         )
-        leaders = (
-            scored_cross[leader_mask]
-            .sort_values("composite_score", ascending=False)
-        )
+        leaders = scored_cross[leader_mask].sort_values("composite_score", ascending=False)
     else:
         # Legacy fallback: no playbook_tag column (Phase 4 test callers).
         actionable = scored_cross.sort_values("composite_score", ascending=False).head(top_n)
@@ -421,8 +404,7 @@ def render_report(
     lines.append("")
     pivot_hdr = PIVOT_COLUMN_HEADER
     lines.append(
-        f"| Rank | Ticker | Composite | Trend Template | RS | Volume |"
-        f" Pivot Zone | {pivot_hdr} |"
+        f"| Rank | Ticker | Composite | Trend Template | RS | Volume | Pivot Zone | {pivot_hdr} |"
     )
     lines.append(
         "|-----:|--------|----------:|---------------:|---:|-------:|:-----------|----------------------------------:|"
@@ -431,16 +413,13 @@ def render_report(
         ticker = str(row["ticker"]).replace("|", "")  # T-4-13 escape
         composite = float(row["composite_score"])
         tt = (
-            "?" if pd.isna(row.get("trend_template_score"))
+            "?"
+            if pd.isna(row.get("trend_template_score"))
             else f"{int(row['trend_template_score'])}/8"
         )
-        rs = (
-            "?" if pd.isna(row.get("rs_rating"))
-            else str(int(row["rs_rating"]))
-        )
+        rs = "?" if pd.isna(row.get("rs_rating")) else str(int(row["rs_rating"]))
         vol = (
-            "?" if pd.isna(row.get("volume_component"))
-            else f"{float(row['volume_component']):.2f}"
+            "?" if pd.isna(row.get("volume_component")) else f"{float(row['volume_component']):.2f}"
         )
         pz = str(row.get("pivot_zone", "unknown"))
         pd_atr = row.get("pivot_distance_atr")
@@ -448,8 +427,7 @@ def render_report(
         rank_val = row.get("rank")
         rank_str = "?" if pd.isna(rank_val) else str(int(rank_val))
         lines.append(
-            f"| {rank_str} "
-            f"| {ticker} | {composite:.1f} | {tt} | {rs} | {vol} | {pz} | {pd_str} |"
+            f"| {rank_str} | {ticker} | {composite:.1f} | {tt} | {rs} | {vol} | {pz} | {pd_str} |"
         )
     lines.append("")
     lines.append("---")
@@ -468,9 +446,7 @@ def render_report(
     if not leaders.empty:
         lines.append("## Currently Held / Leaders")
         lines.append("")
-        lines.append(
-            "Existing positions to monitor (not new entries; informational only)."
-        )
+        lines.append("Existing positions to monitor (not new entries; informational only).")
         lines.append("")
         for i, (_, lrow) in enumerate(leaders.iterrows(), start=1):
             _render_per_pick_block(i, lrow, lines)
@@ -495,11 +471,7 @@ def render_report(
                 if pd.notna(srow.get("risk_per_share"))
                 else 0.0
             )
-            adr_pct = (
-                float(srow.get("adr_pct", 0.0))
-                if pd.notna(srow.get("adr_pct"))
-                else 0.0
-            )
+            adr_pct = float(srow.get("adr_pct", 0.0)) if pd.notna(srow.get("adr_pct")) else 0.0
             entry = float(srow.get("entry_price", srow.get("close", 0.0)))
             adr_dollars = (adr_pct / 100.0) * entry if entry > 0 else 0.0
             multiple = (risk / adr_dollars) if adr_dollars > 0 else 0.0
@@ -508,13 +480,9 @@ def render_report(
                     f"- **{ticker_str}** -- skipped: R/R broken, risk = {multiple:.2f}xADR"
                 )
             elif reason == "invalid_stop":
-                lines.append(
-                    f"- **{ticker_str}** -- skipped: invalid stop (entry <= stop_price)"
-                )
+                lines.append(f"- **{ticker_str}** -- skipped: invalid stop (entry <= stop_price)")
             elif reason == "missing_diagnostics":
-                lines.append(
-                    f"- **{ticker_str}** -- skipped: missing pattern diagnostics"
-                )
+                lines.append(f"- **{ticker_str}** -- skipped: missing pattern diagnostics")
             else:
                 lines.append(f"- **{ticker_str}** -- skipped: {reason}")
         lines.append("")
@@ -527,17 +495,14 @@ def render_report(
     if pass_rate > warn_thresh:
         # Pitfall 12: plain ASCII 'WARNING:', no emoji.
         lines.append(
-            f"**WARNING: Pass rate {pass_rate * 100:.1f}% "
-            f"(expected 5-15% -- verify data quality)**"
+            f"**WARNING: Pass rate {pass_rate * 100:.1f}% (expected 5-15% -- verify data quality)**"
         )
         lines.append("")
     lines.append("| Metric | Value |")
     lines.append("|--------|-------|")
     lines.append(f"| Universe size | {len(scored_cross)} |")
     lines.append(f"| Trend Template pass rate | {pass_rate * 100:.1f}% |")
-    lines.append(
-        f"| Snapshot | data/snapshots/{snapshot_date}.parquet |"
-    )
+    lines.append(f"| Snapshot | data/snapshots/{snapshot_date}.parquet |")
     lines.append("")
     lines.append(
         "*Composite score is capped at ~55/100 in Phase 4 -- "
@@ -564,7 +529,11 @@ def write_report(
             section (D-06 rejection surface — SIZ-02 1xADR auto-reject).
     """
     content = render_report(
-        scored_cross, regime_row, snapshot_date, top_n, pass_rate,
+        scored_cross,
+        regime_row,
+        snapshot_date,
+        top_n,
+        pass_rate,
         skipped_picks=skipped_picks,
     )
     target = _report_dir() / f"{snapshot_date}.md"

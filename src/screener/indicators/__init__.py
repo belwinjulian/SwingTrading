@@ -37,5 +37,5 @@ def build_panel(snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
     panel = rs_panel(panel)
     panel = high_52w_panel(panel, length=252)
     panel = low_52w_panel(panel, length=252)
-    panel = detect_all_patterns(panel)   # Phase 6 PAT-01..06 + D-01..D-06
+    panel = detect_all_patterns(panel)  # Phase 6 PAT-01..06 + D-01..D-06
     return panel

@@ -22,6 +22,7 @@ Tuning Log (D-03 / Open Question 1):
 - FLAG_PIVOT_ORDER = 3 — starting value per RESEARCH §Specifics. Reviewed
   against the NVDA 2023 flag fixture; retained.
 """
+
 from __future__ import annotations
 
 import json
@@ -76,9 +77,7 @@ def breakout_strength(vol: pd.Series, sma_vol_50: pd.Series) -> pd.Series:
     return strength.fillna(0.0)
 
 
-def find_pivots(
-    highs: np.ndarray, lows: np.ndarray, order: int
-) -> tuple[np.ndarray, np.ndarray]:
+def find_pivots(highs: np.ndarray, lows: np.ndarray, order: int) -> tuple[np.ndarray, np.ndarray]:
     """argrelextrema wrapper. Edge-effect: peaks within `order` bars of
     start/end are NOT detected (Pitfall 2).
     """
@@ -114,9 +113,7 @@ def encode_pattern_diagnostics(d: dict[str, Any]) -> str:
     """
     t = d.get("type")
     if t not in _VALID_PATTERN_TYPES:
-        raise ValueError(
-            f"pattern_diagnostics type must be in {_VALID_PATTERN_TYPES}; got {t!r}"
-        )
+        raise ValueError(f"pattern_diagnostics type must be in {_VALID_PATTERN_TYPES}; got {t!r}")
     return json.dumps(d, default=str, separators=(",", ":"))
 
 
@@ -265,9 +262,7 @@ def _vcp_at_breakout(
     max_n = min(len(paired_high_idx), N_CONTRACTIONS_MAX)
     best: tuple[list[int], list[int], list[float]] | None = None
     for n_take in range(max_n, N_CONTRACTIONS_MIN - 1, -1):
-        result = _evaluate_vcp_subsequence(
-            paired_high_idx, paired_low_idx, highs, lows, n_take
-        )
+        result = _evaluate_vcp_subsequence(paired_high_idx, paired_low_idx, highs, lows, n_take)
         if result is not None:
             best = result
             break
@@ -375,8 +370,15 @@ def find_vcp_pattern(ticker_panel: pd.DataFrame) -> dict[str, Any]:
         if not np.isfinite(sma_vol_50) or sma_vol_50 <= 0:
             continue
         result = _vcp_at_breakout(
-            b, closes, highs, lows, vols, dates,
-            high_idx, low_idx, sma_vol_50,
+            b,
+            closes,
+            highs,
+            lows,
+            vols,
+            dates,
+            high_idx,
+            low_idx,
+            sma_vol_50,
         )
         if result is not None:
             return result
@@ -401,7 +403,7 @@ def _flag_at_breakout(
     start_bars = min(FLAG_MAX_BARS, len(prefix) - 1)
     for bars in range(start_bars, FLAG_MIN_BARS - 1, -1):
         sl = prefix.tail(bars + 1)
-        consolidation = sl.iloc[:-1]   # bars BEFORE the breakout bar
+        consolidation = sl.iloc[:-1]  # bars BEFORE the breakout bar
         if "atr_14" not in consolidation.columns:
             return None
         atr = consolidation["atr_14"]
@@ -516,7 +518,5 @@ def detect_all_patterns(panel: pd.DataFrame) -> pd.DataFrame:
         out.loc[key, "breakout_strength"] = winning["breakout_strength"]
         diag_series.at[key] = encode_pattern_diagnostics(winning)  # noqa: PD008
     out["pattern_diagnostics"] = diag_series
-    out["post_gap_continuation"] = (
-        post_gap_continuation_panel(panel).fillna(False).astype(bool)
-    )
+    out["post_gap_continuation"] = post_gap_continuation_panel(panel).fillna(False).astype(bool)
     return out

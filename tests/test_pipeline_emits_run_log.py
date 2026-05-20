@@ -44,9 +44,7 @@ def test_pipeline_emits_run_log_success(
 
     _setup_settings(tmp_path, monkeypatch)
     runs_target = tmp_path / "runs.jsonl"
-    monkeypatch.setattr(
-        "screener.publishers.run_log._RUNS_PATH", runs_target
-    )
+    monkeypatch.setattr("screener.publishers.run_log._RUNS_PATH", runs_target)
     panel = _make_synthetic_multiindex_panel()
     _install_pipeline_mocks(monkeypatch, panel)
 
@@ -56,14 +54,10 @@ def test_pipeline_emits_run_log_success(
 
     assert runs_target.exists(), f"runs.jsonl not written to {runs_target!r}"
     lines = runs_target.read_text(encoding="utf-8").strip().splitlines()
-    assert len(lines) == 1, (
-        f"expected exactly 1 record, got {len(lines)}: {lines!r}"
-    )
+    assert len(lines) == 1, f"expected exactly 1 record, got {len(lines)}: {lines!r}"
     record = json.loads(lines[0])
     assert record["status"] == "success", f"status: {record!r}"
-    assert record["regime_state"] == "Confirmed Uptrend", (
-        f"regime_state mismatch: {record!r}"
-    )
+    assert record["regime_state"] == "Confirmed Uptrend", f"regime_state mismatch: {record!r}"
     assert isinstance(record["picks_count"], int), (
         f"picks_count must be int (not None) on success path: {record!r}"
     )
@@ -89,9 +83,7 @@ def test_pipeline_run_log_record_has_all_required_fields(
 
     _setup_settings(tmp_path, monkeypatch)
     runs_target = tmp_path / "runs.jsonl"
-    monkeypatch.setattr(
-        "screener.publishers.run_log._RUNS_PATH", runs_target
-    )
+    monkeypatch.setattr("screener.publishers.run_log._RUNS_PATH", runs_target)
     panel = _make_synthetic_multiindex_panel()
     _install_pipeline_mocks(monkeypatch, panel)
 

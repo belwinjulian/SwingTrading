@@ -1,4 +1,5 @@
 """tests/test_sizing.py — Phase 7 SIZ-01..05 unit tests (Plan 07-02 bodies)."""
+
 from __future__ import annotations
 
 import math
@@ -44,7 +45,7 @@ def test_shares_formula(sized_input_cross: pd.DataFrame) -> None:
             "low": [99.0],
             "high": [101.0],
             "atr_14": [1.5],
-            "adr_pct": [10.0],   # wide ADR so risk=8 doesn't trigger rejection
+            "adr_pct": [10.0],  # wide ADR so risk=8 doesn't trigger rejection
             "playbook_tag": ["minervini_vcp"],
             "pattern_diagnostics": [cross.loc["VCP1", "pattern_diagnostics"]],
             "composite_score": [68.5],
@@ -119,7 +120,9 @@ def test_stop_dispatch_per_playbook() -> None:
     assert STOP_HELPERS["minervini_vcp"] is _stop_minervini_vcp
     assert STOP_HELPERS["leader_hold"] is _stop_leader_hold
     assert set(STOP_HELPERS.keys()) == {
-        "qullamaggie_continuation", "minervini_vcp", "leader_hold",
+        "qullamaggie_continuation",
+        "minervini_vcp",
+        "leader_hold",
     }
 
 
@@ -134,8 +137,9 @@ def test_leader_swing_fallback(sized_input_cross: pd.DataFrame) -> None:
 
 def test_vcp_stop_from_diagnostics(sized_input_cross: pd.DataFrame) -> None:
     """SIZ-03: minervini_vcp stop = pivot_price × (1 − final_contraction_depth)."""
-    out = compute_sizing(sized_input_cross.loc[["VCP1"]].copy(), _empty_panel(["VCP1"]),
-                         100_000.0, 0.01, 0.85)
+    out = compute_sizing(
+        sized_input_cross.loc[["VCP1"]].copy(), _empty_panel(["VCP1"]), 100_000.0, 0.01, 0.85
+    )
     # vcp_diag has pivot_price=100.0, final_contraction_depth=0.08 → stop = 92.0
     assert math.isclose(float(out.loc["VCP1", "stop_price"]), 92.0, abs_tol=1e-9)
 
@@ -167,10 +171,10 @@ def test_atr_zone_boundaries() -> None:
     """SIZ-05 / D-09: =0.66 → in-zone; =1.0 → extended; >1.0 → chase, skip."""
     assert classify_atr_zone(0.0) == "in-zone"
     assert classify_atr_zone(0.65999) == "in-zone"
-    assert classify_atr_zone(IN_ZONE_ATR) == "in-zone"          # exactly 0.66
+    assert classify_atr_zone(IN_ZONE_ATR) == "in-zone"  # exactly 0.66
     assert classify_atr_zone(0.66001) == "extended"
     assert classify_atr_zone(0.85) == "extended"
-    assert classify_atr_zone(EXTENDED_ATR) == "extended"        # exactly 1.0
+    assert classify_atr_zone(EXTENDED_ATR) == "extended"  # exactly 1.0
     assert classify_atr_zone(1.0001) == "chase, skip"
     assert classify_atr_zone(2.5) == "chase, skip"
 
@@ -187,6 +191,13 @@ def test_pure_function_no_input_mutation(sized_input_cross: pd.DataFrame) -> Non
     # Output has 9 new columns.
     new_cols = set(out.columns) - set(cross.columns)
     assert new_cols == {
-        "stop_price", "entry_price", "shares", "risk_per_share", "atr_zone",
-        "pivot_distance_atr_breakout", "trail_rule_label", "adr_rejected", "rejection_reason",
+        "stop_price",
+        "entry_price",
+        "shares",
+        "risk_per_share",
+        "atr_zone",
+        "pivot_distance_atr_breakout",
+        "trail_rule_label",
+        "adr_rejected",
+        "rejection_reason",
     }

@@ -19,8 +19,13 @@ def test_rs_panel_does_not_mutate_input() -> None:
         names=["ticker", "date"],
     )
     panel = pd.DataFrame(
-        {"open": [1.0] * 300, "high": [1.0] * 300, "low": [1.0] * 300,
-         "close": [1.0] * 300, "volume": [1] * 300},
+        {
+            "open": [1.0] * 300,
+            "high": [1.0] * 300,
+            "low": [1.0] * 300,
+            "close": [1.0] * 300,
+            "volume": [1] * 300,
+        },
         index=idx,
     )
     cols_before = list(panel.columns)
@@ -35,8 +40,13 @@ def test_sma_panel_idempotent() -> None:
         names=["ticker", "date"],
     )
     panel = pd.DataFrame(
-        {"open": [1.0] * 300, "high": [1.0] * 300, "low": [1.0] * 300,
-         "close": [100.0] * 300, "volume": [1] * 300},
+        {
+            "open": [1.0] * 300,
+            "high": [1.0] * 300,
+            "low": [1.0] * 300,
+            "close": [100.0] * 300,
+            "volume": [1] * 300,
+        },
         index=idx,
     )
     a = sma_panel(panel)

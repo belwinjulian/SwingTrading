@@ -86,6 +86,7 @@ def test_snapshot_idempotent_same_week(
     )
     # Also override UNIVERSE_CACHE_DIR in settings to point to our tmp_path.
     from screener.config import get_settings
+
     monkeypatch.setenv("UNIVERSE_CACHE_DIR", str(universe_dir))
     get_settings.cache_clear()
     try:
@@ -110,6 +111,7 @@ def test_snapshot_force_overwrites(
         lambda session=None: synthetic_ishares_csv_bytes,
     )
     from screener.config import get_settings
+
     monkeypatch.setenv("UNIVERSE_CACHE_DIR", str(universe_dir))
     get_settings.cache_clear()
     try:

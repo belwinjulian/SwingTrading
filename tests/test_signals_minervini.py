@@ -118,12 +118,8 @@ def test_short_history_safe() -> None:
     )
     out = passes_trend_template(panel)  # must not raise
     # All conds with NaN inputs propagate to False; score == 0.
-    assert (out["passes_trend_template"] == False).all(), (
-        "short-history ticker must fail the gate"
-    )
-    assert (out["trend_template_score"] == 0).all(), (
-        "short-history ticker must score 0"
-    )
+    assert (out["passes_trend_template"] == False).all(), "short-history ticker must fail the gate"
+    assert (out["trend_template_score"] == 0).all(), "short-history ticker must score 0"
 
 
 def test_pass_rate_smoke() -> None:

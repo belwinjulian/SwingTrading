@@ -94,9 +94,7 @@ def main(argv: list[str] | None = None) -> int:
             n_fail += 1
 
     total = n_ok + n_skip + n_fail
-    print(
-        f"BACKFILL COMPLETE: ok={n_ok} skip={n_skip} fail={n_fail} (total={total})"
-    )
+    print(f"BACKFILL COMPLETE: ok={n_ok} skip={n_skip} fail={n_fail} (total={total})")
     return 0
 
 

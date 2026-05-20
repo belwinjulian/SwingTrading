@@ -15,8 +15,11 @@ def test_adr_pct_canonical_value() -> None:
     )
     panel = pd.DataFrame(
         {
-            "open": [100.0] * 30, "high": [105.0] * 30, "low": [95.0] * 30,
-            "close": [100.0] * 30, "volume": [1] * 30,
+            "open": [100.0] * 30,
+            "high": [105.0] * 30,
+            "low": [95.0] * 30,
+            "close": [100.0] * 30,
+            "volume": [1] * 30,
         },
         index=idx,
     )
@@ -33,8 +36,11 @@ def test_atr_panel_adds_atr_14() -> None:
     )
     panel = pd.DataFrame(
         {
-            "open": [100.0] * 30, "high": [101.0] * 30, "low": [99.0] * 30,
-            "close": [100.0] * 30, "volume": [1] * 30,
+            "open": [100.0] * 30,
+            "high": [101.0] * 30,
+            "low": [99.0] * 30,
+            "close": [100.0] * 30,
+            "volume": [1] * 30,
         },
         index=idx,
     )

@@ -85,10 +85,7 @@ def test_old_root_runs_jsonl_line_removed() -> None:
     `^/runs\\.jsonl$` does not appear anywhere in .gitignore.
     """
     gitignore_text = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
-    matching_lines = [
-        line for line in gitignore_text.splitlines()
-        if line.strip() == "/runs.jsonl"
-    ]
+    matching_lines = [line for line in gitignore_text.splitlines() if line.strip() == "/runs.jsonl"]
     assert matching_lines == [], (
         f"Obsolete root-level `/runs.jsonl` line still present in .gitignore "
         f"({matching_lines!r}); D-04 says the file relocated to data/runs.jsonl. "

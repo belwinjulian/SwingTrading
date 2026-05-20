@@ -120,9 +120,9 @@ from screener.backtest import vbt_runner
 # across 10 seeds) and min(True)=1.55e-6 so the mutation arm exceeds the
 # ceiling and the test FAILS when .shift(1) is removed. See module docstring
 # CR-1 for the calibration-constraint analysis.
-LOOKAHEAD_FALSE_MAX_RETURN = 8e-7   # correct path: max obs |return| 3.71e-7 (10 seeds)
-LOOKAHEAD_TRUE_MIN_RETURN = 8e-7    # mutation:     min obs return  1.55e-6 (10 seeds)
-LOOKAHEAD_RATIO_MIN = 3.0           # drift-invariant third defense (§B Q5)
+LOOKAHEAD_FALSE_MAX_RETURN = 8e-7  # correct path: max obs |return| 3.71e-7 (10 seeds)
+LOOKAHEAD_TRUE_MIN_RETURN = 8e-7  # mutation:     min obs return  1.55e-6 (10 seeds)
+LOOKAHEAD_RATIO_MIN = 3.0  # drift-invariant third defense (§B Q5)
 
 
 def _fixture_date_range(panel: pd.DataFrame) -> tuple[str, str]:
@@ -224,14 +224,10 @@ def _patched_runner(
     def _fake_read_panel(_snapshot_date: str | pd.Timestamp) -> pd.DataFrame:
         return synthetic_ohlcv_panel
 
-    def _fake_load_snapshots(
-        _start: pd.Timestamp, _end: pd.Timestamp
-    ) -> pd.DataFrame:
+    def _fake_load_snapshots(_start: pd.Timestamp, _end: pd.Timestamp) -> pd.DataFrame:
         return snapshot_df
 
-    monkeypatch.setattr(
-        "screener.backtest.vbt_runner.read_panel", _fake_read_panel
-    )
+    monkeypatch.setattr("screener.backtest.vbt_runner.read_panel", _fake_read_panel)
     monkeypatch.setattr(
         "screener.backtest.vbt_runner._load_snapshots_in_range", _fake_load_snapshots
     )

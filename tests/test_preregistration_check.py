@@ -37,15 +37,11 @@ def _write_doc(tmp_path: Path, frozen: dict[str, str]) -> Path:
             rows.append(f"| {full_name} | {target} | {fw} |")
     doc_path = tmp_path / "docs" / "strategy_v1_preregistration.md"
     doc_path.parent.mkdir(parents=True)
-    doc_path.write_text(
-        DOC_TEMPLATE_HEADER + DOC_TABLE_HEADER + "\n".join(rows) + "\n"
-    )
+    doc_path.write_text(DOC_TEMPLATE_HEADER + DOC_TABLE_HEADER + "\n".join(rows) + "\n")
     return doc_path
 
 
-def test_matching_weights_pass(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_matching_weights_pass(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """FND-05: doc weights matching DEFAULT_WEIGHTS -> main() returns 0."""
     monkeypatch.chdir(tmp_path)
     _write_doc(
@@ -61,6 +57,7 @@ def test_matching_weights_pass(
     )
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from scripts.check_preregistration import main
+
     assert main() == 0
 
 
@@ -83,11 +80,12 @@ def test_mismatched_weights_fail(
     )
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from scripts.check_preregistration import main
+
     assert main() == 1
     captured = capsys.readouterr()
     assert "Weight mismatch:" in captured.err
     assert "rs=0.25" in captured.err  # composite.py value
-    assert "rs=0.3" in captured.err   # doc value (printed as 0.3 not 0.30)
+    assert "rs=0.3" in captured.err  # doc value (printed as 0.3 not 0.30)
     assert "earnings=0.15" in captured.err
     assert "earnings=0.1" in captured.err
 
@@ -104,7 +102,8 @@ def test_missing_weight_in_doc_fail(
     doc_path = tmp_path / "docs" / "strategy_v1_preregistration.md"
     doc_path.parent.mkdir(parents=True)
     doc_path.write_text(
-        DOC_TEMPLATE_HEADER + DOC_TABLE_HEADER
+        DOC_TEMPLATE_HEADER
+        + DOC_TABLE_HEADER
         + "| RS percentile (IBD-style)              | 25% | 25% |\n"
         + "| Trend Template (0-8 normalized)        | 20% | 20% |\n"
         + "| Pattern (VCP/flag tightness)           | 20% | 20% |\n"
@@ -114,6 +113,7 @@ def test_missing_weight_in_doc_fail(
     )
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from scripts.check_preregistration import main
+
     assert main() == 1
     captured = capsys.readouterr()
     assert "Catalyst presence" in captured.err

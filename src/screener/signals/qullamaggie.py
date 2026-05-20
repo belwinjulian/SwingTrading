@@ -68,12 +68,7 @@ def passes_qullamaggie_setup_a(panel: pd.DataFrame) -> pd.DataFrame:
     # --- Gate 2: average dollar volume (20-day) > $1.5M ---
     dollar_vol = panel["close"] * panel["volume"]
     # Group by ticker before rolling to avoid cross-ticker contamination
-    avg_dv = (
-        dollar_vol.groupby(level="ticker")
-        .rolling(20)
-        .mean()
-        .droplevel(0)
-    )
+    avg_dv = dollar_vol.groupby(level="ticker").rolling(20).mean().droplevel(0)
     liquid = avg_dv > QULL_MIN_DOLLAR_VOLUME
 
     # --- Gate 3: ADR%(20) >= 4.0 ---

@@ -1,4 +1,5 @@
 """tests/test_journal.py — Phase 7 OUT-04..06 SQLite + trigger tests (Plan 07-03 bodies)."""
+
 from __future__ import annotations
 
 import json
@@ -34,25 +35,38 @@ def _make_row(
 ) -> dict:
     """Factory for a complete picks row dict (13 decision cols + ingested_at)."""
     if features_json is None:
-        features_json = json.dumps({
-            "rs_rating": 92, "trend_template_score": 8,
-            "pattern_diagnostics": {
-                "type": "vcp", "n_contractions": 3,
-                "depth_sequence": [0.25, 0.15, 0.08],
-                "first_leg_depth": 0.25, "final_contraction_depth": 0.08,
-                "breakout_vol_multiple": 1.7, "breakout_strength": 0.85,
-                "pivot_price": 175.5, "days_in_consolidation": 18,
-            },
-            "features_json_version": "v1.0",
-        })
+        features_json = json.dumps(
+            {
+                "rs_rating": 92,
+                "trend_template_score": 8,
+                "pattern_diagnostics": {
+                    "type": "vcp",
+                    "n_contractions": 3,
+                    "depth_sequence": [0.25, 0.15, 0.08],
+                    "first_leg_depth": 0.25,
+                    "final_contraction_depth": 0.08,
+                    "breakout_vol_multiple": 1.7,
+                    "breakout_strength": 0.85,
+                    "pivot_price": 175.5,
+                    "days_in_consolidation": 18,
+                },
+                "features_json_version": "v1.0",
+            }
+        )
     return {
-        "ticker": ticker, "snapshot_date": snapshot_date,
-        "playbook_tag": playbook_tag, "composite_score": composite_score,
-        "regime_state": regime_state, "entry_price": entry_price,
-        "stop_price": stop_price, "shares": shares,
-        "risk_per_share": risk_per_share, "atr_zone": atr_zone,
+        "ticker": ticker,
+        "snapshot_date": snapshot_date,
+        "playbook_tag": playbook_tag,
+        "composite_score": composite_score,
+        "regime_state": regime_state,
+        "entry_price": entry_price,
+        "stop_price": stop_price,
+        "shares": shares,
+        "risk_per_share": risk_per_share,
+        "atr_zone": atr_zone,
         "pivot_distance_atr_breakout": pivot_distance_atr_breakout,
-        "features_json": features_json, "ingested_at": ingested_at,
+        "features_json": features_json,
+        "ingested_at": ingested_at,
     }
 
 
@@ -87,8 +101,12 @@ def test_outcome_column_updatable(tmp_path: Path) -> None:
     db = tmp_path / "j.sqlite"
     append_picks_rows([_make_row()], db_path=db)
     updates = {
-        "entry_filled": 1, "exit_price": 200.0, "exit_date": "2026-06-01",
-        "hold_days": 14, "mfe": 25.5, "mae": -3.2,
+        "entry_filled": 1,
+        "exit_price": 200.0,
+        "exit_date": "2026-06-01",
+        "hold_days": 14,
+        "mfe": 25.5,
+        "mae": -3.2,
     }
     with sqlite3.connect(db) as conn:
         # Initial NULL state.
@@ -109,7 +127,8 @@ def test_idempotent_append(tmp_path: Path) -> None:
     db = tmp_path / "j.sqlite"
     # First insert: 2 rows.
     n1 = append_picks_rows(
-        [_make_row(ticker="AAPL"), _make_row(ticker="MSFT")], db_path=db,
+        [_make_row(ticker="AAPL"), _make_row(ticker="MSFT")],
+        db_path=db,
     )
     assert n1 == 2
     # Second insert: 1 duplicate (AAPL), 1 new (NVDA), 1 duplicate (AAPL again).
@@ -145,9 +164,15 @@ def test_features_json_includes_diagnostics(tmp_path: Path) -> None:
     loaded = json.loads(df.iloc[0]["features_json"])
     diag = loaded["pattern_diagnostics"]
     for required_key in (
-        "type", "n_contractions", "depth_sequence", "first_leg_depth",
-        "final_contraction_depth", "breakout_vol_multiple", "breakout_strength",
-        "pivot_price", "days_in_consolidation",
+        "type",
+        "n_contractions",
+        "depth_sequence",
+        "first_leg_depth",
+        "final_contraction_depth",
+        "breakout_vol_multiple",
+        "breakout_strength",
+        "pivot_price",
+        "days_in_consolidation",
     ):
         assert required_key in diag, f"pattern_diagnostics missing {required_key}"
 
@@ -202,6 +227,7 @@ def test_journal_cli_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("RISK_PCT", "0.01")
     monkeypatch.setenv("ACCOUNT_EQUITY", "100000")
     from screener.config import get_settings
+
     get_settings.cache_clear()
 
     # 2. Write a real snapshot parquet that _build_journal_rows_df_from_snapshot
@@ -215,16 +241,24 @@ def test_journal_cli_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
                 "rank": 1,
                 "composite_score": 75.0,
                 "composite_score_raw": 75.0,  # pre-gate raw composite (Plan 07-04 Pitfall 3)
-                "rs_component": 0.92, "trend_component": 1.0,
-                "volume_component": 0.7, "pattern_component": 0.7,
-                "earnings_component": 0.5, "catalyst_component": 0.3,
-                "passes_trend_template": True, "trend_template_score": 8,
-                "rs_rating": 92, "dryup_ratio": 0.85,
+                "rs_component": 0.92,
+                "trend_component": 1.0,
+                "volume_component": 0.7,
+                "pattern_component": 0.7,
+                "earnings_component": 0.5,
+                "catalyst_component": 0.3,
+                "passes_trend_template": True,
+                "trend_template_score": 8,
+                "rs_rating": 92,
+                "dryup_ratio": 0.85,
                 "pivot_distance_atr": 0.5,  # Phase 4 sign convention
                 "pivot_zone": "in-zone",
-                "regime_state": "Confirmed Uptrend", "regime_score": 0.85,
+                "regime_state": "Confirmed Uptrend",
+                "regime_score": 0.85,
                 "playbook_tag": "minervini_vcp",
-                "qullamaggie_score": 0, "minervini_score": 1, "leader_hold_score": 0,
+                "qullamaggie_score": 0,
+                "minervini_score": 1,
+                "leader_hold_score": 0,
                 "pattern_diagnostics": (
                     '{"type":"vcp","pivot_price":175.5,"final_contraction_depth":0.08,'
                     '"depth_sequence":[0.25,0.15,0.08],"n_contractions":3,'
@@ -239,14 +273,18 @@ def test_journal_cli_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
                 "eps_knowable_from": None,
                 # Phase 7 sizing cols (Plan 07-04 step 5.5 populates these in the
                 # live pipeline; here we mimic that for the catch-up path).
-                "stop_price": 161.46, "entry_price": 180.0, "shares": 50,
-                "risk_per_share": 18.54, "atr_zone": "in-zone",
+                "stop_price": 161.46,
+                "entry_price": 180.0,
+                "shares": 50,
+                "risk_per_share": 18.54,
+                "atr_zone": "in-zone",
                 "pivot_distance_atr_breakout": 0.25,
                 "trail_rule_label": "21d EMA (then 50d SMA after 15 bars)",
                 # Phase 7 revision iter 1: adr_rejected + rejection_reason are real
                 # snapshot columns (Plan 07-01 revised). Catch-up helper reads
                 # adr_rejected directly — Warning #6 single-source-of-truth.
-                "adr_rejected": False, "rejection_reason": "",
+                "adr_rejected": False,
+                "rejection_reason": "",
             },
         ]
     )
@@ -254,6 +292,7 @@ def test_journal_cli_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
 
     # 3. First invocation — inserts 1 row.
     from screener.cli import app
+
     runner = CliRunner()
     result1 = runner.invoke(app, ["journal"])
     assert result1.exit_code == 0, f"first invoke failed: {result1.stdout}"
@@ -274,12 +313,9 @@ def test_journal_cli_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     # 5. Structlog events sanity: second invocation should report
     # n_idempotent_skip == n_attempted (everything was a duplicate).
     events2 = [
-        _json.loads(line) for line in result2.stdout.splitlines()
-        if line.strip().startswith("{")
+        _json.loads(line) for line in result2.stdout.splitlines() if line.strip().startswith("{")
     ]
-    catchup_events = [
-        ev for ev in events2 if ev.get("event") == "journal_catchup_complete"
-    ]
+    catchup_events = [ev for ev in events2 if ev.get("event") == "journal_catchup_complete"]
     assert catchup_events, f"expected journal_catchup_complete event; got events: {events2!r}"
     ev = catchup_events[-1]
     assert ev["n_inserted"] == 0, f"expected n_inserted=0; got {ev!r}"

@@ -101,7 +101,9 @@ def test_eps_history_yfinance_mock(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(df) == 4, f"Expected 4 rows, got {len(df)}"
 
 
-def test_knowable_from_45d_added(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:  # type: ignore[type-arg]
+def test_knowable_from_45d_added(
+    tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:  # type: ignore[type-arg]
     """D-13b: knowable_from = fiscal_quarter_end + 45 days after refresh_fundamentals.
 
     Uses monkeypatch to bypass all network calls:
@@ -113,17 +115,20 @@ def test_knowable_from_45d_added(tmp_path: pytest.TempPathFactory, monkeypatch: 
     """
     monkeypatch.setenv("FUNDAMENTALS_CACHE_DIR", str(tmp_path))
     from screener.config import get_settings
+
     get_settings.cache_clear()
 
     import screener.data.fundamentals as fmod
     from screener.persistence import read_fundamentals
 
     quarter_end = pd.Timestamp("2026-03-31")
-    mock_eps = pd.DataFrame({
-        "fiscal_quarter_end": [quarter_end],
-        "eps_actual": [1.5],
-        "eps_yoy_growth": [0.3],
-    })
+    mock_eps = pd.DataFrame(
+        {
+            "fiscal_quarter_end": [quarter_end],
+            "eps_actual": [1.5],
+            "eps_yoy_growth": [0.3],
+        }
+    )
     expected_knowable = quarter_end + pd.Timedelta(days=45)  # 2026-05-15
 
     with (

@@ -42,11 +42,6 @@ def obv_panel(panel: pd.DataFrame) -> pd.DataFrame:
 def dryup_ratio_panel(panel: pd.DataFrame, length: int = 50) -> pd.DataFrame:
     """D-09: dryup_ratio = volume / SMA(volume, length)."""
     out = panel.copy()
-    sma_vol = (
-        panel.groupby(level="ticker")["volume"]
-        .rolling(length)
-        .mean()
-        .droplevel(0)
-    )
+    sma_vol = panel.groupby(level="ticker")["volume"].rolling(length).mean().droplevel(0)
     out["dryup_ratio"] = panel["volume"] / sma_vol
     return out

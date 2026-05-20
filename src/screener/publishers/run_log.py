@@ -117,9 +117,7 @@ def _cli_failure_entry(status: str) -> None:
         "regime_state": None,
         "picks_count": None,
         "n_429_responses": 0,
-        "error_reason": os.environ.get(
-            "RUN_ERROR_REASON", "pipeline step failed"
-        ),
+        "error_reason": os.environ.get("RUN_ERROR_REASON", "pipeline step failed"),
     }
     append_record(record)
 

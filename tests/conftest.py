@@ -300,16 +300,18 @@ def synthetic_multi_ticker_panel() -> pd.DataFrame:
         drift = 0.001 * (i + 1)
         close = 100.0 * np.cumprod(1.0 + np.full(n, drift))
         idx = pd.MultiIndex.from_product([[t], dates], names=["ticker", "date"])
-        frames.append(pd.DataFrame(
-            {
-                "open": close,
-                "high": close * 1.01,
-                "low": close * 0.99,
-                "close": close,
-                "volume": np.full(n, 1_000_000, dtype="int64"),
-            },
-            index=idx,
-        ))
+        frames.append(
+            pd.DataFrame(
+                {
+                    "open": close,
+                    "high": close * 1.01,
+                    "low": close * 0.99,
+                    "close": close,
+                    "volume": np.full(n, 1_000_000, dtype="int64"),
+                },
+                index=idx,
+            )
+        )
     return pd.concat(frames).sort_index()
 
 
@@ -385,12 +387,15 @@ def synthetic_spy_with_dist_days() -> pd.DataFrame:
     # Inject 4 distribution days at indices 30, 35, 40, 45 (within last 25 sessions
     # of index n-1=49; window covers indices 25..49).
     for i in (30, 35, 40, 45):
-        close[i] = close[i - 1] * 0.99   # 1% drop > 0.2%
+        close[i] = close[i - 1] * 0.99  # 1% drop > 0.2%
         volume[i] = int(volume[i - 1] * 1.5)  # higher volume
     return pd.DataFrame(
         {
-            "open": close, "high": close * 1.01, "low": close * 0.98,
-            "close": close, "volume": volume,
+            "open": close,
+            "high": close * 1.01,
+            "low": close * 0.98,
+            "close": close,
+            "volume": volume,
         },
         index=pd.DatetimeIndex(idx, name="date"),
     )
@@ -583,38 +588,42 @@ def sized_input_cross() -> pd.DataFrame:
     """
     from screener.indicators.patterns import encode_pattern_diagnostics
 
-    vcp_diag = encode_pattern_diagnostics({
-        "type": "vcp",
-        "n_contractions": 3,
-        "depth_sequence": [0.25, 0.15, 0.08],
-        "first_leg_depth": 0.25,
-        "final_contraction_depth": 0.08,
-        "breakout_vol_multiple": 1.7,
-        "breakout_strength": 0.85,
-        "pivot_price": 100.0,
-        "days_in_consolidation": 18,
-    })
+    vcp_diag = encode_pattern_diagnostics(
+        {
+            "type": "vcp",
+            "n_contractions": 3,
+            "depth_sequence": [0.25, 0.15, 0.08],
+            "first_leg_depth": 0.25,
+            "final_contraction_depth": 0.08,
+            "breakout_vol_multiple": 1.7,
+            "breakout_strength": 0.85,
+            "pivot_price": 100.0,
+            "days_in_consolidation": 18,
+        }
+    )
     none_diag = encode_pattern_diagnostics({"type": "none"})
-    flag_diag = encode_pattern_diagnostics({
-        "type": "flag",
-        "n_contractions": 0,
-        "depth_sequence": [],
-        "first_leg_depth": 0.0,
-        "final_contraction_depth": 0.0,
-        "breakout_vol_multiple": 1.6,
-        "breakout_strength": 0.72,
-        "pivot_price": 120.0,
-        "days_in_consolidation": 12,
-    })
+    flag_diag = encode_pattern_diagnostics(
+        {
+            "type": "flag",
+            "n_contractions": 0,
+            "depth_sequence": [],
+            "first_leg_depth": 0.0,
+            "final_contraction_depth": 0.0,
+            "breakout_vol_multiple": 1.6,
+            "breakout_strength": 0.72,
+            "pivot_price": 120.0,
+            "days_in_consolidation": 12,
+        }
+    )
 
     df = pd.DataFrame(
         {
             "ticker": ["QULL", "VCP1", "LEAD", "REJC", "INVS"],
-            "close":  [120.0, 100.0, 200.0,  80.0, 50.0],
-            "low":    [118.0,  99.0, 198.0,  79.5, 50.0],  # INVS close==low → Pitfall 6
-            "high":   [121.5, 101.0, 202.0,  80.5, 50.5],
-            "atr_14": [  2.0,   1.5,   4.0,   0.5,  1.0],
-            "adr_pct":[  5.5,   4.2,   2.1,   0.3,  3.0],  # REJC adr_pct=0.3 → reject
+            "close": [120.0, 100.0, 200.0, 80.0, 50.0],
+            "low": [118.0, 99.0, 198.0, 79.5, 50.0],  # INVS close==low → Pitfall 6
+            "high": [121.5, 101.0, 202.0, 80.5, 50.5],
+            "atr_14": [2.0, 1.5, 4.0, 0.5, 1.0],
+            "adr_pct": [5.5, 4.2, 2.1, 0.3, 3.0],  # REJC adr_pct=0.3 → reject
             "playbook_tag": [
                 "qullamaggie_continuation",
                 "minervini_vcp",

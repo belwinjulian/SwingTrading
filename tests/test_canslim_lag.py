@@ -12,7 +12,9 @@ import pandas as pd
 import pytest
 
 
-def test_lag_enforcement_30d_then_16d(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:  # type: ignore[type-arg]
+def test_lag_enforcement_30d_then_16d(
+    tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:  # type: ignore[type-arg]
     """D-13b verbatim: row with quarter_end = as_of - 30d is MASKED until as_of + 16d.
 
     Timeline:
@@ -23,6 +25,7 @@ def test_lag_enforcement_30d_then_16d(tmp_path: pytest.TempPathFactory, monkeypa
     """
     monkeypatch.setenv("FUNDAMENTALS_CACHE_DIR", str(tmp_path))
     from screener.config import get_settings
+
     get_settings.cache_clear()
 
     from screener.persistence import read_fundamentals, write_fundamentals_atomic
@@ -31,17 +34,19 @@ def test_lag_enforcement_30d_then_16d(tmp_path: pytest.TempPathFactory, monkeypa
     quarter_end = as_of - pd.Timedelta(days=30)  # 2026-04-01
     knowable_from = quarter_end + pd.Timedelta(days=45)  # 2026-05-16
 
-    row = pd.DataFrame({
-        "ticker": ["AAPL"],
-        "fiscal_quarter_end": [quarter_end],
-        "eps_actual": [1.5],
-        "eps_yoy_growth": [0.30],
-        "knowable_from": [knowable_from],
-        "next_earnings_date": [as_of + pd.Timedelta(days=80)],
-        "next_earnings_hour": ["amc"],
-        "source": ["yfinance"],
-        "ingested_at": [pd.Timestamp.now()],
-    })
+    row = pd.DataFrame(
+        {
+            "ticker": ["AAPL"],
+            "fiscal_quarter_end": [quarter_end],
+            "eps_actual": [1.5],
+            "eps_yoy_growth": [0.30],
+            "knowable_from": [knowable_from],
+            "next_earnings_date": [as_of + pd.Timedelta(days=80)],
+            "next_earnings_hour": ["amc"],
+            "source": ["yfinance"],
+            "ingested_at": [pd.Timestamp.now()],
+        }
+    )
     write_fundamentals_atomic(row, "AAPL")
 
     # At as_of (2026-05-01): knowable_from (2026-05-16) > as_of -> MASKED

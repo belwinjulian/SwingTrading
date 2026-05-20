@@ -61,12 +61,12 @@ def test_nvda_2023_vcp(nvda_2023_vcp_panel: pd.DataFrame) -> None:
     result = find_vcp_pattern(panel)
 
     assert result["type"] == "vcp", f"Expected VCP detection, got {result!r}"
-    assert (
-        N_CONTRACTIONS_MIN <= result["n_contractions"] <= N_CONTRACTIONS_MAX
-    ), f"n_contractions={result['n_contractions']} outside [{N_CONTRACTIONS_MIN},{N_CONTRACTIONS_MAX}]"
-    assert (
-        result["final_contraction_depth"] <= FINAL_CONTRACTION_MAX_DEPTH_PCT
-    ), f"final_contraction_depth={result['final_contraction_depth']} > {FINAL_CONTRACTION_MAX_DEPTH_PCT}"
+    assert N_CONTRACTIONS_MIN <= result["n_contractions"] <= N_CONTRACTIONS_MAX, (
+        f"n_contractions={result['n_contractions']} outside [{N_CONTRACTIONS_MIN},{N_CONTRACTIONS_MAX}]"
+    )
+    assert result["final_contraction_depth"] <= FINAL_CONTRACTION_MAX_DEPTH_PCT, (
+        f"final_contraction_depth={result['final_contraction_depth']} > {FINAL_CONTRACTION_MAX_DEPTH_PCT}"
+    )
     assert result["pivot_price"] > 0
 
     # checker B2: per-leg sub-field shape + ISO start_date in fixture window.
@@ -97,12 +97,8 @@ def test_aapl_2020_vcp(aapl_2020_vcp_panel: pd.DataFrame) -> None:
     result = find_vcp_pattern(panel)
 
     assert result["type"] == "vcp", f"Expected VCP detection, got {result!r}"
-    assert (
-        N_CONTRACTIONS_MIN <= result["n_contractions"] <= N_CONTRACTIONS_MAX
-    )
-    assert (
-        result["final_contraction_depth"] <= FINAL_CONTRACTION_MAX_DEPTH_PCT
-    )
+    assert N_CONTRACTIONS_MIN <= result["n_contractions"] <= N_CONTRACTIONS_MAX
+    assert result["final_contraction_depth"] <= FINAL_CONTRACTION_MAX_DEPTH_PCT
     assert result["pivot_price"] > 0
 
     # Subset legs assertion: non-empty, every leg avg_volume > 0.
@@ -183,6 +179,7 @@ def test_nvda_2023_flag(nvda_2023_flag_panel: pd.DataFrame) -> None:
     # When the strict gate fires, document the bars range.
     if result["type"] == "flag":
         from screener.indicators.patterns import FLAG_MAX_BARS, FLAG_MIN_BARS
+
         assert FLAG_MIN_BARS <= result["flag_bars"] <= FLAG_MAX_BARS
 
 

@@ -109,9 +109,7 @@ def test_write_macro_atomic_unknown_series_raises(
 ) -> None:
     """Unknown series name fails fast — typo guard."""
     monkeypatch.setattr("screener.persistence._macro_dir", lambda: tmp_path / "macro")
-    df = pd.DataFrame(
-        {"close": [1.0]}, index=pd.DatetimeIndex(["2026-04-30"], name="date")
-    )
+    df = pd.DataFrame({"close": [1.0]}, index=pd.DatetimeIndex(["2026-04-30"], name="date"))
     with pytest.raises(ValueError, match="unknown macro series"):
         write_macro_atomic(df, "junk")
 
@@ -158,9 +156,7 @@ def test_snapshot_atomic_write_crash_no_residue(
     """A mid-write crash leaves no partial Parquet and no .tmp residue
     — mirrors test_rs_snapshot_atomic_write for write_snapshot_atomic."""
     snapshot_dir = tmp_path / "snapshots"
-    monkeypatch.setattr(
-        "screener.persistence._snapshot_dir", lambda: snapshot_dir
-    )
+    monkeypatch.setattr("screener.persistence._snapshot_dir", lambda: snapshot_dir)
 
     from screener.persistence import write_snapshot_atomic
 
@@ -219,10 +215,6 @@ def test_snapshot_atomic_write_crash_no_residue(
         write_snapshot_atomic(df, "2026-05-10")
 
     target = snapshot_dir / "2026-05-10.parquet"
-    assert not target.exists(), (
-        "snapshot must not exist after a mid-write crash"
-    )
+    assert not target.exists(), "snapshot must not exist after a mid-write crash"
     leftover = list(snapshot_dir.glob(".2026-05-10.parquet.*.tmp"))
-    assert leftover == [], (
-        f"No tmp residue should remain; found {leftover}"
-    )
+    assert leftover == [], f"No tmp residue should remain; found {leftover}"

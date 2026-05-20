@@ -57,15 +57,11 @@ def _make_ranking_snapshot_df() -> pd.DataFrame:
     )
 
 
-def test_snapshot_written_atomic(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_snapshot_written_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """OUT-03: write_snapshot writes data/snapshots/<date>.parquet via the
     publisher's thin-wrapper path."""
     snapshot_dir = tmp_path / "snapshots"
-    monkeypatch.setattr(
-        "screener.persistence._snapshot_dir", lambda: snapshot_dir
-    )
+    monkeypatch.setattr("screener.persistence._snapshot_dir", lambda: snapshot_dir)
     from screener.publishers.snapshot import write_snapshot
 
     df = _make_ranking_snapshot_df()
@@ -74,13 +70,9 @@ def test_snapshot_written_atomic(
     assert path.exists()
 
 
-def test_snapshot_path_traversal_rejected(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_snapshot_path_traversal_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """T-4-01: snapshot_date with traversal attempt is rejected before write."""
-    monkeypatch.setattr(
-        "screener.persistence._snapshot_dir", lambda: tmp_path / "snapshots"
-    )
+    monkeypatch.setattr("screener.persistence._snapshot_dir", lambda: tmp_path / "snapshots")
     from screener.publishers.snapshot import write_snapshot
 
     df = _make_ranking_snapshot_df()

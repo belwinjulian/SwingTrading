@@ -140,7 +140,13 @@ def get_cached_session() -> requests_cache.CachedSession:
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=2, max=60),
     retry=retry_if_exception_type(
-        (requests.HTTPError, requests.ConnectionError, requests.Timeout, ConnectionError, TimeoutError)  # noqa: E501
+        (
+            requests.HTTPError,
+            requests.ConnectionError,
+            requests.Timeout,
+            ConnectionError,
+            TimeoutError,
+        )
     ),
     before_sleep=before_sleep_log(_stdlib_log, logging.WARNING),
     reraise=True,

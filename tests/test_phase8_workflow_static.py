@@ -29,9 +29,7 @@ HEARTBEAT_YML = REPO_ROOT / ".github" / "workflows" / "heartbeat.yml"
 
 # Match: "owner/repo@<40-hex-sha>  # vMAJOR.MINOR.PATCH" — the existing ci.yml
 # pinning convention (lines 22 + 25). Two-space gap + `# vX.Y.Z` is required.
-PINNED_HASH_RE = re.compile(
-    r"[\w-]+/[\w-]+@[0-9a-f]{40}\s+#\s+v\d+\.\d+\.\d+"
-)
+PINNED_HASH_RE = re.compile(r"[\w-]+/[\w-]+@[0-9a-f]{40}\s+#\s+v\d+\.\d+\.\d+")
 
 # Required action SHAs (verified via `git ls-remote` 2026-05-19):
 #   actions/checkout v4.2.2                  -> 11bd71901bbe5b1630ceea73d27597364c9af683
@@ -42,9 +40,11 @@ PINNED_HASH_RE = re.compile(
 
 # === refresh.yml assertions (filled by Plan 08-06) ===
 
+
 def test_refresh_workflow_exists_and_yaml_valid() -> None:
     """OPS-01: .github/workflows/refresh.yml exists and parses as valid YAML."""
     import yaml
+
     assert REFRESH_YML.exists(), f"missing file: {REFRESH_YML}"
     data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
     assert isinstance(data, dict), f"YAML root is not a mapping: {type(data)!r}"
@@ -54,6 +54,7 @@ def test_refresh_workflow_exists_and_yaml_valid() -> None:
 def test_refresh_cron_schedule() -> None:
     """OPS-01: refresh.yml schedules on cron '30 22 * * 1-5' (UTC, weekdays)."""
     import yaml
+
     data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
     # PyYAML parses bareword `on:` as boolean True.
     on_block = data.get(True, data.get("on"))
@@ -68,6 +69,7 @@ def test_refresh_cron_schedule() -> None:
 def test_refresh_has_workflow_dispatch() -> None:
     """OPS-04: refresh.yml has `workflow_dispatch:` for manual re-runs."""
     import yaml
+
     data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
     on_block = data.get(True, data.get("on"))
     assert isinstance(on_block, dict), f"`on:` block missing: {on_block!r}"
@@ -102,6 +104,7 @@ def test_refresh_permissions_contents_write() -> None:
     `permissions: contents: write` at workflow level (not job level), no
     additional scopes."""
     import yaml
+
     data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
     perms = data.get("permissions")
     assert isinstance(perms, dict), f"permissions block missing or wrong shape: {perms!r}"
@@ -118,6 +121,7 @@ def test_refresh_permissions_contents_write() -> None:
 def test_refresh_timeout_120_minutes() -> None:
     """D-07: refresh.yml job sets `timeout-minutes: 120`."""
     import yaml
+
     data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
     job = data.get("jobs", {}).get("refresh", {})
     assert job.get("timeout-minutes") == 120, (
@@ -130,6 +134,7 @@ def test_refresh_cancel_in_progress_false() -> None:
     """Pitfall #3: refresh.yml concurrency block has `cancel-in-progress: false`
     (long cold-cache runs must not be killed by manual workflow_dispatch)."""
     import yaml
+
     data = yaml.safe_load(REFRESH_YML.read_text(encoding="utf-8"))
     concurrency = data.get("concurrency", {})
     assert isinstance(concurrency, dict), f"concurrency block missing: {concurrency!r}"
@@ -150,7 +155,8 @@ def test_refresh_no_github_event_interpolation_in_run_blocks() -> None:
     # Find every interpolation expression in the file.
     interpolations = re.findall(r"\$\{\{\s*([^}]+?)\s*\}\}", text)
     forbidden = [
-        expr for expr in interpolations
+        expr
+        for expr in interpolations
         if "github.event." in expr or expr.strip().startswith("github.event")
     ]
     assert not forbidden, (
@@ -167,6 +173,7 @@ def test_refresh_two_step_commit_pattern() -> None:
     and exactly one by `failure()` (W-04 from gsd-plan-checker — replaces the
     earlier SHA-count heuristic with a structural assertion)."""
     import yaml
+
     text = REFRESH_YML.read_text(encoding="utf-8")
     # Coarse SHA-count guard (cheap, catches obvious regressions).
     sha_count = text.count("b863ae1933cb653a53c021fe36dbb774e1fb9403")
@@ -239,9 +246,11 @@ def test_refresh_file_pattern_includes_reports_and_runs_jsonl() -> None:
 
 # === heartbeat.yml assertions (filled by Plan 08-04) ===
 
+
 def test_heartbeat_workflow_exists_and_yaml_valid() -> None:
     """OPS-03: .github/workflows/heartbeat.yml exists and parses as valid YAML."""
     import yaml  # transitive dep via pandera/structlog stack
+
     assert HEARTBEAT_YML.exists(), f"missing file: {HEARTBEAT_YML}"
     data = yaml.safe_load(HEARTBEAT_YML.read_text(encoding="utf-8"))
     assert isinstance(data, dict), f"YAML root is not a mapping: {type(data)!r}"
@@ -251,6 +260,7 @@ def test_heartbeat_workflow_exists_and_yaml_valid() -> None:
 def test_heartbeat_cron_schedule() -> None:
     """OPS-03 / D-11: heartbeat.yml schedules on cron '0 9 * * 1' (Monday 09:00 UTC)."""
     import yaml
+
     data = yaml.safe_load(HEARTBEAT_YML.read_text(encoding="utf-8"))
     # PyYAML parses bareword `on:` as boolean True (the "Norway problem" cousin).
     # Look up by both keys for compatibility across yaml dialects.
@@ -269,6 +279,7 @@ def test_heartbeat_permissions_contents_write() -> None:
     declare any other scopes. NOTE: deviates from CONTEXT D-09 which says
     `contents: read` — D-09 is a slip; heartbeat cannot commit without write."""
     import yaml
+
     data = yaml.safe_load(HEARTBEAT_YML.read_text(encoding="utf-8"))
     perms = data.get("permissions")
     assert isinstance(perms, dict), f"permissions block missing or wrong shape: {perms!r}"
@@ -291,8 +302,7 @@ def test_heartbeat_workflow_pins_actions_by_sha() -> None:
     text = HEARTBEAT_YML.read_text(encoding="utf-8")
     pins = PINNED_HASH_RE.findall(text)
     assert len(pins) >= 2, (
-        f"heartbeat.yml must pin at least 2 actions by 40-char SHA; "
-        f"matched {len(pins)}: {pins!r}"
+        f"heartbeat.yml must pin at least 2 actions by 40-char SHA; matched {len(pins)}: {pins!r}"
     )
     # Required exact SHAs (verified via `git ls-remote` 2026-05-19):
     assert "11bd71901bbe5b1630ceea73d27597364c9af683" in text, (
@@ -311,8 +321,7 @@ def test_heartbeat_writes_data_heartbeat_txt() -> None:
     this path)."""
     text = HEARTBEAT_YML.read_text(encoding="utf-8")
     assert "data/heartbeat.txt" in text, (
-        f"heartbeat.yml must reference data/heartbeat.txt at least once; "
-        f"file contents: {text!r}"
+        f"heartbeat.yml must reference data/heartbeat.txt at least once; file contents: {text!r}"
     )
     # Specifically, the auto-commit file_pattern must target it.
     assert "file_pattern: data/heartbeat.txt" in text, (
@@ -326,6 +335,7 @@ def test_heartbeat_no_github_event_interpolation_in_run_blocks() -> None:
     YAML — stronger than the one-shot grep in Plan 08-04 Task 1 verify,
     because it gates every future heartbeat.yml edit at pytest time."""
     import yaml
+
     text = HEARTBEAT_YML.read_text(encoding="utf-8")
     data = yaml.safe_load(text)
     for job_name, job in data.get("jobs", {}).items():
@@ -344,6 +354,7 @@ def test_heartbeat_no_set_x() -> None:
     workflow log BEFORE GitHub's secret-masking pre-mask window closes.
     `set -e` is allowed (and required for chain-abort semantics)."""
     import yaml
+
     text = HEARTBEAT_YML.read_text(encoding="utf-8")
     data = yaml.safe_load(text)
     for job_name, job in data.get("jobs", {}).items():

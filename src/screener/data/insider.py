@@ -100,18 +100,20 @@ def refresh_insider(today: date, lookback_days: int = 35) -> int:
         try:
             form4 = filing.obj()
             for activity in form4.get_transaction_activities():
-                rows.append({
-                    "filing_id": str(filing.accession_no),
-                    "ticker": str(activity.ticker).upper(),
-                    "insider": str(activity.insider_name),
-                    "transaction_date": (
-                        pd.Timestamp(activity.transaction_date).isoformat()[:10]
-                    ),
-                    "type": "BUY" if activity.is_acquisition else "SELL",
-                    "shares": float(activity.shares),
-                    "value_usd": float(activity.value_usd or 0.0),
-                    "ingested_at": pd.Timestamp.now(tz="UTC").isoformat(),
-                })
+                rows.append(
+                    {
+                        "filing_id": str(filing.accession_no),
+                        "ticker": str(activity.ticker).upper(),
+                        "insider": str(activity.insider_name),
+                        "transaction_date": (
+                            pd.Timestamp(activity.transaction_date).isoformat()[:10]
+                        ),
+                        "type": "BUY" if activity.is_acquisition else "SELL",
+                        "shares": float(activity.shares),
+                        "value_usd": float(activity.value_usd or 0.0),
+                        "ingested_at": pd.Timestamp.now(tz="UTC").isoformat(),
+                    }
+                )
         except Exception as e:
             log.warning(
                 "insider_filing_parse_skip",

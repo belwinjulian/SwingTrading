@@ -43,9 +43,11 @@ def _synthetic_yf_ohlcv(n: int = 252) -> pd.DataFrame:
 def _synthetic_breadth_df(n: int = 200) -> pd.DataFrame:
     idx = pd.bdate_range(end=pd.Timestamp(REF_DATE), periods=n)
     return pd.DataFrame(
-        {"advances": np.full(n, 600, dtype="int64"),
-         "declines": np.full(n, 400, dtype="int64"),
-         "ad_line": np.arange(200, n + 200, dtype="int64")},
+        {
+            "advances": np.full(n, 600, dtype="int64"),
+            "declines": np.full(n, 400, dtype="int64"),
+            "ad_line": np.arange(200, n + 200, dtype="int64"),
+        },
         index=pd.DatetimeIndex(idx, name="date"),
     )
 
@@ -117,14 +119,17 @@ def test_nyad_fallback_on_thin_stooq(tmp_path: Path, monkeypatch: pytest.MonkeyP
     close = np.full(n, 100.0)
     close[:20] = np.nan  # 10% missing
     thin = pd.DataFrame(
-        {"open": close, "high": close, "low": close, "close": close,
-         "volume": np.full(n, 1_000_000, dtype="int64")},
+        {
+            "open": close,
+            "high": close,
+            "low": close,
+            "close": close,
+            "volume": np.full(n, 1_000_000, dtype="int64"),
+        },
         index=pd.DatetimeIndex(idx, name="date"),
     )
     with (
-        mock.patch(
-            "screener.data.macro.stooq_module.fetch_ohlcv", return_value=thin
-        ),
+        mock.patch("screener.data.macro.stooq_module.fetch_ohlcv", return_value=thin),
         mock.patch(
             "screener.data.macro._compute_breadth_fallback",
             return_value=_synthetic_breadth_df(),
@@ -145,11 +150,15 @@ def test_yields_parquet_columns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     # does not affect the local binding; we must patch the macro module's copy).
     monkeypatch.setattr(
         "screener.data.macro.get_settings",
-        lambda: type("S", (), {
-            "FRED_API_KEY": "TEST_KEY",
-            "MACRO_BACKFILL_START": "2024-01-01",
-            "MACRO_CACHE_DIR": macro_dir,
-        })(),
+        lambda: type(
+            "S",
+            (),
+            {
+                "FRED_API_KEY": "TEST_KEY",
+                "MACRO_BACKFILL_START": "2024-01-01",
+                "MACRO_CACHE_DIR": macro_dir,
+            },
+        )(),
     )
     idx = pd.bdate_range(end=pd.Timestamp(REF_DATE), periods=100)
     series = pd.Series(np.full(100, 4.5), index=idx)
@@ -168,11 +177,15 @@ def test_yields_skipped_without_key(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr("screener.persistence._macro_dir", lambda: macro_dir)
     monkeypatch.setattr(
         "screener.data.macro.get_settings",
-        lambda: type("S", (), {
-            "FRED_API_KEY": "",
-            "MACRO_BACKFILL_START": "2024-01-01",
-            "MACRO_CACHE_DIR": macro_dir,
-        })(),
+        lambda: type(
+            "S",
+            (),
+            {
+                "FRED_API_KEY": "",
+                "MACRO_BACKFILL_START": "2024-01-01",
+                "MACRO_CACHE_DIR": macro_dir,
+            },
+        )(),
     )
     with capture_logs() as logs:
         path = macro_module.refresh_yields(force=True, today=REF_DATE)
@@ -205,11 +218,15 @@ def test_no_secret_in_logs(
     # does not affect macro.py's local binding.
     monkeypatch.setattr(
         "screener.data.macro.get_settings",
-        lambda: type("S", (), {
-            "FRED_API_KEY": secret,
-            "MACRO_BACKFILL_START": "2024-01-01",
-            "MACRO_CACHE_DIR": macro_dir,
-        })(),
+        lambda: type(
+            "S",
+            (),
+            {
+                "FRED_API_KEY": secret,
+                "MACRO_BACKFILL_START": "2024-01-01",
+                "MACRO_CACHE_DIR": macro_dir,
+            },
+        )(),
     )
 
     # Stub the four happy-path series (so the run reaches refresh_yields).

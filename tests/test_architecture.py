@@ -32,7 +32,13 @@ ALLOWED: dict[str, set[str]] = {
     "indicators": {"persistence", "config", "obs"},
     "signals": {"indicators", "regime", "persistence", "config", "obs"},
     "regime": {"data", "indicators", "persistence", "config", "obs"},
-    "sizing": {"signals", "regime", "config", "obs", "indicators"},  # Phase 7 D-07: sizing reuses indicators.patterns.find_pivots + decode_pattern_diagnostics (RESEARCH §Pattern 1/2)
+    "sizing": {
+        "signals",
+        "regime",
+        "config",
+        "obs",
+        "indicators",
+    },  # Phase 7 D-07: sizing reuses indicators.patterns.find_pivots + decode_pattern_diagnostics (RESEARCH §Pattern 1/2)
     "publishers": {"signals", "sizing", "regime", "persistence", "config", "obs"},
     "backtest": {"persistence"},  # D-16 verbatim: persistence + stdlib only, never network
     "catalysts": {"persistence", "config", "obs"},

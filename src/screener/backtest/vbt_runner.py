@@ -36,9 +36,9 @@ log = logging.getLogger(__name__)
 # BCK-03 / D-11 tier table - defined ONCE, consumed by _build_slippage_panel
 # AND by the report's disclosure header (single source of truth - Pitfall 7).
 SLIPPAGE_TIERS: tuple[tuple[float, float], ...] = (
-    (50_000_000.0, 0.0005),   # ADV > $50M -> 5 bps
-    (5_000_000.0, 0.0015),    # $5M <= ADV <= $50M -> 15 bps
-    (0.0, 0.0030),            # ADV < $5M -> 30 bps  (also the NaN-warmup default)
+    (50_000_000.0, 0.0005),  # ADV > $50M -> 5 bps
+    (5_000_000.0, 0.0015),  # $5M <= ADV <= $50M -> 15 bps
+    (0.0, 0.0030),  # ADV < $5M -> 30 bps  (also the NaN-warmup default)
 )
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -69,9 +69,7 @@ class WindowResult:
     # Built by joining vbt.Portfolio.returns() with snapshots[regime_state]
     # date-wise. Plan 05-03 concatenates these across windows for the
     # BCK-05 per-regime breakdown table.
-    regime_returns: pd.DataFrame = field(
-        default_factory=lambda: _EMPTY_REGIME_RETURNS.copy()
-    )
+    regime_returns: pd.DataFrame = field(default_factory=lambda: _EMPTY_REGIME_RETURNS.copy())
 
 
 @dataclass(frozen=True)
@@ -85,17 +83,13 @@ class BacktestResult:
     # B-3 fix: concatenation of all windows' regime_returns (long format).
     # Consumed by plan 05-03's `_render_per_regime_section` which calls
     # `metrics.per_regime_breakdown(all_regime_returns)`.
-    all_regime_returns: pd.DataFrame = field(
-        default_factory=lambda: _EMPTY_REGIME_RETURNS.copy()
-    )
+    all_regime_returns: pd.DataFrame = field(default_factory=lambda: _EMPTY_REGIME_RETURNS.copy())
 
 
 def _validate_date(date_str: str) -> None:
     """Reject any non-ISO date string (T-5-01 mitigation against path traversal)."""
     if not isinstance(date_str, str) or not _DATE_RE.match(date_str):
-        raise ValueError(
-            f"Invalid date string {date_str!r}; expected YYYY-MM-DD format."
-        )
+        raise ValueError(f"Invalid date string {date_str!r}; expected YYYY-MM-DD format.")
 
 
 def _build_slippage_panel(panel: pd.DataFrame) -> pd.DataFrame:
@@ -143,9 +137,7 @@ def _read_snapshot(snapshot_date: str) -> pd.DataFrame:
     return pd.read_parquet(target)
 
 
-def _load_snapshots_in_range(
-    start: pd.Timestamp, end: pd.Timestamp
-) -> pd.DataFrame:
+def _load_snapshots_in_range(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """Read every ``data/snapshots/YYYY-MM-DD.parquet`` whose stem date falls
     in ``[start, end]``.
 
@@ -155,8 +147,7 @@ def _load_snapshots_in_range(
     snap_dir = Path("data/snapshots")
     if not snap_dir.exists() or not any(snap_dir.glob("*.parquet")):
         raise RuntimeError(
-            "No snapshots found in data/snapshots/. "
-            "Run `make backfill-snapshots` first."
+            "No snapshots found in data/snapshots/. Run `make backfill-snapshots` first."
         )
     frames: list[pd.DataFrame] = []
     for p in sorted(snap_dir.glob("*.parquet")):
@@ -180,9 +171,7 @@ def _load_snapshots_in_range(
     snapshot = pd.concat(frames, ignore_index=True)
     # L15: defensive non-null regime_state check.
     if "regime_state" in snapshot.columns and snapshot["regime_state"].isna().any():
-        raise RuntimeError(
-            "Snapshot has NaN regime_state - backfill data is corrupt."
-        )
+        raise RuntimeError("Snapshot has NaN regime_state - backfill data is corrupt.")
     return snapshot
 
 
@@ -236,9 +225,7 @@ def _build_regime_returns_for_window(
         return _EMPTY_REGIME_RETURNS.copy()
 
     # Slice snapshots to the OOS window and pick the modal regime per date.
-    snap_window = snapshots[
-        (snapshots["date"] >= oos_start) & (snapshots["date"] <= oos_end)
-    ]
+    snap_window = snapshots[(snapshots["date"] >= oos_start) & (snapshots["date"] <= oos_end)]
     if snap_window.empty or "regime_state" not in snap_window.columns:
         return _EMPTY_REGIME_RETURNS.copy()
     regime_by_date = snap_window.groupby("date")["regime_state"].agg(
@@ -285,10 +272,7 @@ def run(start: str, end: str, *, _lookahead: bool = False) -> BacktestResult:
 
     windows = walk_forward_windows(start_ts, end_ts)
     # B-1 fix: stdlib logging - f-string form, NEVER **kwargs.
-    log.info(
-        f"run_start start={start} end={end} n_windows={len(windows)} "
-        f"lookahead={_lookahead}"
-    )
+    log.info(f"run_start start={start} end={end} n_windows={len(windows)} lookahead={_lookahead}")
 
     # Load assembled OHLCV panel + snapshots ONCE; slice per-window.
     panel = read_panel(end)  # most-recent universe (A2 assumption per RESEARCH)
@@ -309,9 +293,7 @@ def run(start: str, end: str, *, _lookahead: bool = False) -> BacktestResult:
     ).astype(bool)
     # Reindex to the close-panel index so .loc slices align
     # (RESEARCH section E L4).
-    raw_entries = raw_entries.reindex(
-        index=close.index, columns=close.columns, fill_value=False
-    )
+    raw_entries = raw_entries.reindex(index=close.index, columns=close.columns, fill_value=False)
     raw_exits = (~raw_entries) & raw_entries.shift(1, fill_value=False)
     # Edge-trigger entries (avoid re-entry on every bar a True signal persists).
     raw_entries_clean = raw_entries & ~raw_entries.shift(1, fill_value=False)
@@ -353,10 +335,7 @@ def run(start: str, end: str, *, _lookahead: bool = False) -> BacktestResult:
             )
         except Exception as e:
             # B-1 fix: stdlib logger - f-string form, NEVER **kwargs.
-            log.error(
-                f"window_failed window_start={oos_s.date()} "
-                f"error_type={type(e).__name__}"
-            )
+            log.error(f"window_failed window_start={oos_s.date()} error_type={type(e).__name__}")
             raise
 
         n_trades = int(pf.trades.count())
@@ -365,9 +344,7 @@ def run(start: str, end: str, *, _lookahead: bool = False) -> BacktestResult:
 
         # B-3 fix: per-day regime + portfolio return for the OOS slice.
         # C-2 fix iter 3: the helper now uses a hard assert, not try/except.
-        window_regime_returns = _build_regime_returns_for_window(
-            pf, snapshots, oos_s, oos_e
-        )
+        window_regime_returns = _build_regime_returns_for_window(pf, snapshots, oos_s, oos_e)
         per_window_regime_frames.append(window_regime_returns)
 
         window_results.append(
@@ -388,9 +365,7 @@ def run(start: str, end: str, *, _lookahead: bool = False) -> BacktestResult:
     sharpes = pd.Series([w.oos_sharpe for w in window_results], dtype="float64")
     clean_sharpes = sharpes.dropna()
     n_zero = int(sharpes.isna().sum())
-    total_ret = float(
-        (1.0 + pd.Series([w.oos_total_return for w in window_results])).prod() - 1.0
-    )
+    total_ret = float((1.0 + pd.Series([w.oos_total_return for w in window_results])).prod() - 1.0)
 
     # B-3 fix: concatenate per-window regime_returns into a single long
     # DataFrame.
@@ -402,9 +377,7 @@ def run(start: str, end: str, *, _lookahead: bool = False) -> BacktestResult:
     result = BacktestResult(
         windows=window_results,
         sharpe_min=float(clean_sharpes.min()) if len(clean_sharpes) > 0 else float("nan"),
-        sharpe_median=(
-            float(clean_sharpes.median()) if len(clean_sharpes) > 0 else float("nan")
-        ),
+        sharpe_median=(float(clean_sharpes.median()) if len(clean_sharpes) > 0 else float("nan")),
         sharpe_max=float(clean_sharpes.max()) if len(clean_sharpes) > 0 else float("nan"),
         total_return=total_ret,
         n_zero_trade_windows=n_zero,

@@ -62,16 +62,20 @@ def test_fetch_stale_fails(synthetic_ohlcv_stale_df: pd.DataFrame) -> None:
 
 
 def test_fetch_non_monotonic_fails(synthetic_ohlcv_non_monotonic_df: pd.DataFrame) -> None:
-    with mock.patch(
-        "screener.data.ohlcv.yf.download", return_value=synthetic_ohlcv_non_monotonic_df
-    ), pytest.raises(StaleOrEmptyError, match="non-monotonic"):
+    with (
+        mock.patch(
+            "screener.data.ohlcv.yf.download", return_value=synthetic_ohlcv_non_monotonic_df
+        ),
+        pytest.raises(StaleOrEmptyError, match="non-monotonic"),
+    ):
         fetch_ohlcv("AAPL", "2024-01-01", REF_DATE)
 
 
 def test_fetch_null_close_fails(synthetic_ohlcv_null_close_df: pd.DataFrame) -> None:
-    with mock.patch(
-        "screener.data.ohlcv.yf.download", return_value=synthetic_ohlcv_null_close_df
-    ), pytest.raises(StaleOrEmptyError, match="null close"):
+    with (
+        mock.patch("screener.data.ohlcv.yf.download", return_value=synthetic_ohlcv_null_close_df),
+        pytest.raises(StaleOrEmptyError, match="null close"),
+    ):
         fetch_ohlcv("AAPL", "2024-01-01", REF_DATE)
 
 
@@ -96,6 +100,7 @@ def test_sentinel_mismatch_full_refetch(
     # Use a cache whose last bar is 5 business days before REF_DATE, with Close=200.
     # The refetched fixture returns Close=100 for the same date, triggering mismatch.
     import numpy as _np
+
     stale_end = pd.Timestamp(REF_DATE) - pd.tseries.offsets.BDay(5)
     stale_idx = pd.bdate_range(end=stale_end, periods=10)
     cached_lower = pd.DataFrame(
@@ -139,7 +144,7 @@ def test_sentinel_mismatch_full_refetch(
             "Open": [99.0] * 6,
             "High": [101.0] * 6,
             "Low": [98.0] * 6,
-            "Close": [100.0] * 6,   # 50% below cached 200.0 — forces mismatch
+            "Close": [100.0] * 6,  # 50% below cached 200.0 — forces mismatch
             "Volume": [2_000_000] * 6,
         },
         # Start at stale_end (the last cached date) through REF_DATE
@@ -233,12 +238,10 @@ def test_structured_log_on_fail(
     # event for ticker FAKE1. No disjunctive fallback — the fixture is the
     # source of truth, and a missing event is a real bug.
     fail_events = [
-        e for e in cap_logs
-        if e.get("event") == "fetch_fail" and e.get("ticker") == "FAKE1"
+        e for e in cap_logs if e.get("event") == "fetch_fail" and e.get("ticker") == "FAKE1"
     ]
     assert fail_events, (
-        f"Expected at least one fetch_fail event for ticker=FAKE1; "
-        f"captured events: {cap_logs!r}"
+        f"Expected at least one fetch_fail event for ticker=FAKE1; captured events: {cap_logs!r}"
     )
 
 
@@ -303,7 +306,9 @@ def test_circuit_breaker_trip(
         yf_ok, stooq_ok, _failed = run_with_breaker(tickers, REF_DATE)
 
     assert yf_ok <= 1, f"Expected ≤ 1 yf successes (only the first); got {yf_ok}"
-    assert stooq_ok >= 40, f"Expected stooq fallback to handle most of tickers 50..99; got {stooq_ok}"
+    assert stooq_ok >= 40, (
+        f"Expected stooq fallback to handle most of tickers 50..99; got {stooq_ok}"
+    )
 
 
 # --- DAT-07: combined gate counter shape -----------------------------------

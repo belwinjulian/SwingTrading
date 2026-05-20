@@ -50,13 +50,9 @@ def _make_regime_row() -> pd.Series:
     )
 
 
-def test_report_file_written(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_report_file_written(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """OUT-01: write_report produces reports/<date>.md."""
-    monkeypatch.setattr(
-        "screener.publishers.report._report_dir", lambda: tmp_path
-    )
+    monkeypatch.setattr("screener.publishers.report._report_dir", lambda: tmp_path)
     from screener.publishers.report import write_report
 
     path = write_report(
@@ -171,8 +167,11 @@ def test_data_quality_warning_banner_d07(
     from screener.publishers.report import render_report
 
     md_warn = render_report(
-        _make_scored_cross(3), _make_regime_row(), "2026-05-10",
-        top_n=15, pass_rate=0.31,
+        _make_scored_cross(3),
+        _make_regime_row(),
+        "2026-05-10",
+        top_n=15,
+        pass_rate=0.31,
     )
     assert "WARNING:" in md_warn
     assert "31.0%" in md_warn
@@ -181,8 +180,11 @@ def test_data_quality_warning_banner_d07(
     assert "\U0001f6a8" not in md_warn
 
     md_clean = render_report(
-        _make_scored_cross(3), _make_regime_row(), "2026-05-10",
-        top_n=15, pass_rate=0.10,
+        _make_scored_cross(3),
+        _make_regime_row(),
+        "2026-05-10",
+        top_n=15,
+        pass_rate=0.10,
     )
     assert "WARNING:" not in md_clean
 
@@ -193,8 +195,11 @@ def test_pivot_column_header_d05() -> None:
 
     assert PIVOT_COLUMN_HEADER == "ATR from 52w high (Phase 4 proxy)"
     md = render_report(
-        _make_scored_cross(3), _make_regime_row(), "2026-05-10",
-        top_n=15, pass_rate=0.10,
+        _make_scored_cross(3),
+        _make_regime_row(),
+        "2026-05-10",
+        top_n=15,
+        pass_rate=0.10,
     )
     assert PIVOT_COLUMN_HEADER in md
 
@@ -203,9 +208,7 @@ def test_report_atomic_write_crash_no_residue(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The Markdown write is atomic: a crash mid-write leaves no .tmp residue."""
-    monkeypatch.setattr(
-        "screener.publishers.report._report_dir", lambda: tmp_path
-    )
+    monkeypatch.setattr("screener.publishers.report._report_dir", lambda: tmp_path)
 
     # Force os.replace to raise mid-write.
     def _raise(*args: object, **kwargs: object) -> None:
@@ -216,8 +219,11 @@ def test_report_atomic_write_crash_no_residue(
     monkeypatch.setattr("screener.publishers.report.os.replace", _raise)
     with pytest.raises(OSError):
         write_report(
-            _make_scored_cross(3), _make_regime_row(), "2026-05-10",
-            top_n=15, pass_rate=0.10,
+            _make_scored_cross(3),
+            _make_regime_row(),
+            "2026-05-10",
+            top_n=15,
+            pass_rate=0.10,
         )
 
     target = tmp_path / "2026-05-10.md"
@@ -236,32 +242,46 @@ def test_render_report_includes_sizing_fields_and_skipped_section() -> None:
     actionable = pd.DataFrame(
         {
             "ticker": ["AAPL"],
-            "composite_score": [85.0], "rs_rating": [92], "trend_template_score": [8],
+            "composite_score": [85.0],
+            "rs_rating": [92],
+            "trend_template_score": [8],
             "volume_component": [0.7],
-            "pivot_distance_atr": [0.5], "pivot_zone": ["in-zone"],
+            "pivot_distance_atr": [0.5],
+            "pivot_zone": ["in-zone"],
             "playbook_tag": ["minervini_vcp"],
-            "pattern_diagnostics": ['{"type":"vcp","pivot_price":175.5,"final_contraction_depth":0.08}'],
-            "qullamaggie_score": [0], "minervini_score": [1], "leader_hold_score": [0],
+            "pattern_diagnostics": [
+                '{"type":"vcp","pivot_price":175.5,"final_contraction_depth":0.08}'
+            ],
+            "qullamaggie_score": [0],
+            "minervini_score": [1],
+            "leader_hold_score": [0],
             "breakout_strength": [0.85],
-            "days_to_next_earnings": [pd.NA], "crossed_52w_high_within_60d": [False],
-            "insider_cluster_buy": [False], "earnings_in_3d_warn": [False],
-            "eps_knowable_from": [None], "rank": pd.array([1], dtype=pd.Int64Dtype()),
-            "regime_state": ["Confirmed Uptrend"], "regime_score": [0.82],
+            "days_to_next_earnings": [pd.NA],
+            "crossed_52w_high_within_60d": [False],
+            "insider_cluster_buy": [False],
+            "earnings_in_3d_warn": [False],
+            "eps_knowable_from": [None],
+            "rank": pd.array([1], dtype=pd.Int64Dtype()),
+            "regime_state": ["Confirmed Uptrend"],
+            "regime_score": [0.82],
             # Phase 7 sizing cols populated by Plan 07-04 step 5.5.
-            "stop_price": [161.46],   # 175.5 * (1 - 0.08)
+            "stop_price": [161.46],  # 175.5 * (1 - 0.08)
             "entry_price": [180.0],
             "shares": pd.array([50], dtype=pd.Int64Dtype()),
             "risk_per_share": [18.54],
             "atr_zone": ["in-zone"],
             "pivot_distance_atr_breakout": [0.25],
             "trail_rule_label": ["21d EMA (then 50d SMA after 15 bars)"],
-            "adr_rejected": [False], "rejection_reason": [""],
+            "adr_rejected": [False],
+            "rejection_reason": [""],
         }
     )
     skipped = pd.DataFrame(
         {
             "rejection_reason": ["adr_exceeded"],
-            "risk_per_share": [1.4], "adr_pct": [1.0], "entry_price": [100.0],
+            "risk_per_share": [1.4],
+            "adr_pct": [1.0],
+            "entry_price": [100.0],
             "close": [100.0],
         },
         index=pd.Index(["BADTICK"], name="ticker"),
@@ -269,8 +289,12 @@ def test_render_report_includes_sizing_fields_and_skipped_section() -> None:
     regime_row = pd.Series({"regime_state": "Confirmed Uptrend", "regime_score": 0.82})
 
     md = render_report(
-        actionable, regime_row, snapshot_date="2026-05-18",
-        top_n=15, pass_rate=0.10, skipped_picks=skipped,
+        actionable,
+        regime_row,
+        snapshot_date="2026-05-18",
+        top_n=15,
+        pass_rate=0.10,
+        skipped_picks=skipped,
     )
 
     # Sizing per-pick fields present.

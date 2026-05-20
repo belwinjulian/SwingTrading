@@ -1,4 +1,5 @@
 """tests/test_pipeline_journal.py — Phase 7 pipeline + journal integration (Plan 07-04 bodies)."""
+
 from __future__ import annotations
 
 import json
@@ -25,7 +26,7 @@ def _make_synthetic_multiindex_panel(
             "low": [178.0, 378.0, 940.0, 79.5],
             "high": [182.0, 382.0, 960.0, 80.5],
             "atr_14": [3.5, 5.0, 22.0, 0.5],
-            "adr_pct": [4.2, 3.8, 5.5, 0.3],   # REJC adr_pct=0.3 -> reject
+            "adr_pct": [4.2, 3.8, 5.5, 0.3],  # REJC adr_pct=0.3 -> reject
             "rs_rating": pd.array([92, 88, 95, 82], dtype=pd.Int64Dtype()),
             "trend_template_score": pd.array([8, 7, 8, 6], dtype=pd.Int64Dtype()),
             "volume_component": [0.7, 0.6, 0.8, 0.3],
@@ -110,24 +111,22 @@ def _install_pipeline_mocks(monkeypatch: pytest.MonkeyPatch, panel: pd.DataFrame
     monkeypatch.setattr("screener.publishers.pipeline.build_panel", lambda d: panel)
     monkeypatch.setattr("screener.publishers.pipeline.passes_trend_template", lambda p: p)
     monkeypatch.setattr("screener.publishers.pipeline.score", lambda p, w: p)
-    monkeypatch.setattr("screener.publishers.pipeline.compute_for_date",
+    monkeypatch.setattr(
+        "screener.publishers.pipeline.compute_for_date",
         lambda ts, p: pd.Series({"regime_state": "Confirmed Uptrend", "regime_score": 0.82}),
     )
     monkeypatch.setattr("screener.publishers.pipeline.validate_run", lambda *a, **kw: None)
     # _add_catalyst_columns is defined locally in pipeline.py.
-    monkeypatch.setattr(
-        "screener.publishers.pipeline._add_catalyst_columns", lambda p, f, ts: p
-    )
+    monkeypatch.setattr("screener.publishers.pipeline._add_catalyst_columns", lambda p, f, ts: p)
 
     # Inline-imported inside run_pipeline — patch the source module so the
     # local `from X import Y` inside the function gets the stub.
-    monkeypatch.setattr(
-        "screener.signals.qullamaggie.passes_qullamaggie_setup_a", lambda p: p
-    )
+    monkeypatch.setattr("screener.signals.qullamaggie.passes_qullamaggie_setup_a", lambda p: p)
     monkeypatch.setattr("screener.signals.canslim.canslim_c_overlay", lambda p, f, ts: p)
     monkeypatch.setattr("screener.signals.composite.tag_playbook", lambda p: p)
     # compute_sizing is also inline-imported; patch the sizing module.
     import screener.sizing as _sizing
+
     monkeypatch.setattr(_sizing, "compute_sizing", lambda cross, panel, **kw: _stub_sizing(cross))
 
     # persistence functions.
@@ -135,6 +134,7 @@ def _install_pipeline_mocks(monkeypatch: pytest.MonkeyPatch, panel: pd.DataFrame
     # Pattern audit writer: if it exists, stub it; otherwise, the pipeline's
     # try/except around step 10 silently catches AttributeError — safe to skip.
     import screener.persistence as _pers
+
     if hasattr(_pers, "write_pattern_audit_atomic"):
         monkeypatch.setattr(_pers, "write_pattern_audit_atomic", lambda df, d: None)
     # NOTE: write_snapshot is INTENTIONALLY NOT mocked. SNAPSHOT_DIR is pointed
@@ -187,6 +187,7 @@ def _setup_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RISK_PCT", "0.01")
     monkeypatch.setenv("ACCOUNT_EQUITY", "100000")
     from screener.config import get_settings
+
     get_settings.cache_clear()
 
 
@@ -197,6 +198,7 @@ def test_pipeline_writes_journal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     _install_pipeline_mocks(monkeypatch, panel)
 
     from screener.publishers.pipeline import run_pipeline
+
     run_pipeline("2026-05-18", write_report=False, write_journal=True)
 
     db = tmp_path / "journal.sqlite"
@@ -216,6 +218,7 @@ def test_journal_disabled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     _install_pipeline_mocks(monkeypatch, panel)
 
     from screener.publishers.pipeline import run_pipeline
+
     run_pipeline("2026-05-18", write_report=False, write_journal=False)
 
     db = tmp_path / "journal.sqlite"
@@ -239,6 +242,7 @@ def test_rejected_picks_not_in_journal(tmp_path: Path, monkeypatch: pytest.Monke
     _install_pipeline_mocks(monkeypatch, panel)
 
     from screener.publishers.pipeline import run_pipeline
+
     run_pipeline("2026-05-18", write_report=False, write_journal=True)
 
     # Journal: REJC must NOT appear.
@@ -272,6 +276,7 @@ def test_golden_pipeline_journal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     _install_pipeline_mocks(monkeypatch, panel)
 
     from screener.publishers.pipeline import run_pipeline
+
     run_pipeline("2026-05-18", write_report=False, write_journal=True)
 
     # 1. Snapshot row-count regression (Warning #10 / Blocker #1 lock).
@@ -287,19 +292,31 @@ def test_golden_pipeline_journal(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     # 2. Journal row-count + features_json structure.
     db = tmp_path / "journal.sqlite"
     with sqlite3.connect(db) as conn:
-        rows = conn.execute(
-            "SELECT ticker, features_json FROM picks ORDER BY ticker"
-        ).fetchall()
+        rows = conn.execute("SELECT ticker, features_json FROM picks ORDER BY ticker").fetchall()
     # Exact count: 3 actionable tickers (AAPL, MSFT, NVDA — composite >= 50, not rejected).
     assert len(rows) == 3, [r[0] for r in rows]
     # features_json structure check on the first row.
     feat = json.loads(rows[0][1])
     required_top_keys = {
-        "features_json_version", "rs_rating", "trend_template_score",
-        "composite_score", "composite_score_raw", "regime_score", "regime_state",
-        "playbook_tag", "atr_14", "adr_pct", "entry_price", "stop_price",
-        "shares", "risk_per_share", "atr_zone", "pattern_diagnostics",
-        "account_equity_used", "risk_pct_used", "entry_price_semantics",
+        "features_json_version",
+        "rs_rating",
+        "trend_template_score",
+        "composite_score",
+        "composite_score_raw",
+        "regime_score",
+        "regime_state",
+        "playbook_tag",
+        "atr_14",
+        "adr_pct",
+        "entry_price",
+        "stop_price",
+        "shares",
+        "risk_per_share",
+        "atr_zone",
+        "pattern_diagnostics",
+        "account_equity_used",
+        "risk_pct_used",
+        "entry_price_semantics",
         "pivot_distance_atr_breakout",  # Warning #5 -- renamed column present
     }
     missing = required_top_keys - set(feat.keys())

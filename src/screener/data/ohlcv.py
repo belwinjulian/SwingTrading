@@ -70,12 +70,12 @@ def fetch_ohlcv(ticker: str, start: str | date, today: date) -> pd.DataFrame:
     df = yf.download(
         ticker,
         start=str(start),
-        auto_adjust=True,           # D-17: store adjusted only
+        auto_adjust=True,  # D-17: store adjusted only
         progress=False,
-        threads=False,              # D-10: no batch/parallel
-        actions=False,              # splits fetched separately via Ticker.actions
-        multi_level_index=False,    # Pitfall 9: yf 1.3.x default is True
-        timeout=15,                 # prevent indefinite network hang
+        threads=False,  # D-10: no batch/parallel
+        actions=False,  # splits fetched separately via Ticker.actions
+        multi_level_index=False,  # Pitfall 9: yf 1.3.x default is True
+        timeout=15,  # prevent indefinite network hang
     )
     if df is None or len(df) == 0:
         raise StaleOrEmptyError(f"yf returned empty for {ticker}")
@@ -207,12 +207,12 @@ def fetch_splits(ticker: str) -> pd.DataFrame:
     # tickers may have only dividends. Normalize to {ratio, dividend}.
     df = pd.DataFrame(
         {
-            "ratio": actions.get(
-                "Stock Splits", pd.Series(0.0, index=actions.index)
-            ).astype(float).to_numpy(),
-            "dividend": actions.get(
-                "Dividends", pd.Series(0.0, index=actions.index)
-            ).astype(float).to_numpy(),
+            "ratio": actions.get("Stock Splits", pd.Series(0.0, index=actions.index))
+            .astype(float)
+            .to_numpy(),
+            "dividend": actions.get("Dividends", pd.Series(0.0, index=actions.index))
+            .astype(float)
+            .to_numpy(),
         },
         index=pd.DatetimeIndex(actions.index, name="date").tz_localize(None)
         if actions.index.tz is not None

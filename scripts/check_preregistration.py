@@ -99,9 +99,7 @@ def main() -> int:
     for k, w in DEFAULT_WEIGHTS.items():
         dw = doc_weights.get(k)
         if dw is None or abs(w - dw) > 1e-3:
-            diffs.append(
-                f"composite.py {k}={w:.2f} vs doc {k}={dw}"
-            )
+            diffs.append(f"composite.py {k}={w:.2f} vs doc {k}={dw}")
     # Partial bidirectional check (REVIEW CR-02 + WR-02 iter 2): detect keys
     # present in the doc table that are NOT in DEFAULT_WEIGHTS. SCOPE: this
     # only catches doc rows whose friendly name IS in NAME_TO_KEY but whose
@@ -113,9 +111,7 @@ def main() -> int:
     # phase since v1 has a fixed 6-component composite.
     extra_in_doc = set(doc_weights) - set(DEFAULT_WEIGHTS)
     if extra_in_doc:
-        diffs.append(
-            f"doc has extra keys not in composite.py: {sorted(extra_in_doc)}"
-        )
+        diffs.append(f"doc has extra keys not in composite.py: {sorted(extra_in_doc)}")
     if diffs:
         print(
             "Weight mismatch:\n  " + "\n  ".join(diffs),

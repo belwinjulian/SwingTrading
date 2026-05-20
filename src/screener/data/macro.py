@@ -150,6 +150,7 @@ def _append_new_bars(existing: pd.DataFrame | None, new_bars: pd.DataFrame) -> p
 def _macro_dir_for_log() -> Path:
     """Local helper to surface the canonical macro path for skip-log return values."""
     from screener import persistence  # late import; avoids circular concerns
+
     return persistence._macro_dir()
 
 
@@ -414,9 +415,7 @@ def _compute_breadth_fallback(start: str | date, today: date) -> pd.DataFrame:
     universe_dir = Path(str(settings.UNIVERSE_CACHE_DIR))
     snaps = sorted(universe_dir.glob("*.parquet"))
     if not snaps:
-        raise StaleOrEmptyError(
-            "no universe snapshot available for r1000_proxy fallback"
-        )
+        raise StaleOrEmptyError("no universe snapshot available for r1000_proxy fallback")
     snapshot_date = snaps[-1].stem
     panel = read_panel(snapshot_date)  # MultiIndex (ticker, date) panel
     closes = panel["close"].unstack(level="ticker")  # date x ticker wide frame  # noqa: PD010

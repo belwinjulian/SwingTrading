@@ -154,12 +154,16 @@ def fetch_eps_history(ticker: str) -> pd.DataFrame:
             series = stmt.loc[row_name].dropna()
             if series.empty:
                 continue
-            df = pd.DataFrame(
-                {
-                    "fiscal_quarter_end": pd.to_datetime(series.index),
-                    "eps_actual": series.astype(float).to_numpy(),
-                }
-            ).sort_values("fiscal_quarter_end").reset_index(drop=True)
+            df = (
+                pd.DataFrame(
+                    {
+                        "fiscal_quarter_end": pd.to_datetime(series.index),
+                        "eps_actual": series.astype(float).to_numpy(),
+                    }
+                )
+                .sort_values("fiscal_quarter_end")
+                .reset_index(drop=True)
+            )
             # YoY growth = current / 4-quarters-ago - 1
             df["eps_yoy_growth"] = df["eps_actual"] / df["eps_actual"].shift(4) - 1.0
             return df
@@ -176,9 +180,7 @@ def fetch_eps_history_with_pacing(ticker: str) -> pd.DataFrame:
     Sleep duration mirrors OHLCV_FETCH_SLEEP_MIN_S/MAX_S from config.
     """
     settings = get_settings()
-    time.sleep(
-        random.uniform(settings.OHLCV_FETCH_SLEEP_MIN_S, settings.OHLCV_FETCH_SLEEP_MAX_S)
-    )
+    time.sleep(random.uniform(settings.OHLCV_FETCH_SLEEP_MIN_S, settings.OHLCV_FETCH_SLEEP_MAX_S))
     return fetch_eps_history(ticker)
 
 

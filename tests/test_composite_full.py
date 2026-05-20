@@ -20,9 +20,7 @@ def _make_full_panel() -> pd.DataFrame:
     """Build a synthetic 1-ticker panel with all required columns for score()."""
     dates = pd.bdate_range("2024-01-01", periods=260)
     ticker = "AAPL"
-    idx = pd.MultiIndex.from_tuples(
-        [(ticker, d) for d in dates], names=["ticker", "date"]
-    )
+    idx = pd.MultiIndex.from_tuples([(ticker, d) for d in dates], names=["ticker", "date"])
     n = len(dates)
     # Minimum required columns for score()
     df = pd.DataFrame(

@@ -65,9 +65,7 @@ def _make_tag_panel(
     else:
         diag = encode_pattern_diagnostics({"type": "none"})
 
-    idx = pd.MultiIndex.from_tuples(
-        [(ticker, pd.Timestamp(date))], names=["ticker", "date"]
-    )
+    idx = pd.MultiIndex.from_tuples([(ticker, pd.Timestamp(date))], names=["ticker", "date"])
     vcp_passes = pattern_type == "vcp"
     flag_passes = pattern_type == "flag"
     return pd.DataFrame(
@@ -90,9 +88,7 @@ def _make_tag_panel(
     )
 
 
-VALID_TAGS = frozenset(
-    {"qullamaggie_continuation", "minervini_vcp", "leader_hold", "none"}
-)
+VALID_TAGS = frozenset({"qullamaggie_continuation", "minervini_vcp", "leader_hold", "none"})
 
 
 def test_tag_values_valid() -> None:
@@ -146,9 +142,9 @@ def test_d14_tiebreaker() -> None:
         ticker="NVDA",
         date="2024-06-01",
         pattern_type="vcp",
-        pattern_bars=12,                    # < QULL_MAX_BARS=25 -> Qull fires
-        final_contraction_depth=0.05,       # 5% <= MINERVINI_MAX_FINAL_CONTRACTION_PCT=8% -> MVP fires
-        adr_pct=6.0,                        # >= QULL_MIN_ADR_PCT=5.0 -> Qull fires
+        pattern_bars=12,  # < QULL_MAX_BARS=25 -> Qull fires
+        final_contraction_depth=0.05,  # 5% <= MINERVINI_MAX_FINAL_CONTRACTION_PCT=8% -> MVP fires
+        adr_pct=6.0,  # >= QULL_MIN_ADR_PCT=5.0 -> Qull fires
         rs_rating=85,
         passes_trend_template=True,
     )
@@ -181,8 +177,8 @@ def test_d15_leader_hold() -> None:
     """D-15: passes_trend_template=True AND rs_rating=92 AND pattern_type='none' => leader_hold."""
     panel = _make_tag_panel(
         pattern_type="none",
-        adr_pct=3.0,        # below QULL_MIN_ADR_PCT -> Qull does not fire
-        rs_rating=92,       # >= LEADER_MIN_RS=90
+        adr_pct=3.0,  # below QULL_MIN_ADR_PCT -> Qull does not fire
+        rs_rating=92,  # >= LEADER_MIN_RS=90
         passes_trend_template=True,
     )
     out = tag_playbook(panel)
@@ -191,9 +187,7 @@ def test_d15_leader_hold() -> None:
     assert out.loc[(ticker, dt), "playbook_tag"] == "leader_hold", (
         f"Expected playbook_tag=leader_hold, got {out.loc[(ticker, dt), 'playbook_tag']!r}"
     )
-    assert out.loc[(ticker, dt), "leader_hold_score"] == 1, (
-        "Expected leader_hold_score=1"
-    )
+    assert out.loc[(ticker, dt), "leader_hold_score"] == 1, "Expected leader_hold_score=1"
     assert out.loc[(ticker, dt), "qullamaggie_score"] == 0, (
         "Expected qullamaggie_score=0 for leader_hold pick"
     )
@@ -207,7 +201,7 @@ def test_d15_none_tag_excluded_from_report() -> None:
     panel = _make_tag_panel(
         pattern_type="none",
         adr_pct=3.0,
-        rs_rating=50,        # below LEADER_MIN_RS=90
+        rs_rating=50,  # below LEADER_MIN_RS=90
         passes_trend_template=False,
     )
     out = tag_playbook(panel)

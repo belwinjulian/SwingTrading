@@ -261,6 +261,7 @@ def test_read_panel_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 
 def test_ranking_snapshot_schema_accepts_valid_frame() -> None:
     from screener.persistence import RankingSnapshotSchema, validate_at_write
+
     df = _make_ranking_snapshot_df()
     validated = validate_at_write(RankingSnapshotSchema, df)
     assert len(validated) == 2
@@ -268,6 +269,7 @@ def test_ranking_snapshot_schema_accepts_valid_frame() -> None:
 
 def test_ranking_snapshot_rejects_bad_pivot_zone() -> None:
     from screener.persistence import RankingSnapshotSchema, validate_at_write
+
     df = _make_ranking_snapshot_df()
     df["pivot_zone"] = ["BOGUS", "BOGUS"]
     with pytest.raises(pa.errors.SchemaError):
@@ -276,6 +278,7 @@ def test_ranking_snapshot_rejects_bad_pivot_zone() -> None:
 
 def test_assert_safe_snapshot_date_rejects_traversal() -> None:
     from screener.persistence import _assert_safe_snapshot_date
+
     _assert_safe_snapshot_date("2026-05-10")  # silent pass
     with pytest.raises(ValueError, match="Unsafe snapshot_date"):
         _assert_safe_snapshot_date("../etc/passwd")

@@ -78,11 +78,7 @@ def test_setup_a_top_2pct_filter() -> None:
     # Other tickers have volume=20, close~50-200 => dollar_volume~1000-4000 << $1.5M
     # They should all fail the ADV gate regardless of their return rank
     other_tickers = tickers[1:]
-    passing_others = [
-        t
-        for t in other_tickers
-        if out.loc[(t, last_date), "qullamaggie_score"] == 1
-    ]
+    passing_others = [t for t in other_tickers if out.loc[(t, last_date), "qullamaggie_score"] == 1]
     assert len(passing_others) == 0, (
         f"Expected no other tickers to pass (ADV << $1.5M), "
         f"but {len(passing_others)} did: {passing_others[:5]}"

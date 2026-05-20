@@ -110,17 +110,13 @@ def validate_run(
     # thresholds are independent control surfaces so an operator can set
     # warn_threshold lower than fail_threshold_with_correction without the
     # hard-fail being suppressed by the outer warn gate.
-    if (
-        regime_state == "Correction"
-        and pass_rate > fail_threshold_with_correction
-    ):
+    if regime_state == "Correction" and pass_rate > fail_threshold_with_correction:
         log.error(
             "data_quality_gate_failed",
             pass_rate=pass_rate,
             regime_state=regime_state,
             message=(
-                f"Pass rate {pass_rate * 100:.1f}% in Correction regime — "
-                f"data quality gate failed"
+                f"Pass rate {pass_rate * 100:.1f}% in Correction regime — data quality gate failed"
             ),
         )
         raise typer.Exit(code=1)
@@ -204,10 +200,9 @@ def _add_catalyst_columns(
 
     # 3. insider_cluster_buy from persistence (SQL or Python rolling fallback)
     from screener import persistence
+
     cluster_tickers = persistence.read_insider_cluster_buy(window_days=30, cluster_size=2, dt=5)
-    out["insider_cluster_buy"] = pd.array(
-        [t in cluster_tickers for t in tickers], dtype=bool
-    )
+    out["insider_cluster_buy"] = pd.array([t in cluster_tickers for t in tickers], dtype=bool)
     return out
 
 
@@ -229,10 +224,21 @@ def _build_pattern_audit_df(panel: pd.DataFrame, as_of: pd.Timestamp) -> pd.Data
     )
     if cross.empty or "pattern_diagnostics" not in cross.columns:
         return pd.DataFrame(
-            columns=["ticker", "snapshot_date", "pattern_type", "leg_idx",
-                     "start_date", "end_date", "high", "low", "depth", "avg_volume"]
+            columns=[
+                "ticker",
+                "snapshot_date",
+                "pattern_type",
+                "leg_idx",
+                "start_date",
+                "end_date",
+                "high",
+                "low",
+                "depth",
+                "avg_volume",
+            ]
         )
     import json as _json
+
     as_of_ts = pd.Timestamp(as_of)
 
     def _decode_diag(s: str) -> dict:
@@ -257,37 +263,51 @@ def _build_pattern_audit_df(panel: pd.DataFrame, as_of: pd.Timestamp) -> pd.Data
                 )
                 continue
             for leg in legs:
-                rows.append({
-                    "ticker": str(ticker),
-                    "snapshot_date": as_of_ts,
-                    "pattern_type": "vcp",
-                    "leg_idx": int(leg["leg_idx"]),
-                    "start_date": pd.Timestamp(leg["start_date"]),
-                    "end_date": pd.Timestamp(leg["end_date"]),
-                    "high": float(leg["high"]),
-                    "low": float(leg["low"]),
-                    "depth": float(leg["depth"]),
-                    "avg_volume": float(leg["avg_volume"]),
-                })
+                rows.append(
+                    {
+                        "ticker": str(ticker),
+                        "snapshot_date": as_of_ts,
+                        "pattern_type": "vcp",
+                        "leg_idx": int(leg["leg_idx"]),
+                        "start_date": pd.Timestamp(leg["start_date"]),
+                        "end_date": pd.Timestamp(leg["end_date"]),
+                        "high": float(leg["high"]),
+                        "low": float(leg["low"]),
+                        "depth": float(leg["depth"]),
+                        "avg_volume": float(leg["avg_volume"]),
+                    }
+                )
         elif diag["type"] == "flag":
             pivot = float(diag.get("pivot_price", 0.0))
             range_tightness = float(diag.get("range_tightness", 0.0))
-            rows.append({
-                "ticker": str(ticker),
-                "snapshot_date": as_of_ts,
-                "pattern_type": "flag",
-                "leg_idx": 0,
-                "start_date": as_of_ts,
-                "end_date": as_of_ts,
-                "high": pivot,
-                "low": pivot * (1.0 - range_tightness) if range_tightness > 0 else pivot * 0.95,
-                "depth": range_tightness if range_tightness > 0 else 0.05,
-                "avg_volume": 0.0,
-            })
+            rows.append(
+                {
+                    "ticker": str(ticker),
+                    "snapshot_date": as_of_ts,
+                    "pattern_type": "flag",
+                    "leg_idx": 0,
+                    "start_date": as_of_ts,
+                    "end_date": as_of_ts,
+                    "high": pivot,
+                    "low": pivot * (1.0 - range_tightness) if range_tightness > 0 else pivot * 0.95,
+                    "depth": range_tightness if range_tightness > 0 else 0.05,
+                    "avg_volume": 0.0,
+                }
+            )
     if not rows:
         return pd.DataFrame(
-            columns=["ticker", "snapshot_date", "pattern_type", "leg_idx",
-                     "start_date", "end_date", "high", "low", "depth", "avg_volume"]
+            columns=[
+                "ticker",
+                "snapshot_date",
+                "pattern_type",
+                "leg_idx",
+                "start_date",
+                "end_date",
+                "high",
+                "low",
+                "depth",
+                "avg_volume",
+            ]
         )
     return pd.DataFrame(rows)
 
@@ -493,8 +513,7 @@ def run_pipeline(
     # sizing (1xADR fail / invalid stop / missing diagnostics). Excludes the
     # ~95% playbook_tag='none' rows (they were never candidates).
     skipped_view = today_panel[
-        today_panel["adr_rejected"]
-        & today_panel["playbook_tag"].isin(_valid_playbook_tags)
+        today_panel["adr_rejected"] & today_panel["playbook_tag"].isin(_valid_playbook_tags)
     ].copy()
 
     if write_journal:
@@ -505,7 +524,10 @@ def run_pipeline(
         )
 
         journal_rows_df = _build_journal_rows_df(
-            actionable_view, regime_row, snapshot_date, settings,
+            actionable_view,
+            regime_row,
+            snapshot_date,
+            settings,
         )
         if not journal_rows_df.empty:
             validated = validate_at_write(PicksSchema, journal_rows_df)
@@ -521,7 +543,9 @@ def run_pipeline(
             log.info(
                 "journal_append_summary",
                 snapshot_date=snapshot_date,
-                n_attempted=0, n_inserted=0, n_idempotent_skip=0,
+                n_attempted=0,
+                n_inserted=0,
+                n_idempotent_skip=0,
                 reason="no_actionable_picks_above_threshold",
             )
     else:
@@ -572,12 +596,8 @@ def run_pipeline(
     # If any prior step raised, control never reaches here; the failure
     # record is written by `python -m screener.publishers.run_log failure`
     # in refresh.yml's `if: failure()` step (D-05).
-    _ticker_universe_size = max(
-        1, len(panel.index.get_level_values("ticker").unique())
-    )
-    _picks_count = int(
-        (today_panel["composite_score_raw"] >= settings.JOURNAL_THRESHOLD).sum()
-    )
+    _ticker_universe_size = max(1, len(panel.index.get_level_values("ticker").unique()))
+    _picks_count = int((today_panel["composite_score_raw"] >= settings.JOURNAL_THRESHOLD).sum())
     append_record(
         {
             "status": "success",
@@ -620,10 +640,19 @@ def _build_journal_rows_df(
 
     regime_state = str(regime_row["regime_state"])
     schema_cols = [
-        "ticker", "snapshot_date", "playbook_tag", "composite_score",
-        "regime_state", "entry_price", "stop_price", "shares",
-        "risk_per_share", "atr_zone", "pivot_distance_atr_breakout",
-        "features_json", "ingested_at",
+        "ticker",
+        "snapshot_date",
+        "playbook_tag",
+        "composite_score",
+        "regime_state",
+        "entry_price",
+        "stop_price",
+        "shares",
+        "risk_per_share",
+        "atr_zone",
+        "pivot_distance_atr_breakout",
+        "features_json",
+        "ingested_at",
     ]
     if regime_state == "Correction" or actionable_view.empty:
         return pd.DataFrame(columns=schema_cols)
@@ -682,28 +711,30 @@ def _build_journal_rows_df(
         # value for callers that pass a ticker-indexed actionable_view directly
         # (e.g. _build_journal_rows_df_from_snapshot).
         ticker_val = str(row["ticker"]) if "ticker" in row.index else str(ticker)
-        rows.append({
-            "ticker": ticker_val,
-            "snapshot_date": str(snapshot_date),
-            "playbook_tag": str(row["playbook_tag"]),
-            "composite_score": float(row["composite_score"]),
-            "regime_state": regime_state,
-            "entry_price": float(row["entry_price"]),
-            "stop_price": float(row["stop_price"]),
-            "shares": int(row["shares"]),
-            "risk_per_share": float(row["risk_per_share"]),
-            "atr_zone": str(row["atr_zone"]),
-            # Warning #5 (revision iter 1): use the renamed PicksSchema column.
-            # Nullable in the schema; coerce NaN -> None so pandera + sqlite3 see
-            # a real NULL rather than a float('nan').
-            "pivot_distance_atr_breakout": (
-                None
-                if pd.isna(row.get("pivot_distance_atr_breakout"))
-                else float(row["pivot_distance_atr_breakout"])
-            ),
-            "features_json": _json.dumps(features, default=str, sort_keys=True),
-            "ingested_at": now_iso,
-        })
+        rows.append(
+            {
+                "ticker": ticker_val,
+                "snapshot_date": str(snapshot_date),
+                "playbook_tag": str(row["playbook_tag"]),
+                "composite_score": float(row["composite_score"]),
+                "regime_state": regime_state,
+                "entry_price": float(row["entry_price"]),
+                "stop_price": float(row["stop_price"]),
+                "shares": int(row["shares"]),
+                "risk_per_share": float(row["risk_per_share"]),
+                "atr_zone": str(row["atr_zone"]),
+                # Warning #5 (revision iter 1): use the renamed PicksSchema column.
+                # Nullable in the schema; coerce NaN -> None so pandera + sqlite3 see
+                # a real NULL rather than a float('nan').
+                "pivot_distance_atr_breakout": (
+                    None
+                    if pd.isna(row.get("pivot_distance_atr_breakout"))
+                    else float(row["pivot_distance_atr_breakout"])
+                ),
+                "features_json": _json.dumps(features, default=str, sort_keys=True),
+                "ingested_at": now_iso,
+            }
+        )
 
     return pd.DataFrame(rows)
 
@@ -730,10 +761,12 @@ def _build_journal_rows_df_from_snapshot(snapshot_date: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     regime_state = str(snap["regime_state"].iloc[0])
-    regime_row = pd.Series({
-        "regime_state": regime_state,
-        "regime_score": float(snap["regime_score"].iloc[0]),
-    })
+    regime_row = pd.Series(
+        {
+            "regime_state": regime_state,
+            "regime_score": float(snap["regime_score"].iloc[0]),
+        }
+    )
 
     # Re-derive the actionable view from the snapshot. Same predicate as the
     # live pipeline (Warning #6 single-source-of-truth).
@@ -767,6 +800,7 @@ def _build_journal_rows_df_from_snapshot(snapshot_date: str) -> pd.DataFrame:
 
 # --- private safe-coerce helpers (defensive against NaN / None / Int64NA) -
 
+
 def _safe_int(v: Any) -> int | None:
     if v is None or pd.isna(v):
         return None
@@ -781,6 +815,7 @@ def _safe_float(v: Any) -> float | None:
 
 def _safe_decode_json(v: Any) -> dict:
     import json as _json
+
     if v is None or (isinstance(v, float) and pd.isna(v)):
         return {"type": "none"}
     try:

@@ -49,10 +49,7 @@ def _compute_distribution_days(spy: pd.DataFrame, window: int = 25) -> pd.Series
     """
     prev_close = spy["close"].shift(1)
     prev_vol = spy["volume"].shift(1)
-    is_dist_day = (
-        (spy["close"] / prev_close - 1.0 < -0.002)
-        & (spy["volume"] > prev_vol)
-    )
+    is_dist_day = (spy["close"] / prev_close - 1.0 < -0.002) & (spy["volume"] > prev_vol)
     return is_dist_day.rolling(window).sum().fillna(0).astype(int)
 
 
@@ -102,12 +99,7 @@ def _regime_score(df: pd.DataFrame) -> pd.Series:
     breadth_norm = (df["breadth_pct"] / 100.0).clip(0.0, 1.0)
     dist_norm = (1.0 - df["distribution_days"] / 9.0).clip(0.0, 1.0)
     vix_norm = (1.0 - (df["vix_level"] - 15.0) / 25.0).clip(0.0, 1.0)
-    return (
-        0.30 * spy_component
-        + 0.40 * breadth_norm
-        + 0.20 * dist_norm
-        + 0.10 * vix_norm
-    )
+    return 0.30 * spy_component + 0.40 * breadth_norm + 0.20 * dist_norm + 0.10 * vix_norm
 
 
 # ---------------------------------------------------------------------------
@@ -143,8 +135,7 @@ def compute_for_date(
         breadth_pct = 0.0
     else:
         breadth_pct = float(
-            (snapshot.loc[has_data, "close"] > snapshot.loc[has_data, "sma_200"]).mean()
-            * 100
+            (snapshot.loc[has_data, "close"] > snapshot.loc[has_data, "sma_200"]).mean() * 100
         )
 
     # Distribution days
@@ -154,17 +145,17 @@ def compute_for_date(
     vix_level = float(vix.loc[date, "close"])  # type: ignore[arg-type]
 
     # State
-    state = _classify_state(
-        spy_above_200d, breadth_pct, dist_days, vix_level, settings
-    )
+    state = _classify_state(spy_above_200d, breadth_pct, dist_days, vix_level, settings)
 
     # Score (call vectorized _regime_score on a 1-row frame)
-    one_row = pd.DataFrame({
-        "spy_above_200d": [spy_above_200d],
-        "breadth_pct": [breadth_pct],
-        "distribution_days": [dist_days],
-        "vix_level": [vix_level],
-    })
+    one_row = pd.DataFrame(
+        {
+            "spy_above_200d": [spy_above_200d],
+            "breadth_pct": [breadth_pct],
+            "distribution_days": [dist_days],
+            "vix_level": [vix_level],
+        }
+    )
     regime_score = float(_regime_score(one_row).iloc[0])
 
     log.info(
@@ -217,12 +208,18 @@ def build_history(
     # Backtests should call compute_for_date per-date for point-in-time accuracy.
     panel = build_panel(str(end))
     breadth_series = (
-        panel
-        .reset_index()
+        panel.reset_index()
         .groupby("date")
-        .apply(lambda g: float(
-            (g["close"][g["sma_200"].notna()] > g["sma_200"][g["sma_200"].notna()]).mean() * 100
-        ) if g["sma_200"].notna().any() else 0.0)
+        .apply(
+            lambda g: (
+                float(
+                    (g["close"][g["sma_200"].notna()] > g["sma_200"][g["sma_200"].notna()]).mean()
+                    * 100
+                )
+                if g["sma_200"].notna().any()
+                else 0.0
+            )
+        )
         .rename("breadth_pct")
     )
 
@@ -231,7 +228,7 @@ def build_history(
         axis=1,
         join="inner",
     )
-    df = df.loc[str(start):str(end)]  # type: ignore[misc]
+    df = df.loc[str(start) : str(end)]  # type: ignore[misc]
 
     # Apply classification per row
     df["regime_state"] = df.apply(

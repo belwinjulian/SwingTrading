@@ -14,8 +14,11 @@ def test_obv_panel_adds_obv_col() -> None:
     )
     panel = pd.DataFrame(
         {
-            "open": [100.0] * 30, "high": [101.0] * 30, "low": [99.0] * 30,
-            "close": [100.0] * 30, "volume": [1_000_000] * 30,
+            "open": [100.0] * 30,
+            "high": [101.0] * 30,
+            "low": [99.0] * 30,
+            "close": [100.0] * 30,
+            "volume": [1_000_000] * 30,
         },
         index=idx,
     )
@@ -32,8 +35,11 @@ def test_dryup_ratio_definition() -> None:
     )
     panel = pd.DataFrame(
         {
-            "open": [100.0] * 100, "high": [101.0] * 100, "low": [99.0] * 100,
-            "close": [100.0] * 100, "volume": [2_000_000] * 100,
+            "open": [100.0] * 100,
+            "high": [101.0] * 100,
+            "low": [99.0] * 100,
+            "close": [100.0] * 100,
+            "volume": [2_000_000] * 100,
         },
         index=idx,
     )

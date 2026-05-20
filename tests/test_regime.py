@@ -31,34 +31,59 @@ SETTINGS = _StubSettings()
 
 
 def test_classify_state_confirmed_uptrend() -> None:
-    s = _classify_state(spy_above_200d=True, breadth_pct=70.0,
-                        distribution_days=2, vix_level=15.0, settings=SETTINGS)
+    s = _classify_state(
+        spy_above_200d=True,
+        breadth_pct=70.0,
+        distribution_days=2,
+        vix_level=15.0,
+        settings=SETTINGS,
+    )
     assert s == "Confirmed Uptrend"
 
 
 def test_classify_state_uptrend_under_pressure_breadth() -> None:
     """Breadth < 60% — not Correction; falls back to Pressure."""
-    s = _classify_state(spy_above_200d=True, breadth_pct=50.0,
-                        distribution_days=2, vix_level=15.0, settings=SETTINGS)
+    s = _classify_state(
+        spy_above_200d=True,
+        breadth_pct=50.0,
+        distribution_days=2,
+        vix_level=15.0,
+        settings=SETTINGS,
+    )
     assert s == "Uptrend Under Pressure"
 
 
 def test_correction_overrides_on_spy_below_200d() -> None:
-    s = _classify_state(spy_above_200d=False, breadth_pct=70.0,
-                        distribution_days=2, vix_level=15.0, settings=SETTINGS)
+    s = _classify_state(
+        spy_above_200d=False,
+        breadth_pct=70.0,
+        distribution_days=2,
+        vix_level=15.0,
+        settings=SETTINGS,
+    )
     assert s == "Correction"
 
 
 def test_correction_overrides_pressure() -> None:
     """D-01: dist >= 9 forces Correction even if breadth and VIX are healthy."""
-    s = _classify_state(spy_above_200d=True, breadth_pct=70.0,
-                        distribution_days=10, vix_level=15.0, settings=SETTINGS)
+    s = _classify_state(
+        spy_above_200d=True,
+        breadth_pct=70.0,
+        distribution_days=10,
+        vix_level=15.0,
+        settings=SETTINGS,
+    )
     assert s == "Correction"
 
 
 def test_correction_overrides_on_vix_30() -> None:
-    s = _classify_state(spy_above_200d=True, breadth_pct=70.0,
-                        distribution_days=2, vix_level=35.0, settings=SETTINGS)
+    s = _classify_state(
+        spy_above_200d=True,
+        breadth_pct=70.0,
+        distribution_days=2,
+        vix_level=35.0,
+        settings=SETTINGS,
+    )
     assert s == "Correction"
 
 
@@ -80,8 +105,7 @@ def test_distribution_day_volume_filter() -> None:
     vol = np.full(n, 1_000_000, dtype="int64")
     vol[15] = vol[14] - 1  # LOWER volume — must NOT count
     spy = pd.DataFrame(
-        {"open": close, "high": close * 1.01, "low": close * 0.98,
-         "close": close, "volume": vol},
+        {"open": close, "high": close * 1.01, "low": close * 0.98, "close": close, "volume": vol},
         index=pd.DatetimeIndex(idx, name="date"),
     )
     out = _compute_distribution_days(spy, window=25)
@@ -92,23 +116,27 @@ def test_distribution_day_volume_filter() -> None:
 
 
 def test_regime_score_all_good() -> None:
-    df = pd.DataFrame({
-        "spy_above_200d": [True],
-        "breadth_pct": [100.0],
-        "distribution_days": [0],
-        "vix_level": [10.0],
-    })
+    df = pd.DataFrame(
+        {
+            "spy_above_200d": [True],
+            "breadth_pct": [100.0],
+            "distribution_days": [0],
+            "vix_level": [10.0],
+        }
+    )
     score = _regime_score(df).iloc[0]
     assert score == pytest.approx(1.0)
 
 
 def test_regime_score_all_bad() -> None:
-    df = pd.DataFrame({
-        "spy_above_200d": [False],
-        "breadth_pct": [0.0],
-        "distribution_days": [10],
-        "vix_level": [50.0],
-    })
+    df = pd.DataFrame(
+        {
+            "spy_above_200d": [False],
+            "breadth_pct": [0.0],
+            "distribution_days": [10],
+            "vix_level": [50.0],
+        }
+    )
     score = _regime_score(df).iloc[0]
     assert score == pytest.approx(0.0)
 
@@ -116,8 +144,9 @@ def test_regime_score_all_bad() -> None:
 # --- compute_for_date — REG-01/02/03 integration ---------------------------
 
 
-def _setup_macro(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
-                 spy_df: pd.DataFrame, vix_df: pd.DataFrame) -> None:
+def _setup_macro(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, spy_df: pd.DataFrame, vix_df: pd.DataFrame
+) -> None:
     """Write macro parquets to tmp_path/macro and monkeypatch the dir."""
     macro_dir = tmp_path / "macro"
     macro_dir.mkdir(parents=True, exist_ok=True)
@@ -150,8 +179,14 @@ def test_compute_for_date_columns(
     panel = _make_indicator_panel()
     target = synthetic_spy_with_dist_days.index[-1]  # use last shared date
     out = compute_for_date(target, panel)
-    expected = {"spy_above_200d", "breadth_pct", "distribution_days",
-                "vix_level", "regime_state", "regime_score"}
+    expected = {
+        "spy_above_200d",
+        "breadth_pct",
+        "distribution_days",
+        "vix_level",
+        "regime_state",
+        "regime_score",
+    }
     assert set(out.index) == expected
 
 

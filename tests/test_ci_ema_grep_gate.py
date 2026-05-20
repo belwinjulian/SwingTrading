@@ -40,7 +40,7 @@ def test_ema_grep_passes_when_clean() -> None:
     """
     # Mimic the CI shell guard: redirect stderr so missing files are silent.
     proc = subprocess.run(
-        f"grep -ilE \"ema\" {' '.join(str(p) for p in TARGETS)} 2>/dev/null",
+        f'grep -ilE "ema" {" ".join(str(p) for p in TARGETS)} 2>/dev/null',
         shell=True,
         capture_output=True,
         text=True,

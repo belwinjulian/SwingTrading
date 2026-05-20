@@ -99,8 +99,10 @@ def _fetch_yf(ticker: str, start: str, end: str) -> pd.DataFrame:
 def _write_pattern_fixture(name: str, df: pd.DataFrame) -> Path:
     target = PATTERNS_DIR / name
     df.to_parquet(target, engine="pyarrow", index=True)
-    print(f"  wrote {target.relative_to(REPO_ROOT)} ({len(df)} rows, "
-          f"{target.stat().st_size / 1024:.1f} KB)")
+    print(
+        f"  wrote {target.relative_to(REPO_ROOT)} ({len(df)} rows, "
+        f"{target.stat().st_size / 1024:.1f} KB)"
+    )
     return target
 
 
@@ -158,8 +160,10 @@ def generate_fundamentals_fixture() -> None:
     df = pd.DataFrame(rows)
     target = FUNDAMENTALS_DIR / "sample_quarterly.parquet"
     df.to_parquet(target, engine="pyarrow", index=False)
-    print(f"  wrote {target.relative_to(REPO_ROOT)} ({len(df)} rows, "
-          f"{target.stat().st_size / 1024:.1f} KB)")
+    print(
+        f"  wrote {target.relative_to(REPO_ROOT)} ({len(df)} rows, "
+        f"{target.stat().st_size / 1024:.1f} KB)"
+    )
 
 
 def _build_form4_sqlite(db_path: Path, rows: list[dict[str, object]]) -> None:
@@ -182,9 +186,7 @@ def _build_form4_sqlite(db_path: Path, rows: list[dict[str, object]]) -> None:
             )
             """
         )
-        conn.execute(
-            "CREATE INDEX idx_form4_ticker_date ON form4(ticker, transaction_date)"
-        )
+        conn.execute("CREATE INDEX idx_form4_ticker_date ON form4(ticker, transaction_date)")
         conn.executemany(
             """INSERT INTO form4(filing_id, ticker, insider, transaction_date,
                                   type, shares, value_usd, ingested_at)
@@ -244,8 +246,10 @@ def generate_insider_fixtures() -> None:
     ]
     cluster_db = SQLITE_DIR / "form4_cluster.sqlite"
     _build_form4_sqlite(cluster_db, cluster_rows)
-    print(f"  wrote {cluster_db.relative_to(REPO_ROOT)} ({len(cluster_rows)} rows, "
-          f"{cluster_db.stat().st_size / 1024:.1f} KB)")
+    print(
+        f"  wrote {cluster_db.relative_to(REPO_ROOT)} ({len(cluster_rows)} rows, "
+        f"{cluster_db.stat().st_size / 1024:.1f} KB)"
+    )
 
     # No-cluster fixture: single insider on GOOGL.
     no_cluster_rows = [
@@ -262,8 +266,10 @@ def generate_insider_fixtures() -> None:
     ]
     no_cluster_db = SQLITE_DIR / "form4_no_cluster.sqlite"
     _build_form4_sqlite(no_cluster_db, no_cluster_rows)
-    print(f"  wrote {no_cluster_db.relative_to(REPO_ROOT)} ({len(no_cluster_rows)} row, "
-          f"{no_cluster_db.stat().st_size / 1024:.1f} KB)")
+    print(
+        f"  wrote {no_cluster_db.relative_to(REPO_ROOT)} ({len(no_cluster_rows)} row, "
+        f"{no_cluster_db.stat().st_size / 1024:.1f} KB)"
+    )
 
 
 def main() -> int:

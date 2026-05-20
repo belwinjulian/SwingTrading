@@ -46,14 +46,7 @@ def adr_pct_panel(panel: pd.DataFrame, length: int = 20) -> pd.DataFrame:
     """
     out = panel.copy()
     ratio = panel["high"] / panel["low"]
-    out["adr_pct"] = (
-        100.0
-        * (
-            ratio.groupby(level="ticker")
-            .rolling(length)
-            .mean()
-            .droplevel(0)
-            - 1.0
-        )
+    out["adr_pct"] = 100.0 * (
+        ratio.groupby(level="ticker").rolling(length).mean().droplevel(0) - 1.0
     )
     return out

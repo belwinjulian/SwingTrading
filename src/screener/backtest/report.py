@@ -158,14 +158,12 @@ def _render_frontmatter(
     lines.append("regime_gate:")
     lines.append("  type: soft")
     lines.append(
-        "  formula: composite_score *= regime_score  "
-        "# see publishers/pipeline.apply_regime_gate"
+        "  formula: composite_score *= regime_score  # see publishers/pipeline.apply_regime_gate"
     )
     lines.append("playbook_attribution:")
     lines.append("  status: stubbed")
     lines.append(
-        "  note: All picks tagged 'leader_hold' "
-        "until Phase 6 ships VCP/Qullamaggie detectors."
+        "  note: All picks tagged 'leader_hold' until Phase 6 ships VCP/Qullamaggie detectors."
     )
     lines.append("preregistration:")
     lines.append(f"  weights_hash: {preregistration_hash}")
@@ -182,12 +180,10 @@ def _render_sharpe_distribution_section(result: BacktestResult) -> str:
     lines: list[str] = ["## OOS Sharpe Distribution"]
     lines.append("")
     lines.append(
-        "| Window | IS Period | OOS Period | OOS Sharpe | "
-        "OOS MaxDD | OOS WinRate | N Trades |"
+        "| Window | IS Period | OOS Period | OOS Sharpe | OOS MaxDD | OOS WinRate | N Trades |"
     )
     lines.append(
-        "|--------|-----------|------------|------------|"
-        "-----------|-------------|----------|"
+        "|--------|-----------|------------|------------|-----------|-------------|----------|"
     )
     for i, w in enumerate(result.windows, start=1):
         is_period = f"{w.is_start.date()}..{w.is_end.date()}"

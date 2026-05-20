@@ -25,9 +25,7 @@ def test_soft_regime_gate_multiplies() -> None:
 
 def test_apply_regime_gate_rejects_out_of_range_pitfall_6() -> None:
     """Pitfall 6: regime_score must be in [0, 1] — defensive assertion."""
-    panel = pd.DataFrame(
-        {"composite_score": [50.0]}, index=pd.Index(["AAA"], name="ticker")
-    )
+    panel = pd.DataFrame({"composite_score": [50.0]}, index=pd.Index(["AAA"], name="ticker"))
     with pytest.raises(AssertionError, match="regime_score out of range"):
         apply_regime_gate(panel, regime_score=1.5)
     with pytest.raises(AssertionError, match="regime_score out of range"):

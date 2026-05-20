@@ -241,9 +241,7 @@ class RankingSnapshotSchema(pa.DataFrameModel):
     rs_rating: Series[pd.Int64Dtype] = pa.Field(ge=1, le=99, nullable=True)
     dryup_ratio: Series[float] = pa.Field(nullable=True)
     pivot_distance_atr: Series[float] = pa.Field(nullable=True)
-    pivot_zone: Series[str] = pa.Field(
-        isin=["in-zone", "chase, skip", "unknown"], nullable=False
-    )
+    pivot_zone: Series[str] = pa.Field(isin=["in-zone", "chase, skip", "unknown"], nullable=False)
     regime_state: Series[str] = pa.Field(
         isin=["Confirmed Uptrend", "Uptrend Under Pressure", "Correction"],
         nullable=False,
@@ -296,7 +294,8 @@ class RankingSnapshotSchema(pa.DataFrameModel):
     shares: Series[pd.Int64Dtype] = pa.Field(ge=0, nullable=True)
     risk_per_share: Series[float] = pa.Field(ge=0.0, nullable=True)
     atr_zone: Series[str] = pa.Field(
-        isin=["in-zone", "extended", "chase, skip", "not_applicable"], nullable=True,
+        isin=["in-zone", "extended", "chase, skip", "not_applicable"],
+        nullable=True,
     )
     pivot_distance_atr_breakout: Series[float] = pa.Field(nullable=True)
     trail_rule_label: Series[str] = pa.Field(nullable=True)
@@ -315,7 +314,8 @@ class RankingSnapshotSchema(pa.DataFrameModel):
     # set from the snapshot alone (no need to re-run sizing).
     adr_rejected: Series[bool] = pa.Field(nullable=True)
     rejection_reason: Series[str] = pa.Field(
-        isin=["", "adr_exceeded", "invalid_stop", "missing_diagnostics"], nullable=True,
+        isin=["", "adr_exceeded", "invalid_stop", "missing_diagnostics"],
+        nullable=True,
     )
 
     class Config:
@@ -394,12 +394,8 @@ class PicksSchema(pa.DataFrameModel):
     carry-forward) — there is no separate _assert_safe call.
     """
 
-    ticker: Series[str] = pa.Field(
-        nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$"
-    )
-    snapshot_date: Series[str] = pa.Field(
-        nullable=False, str_matches=r"^\d{4}-\d{2}-\d{2}$"
-    )
+    ticker: Series[str] = pa.Field(nullable=False, str_matches=r"^[A-Z][A-Z0-9\-]{0,9}$")
+    snapshot_date: Series[str] = pa.Field(nullable=False, str_matches=r"^\d{4}-\d{2}-\d{2}$")
     playbook_tag: Series[str] = pa.Field(
         isin=["qullamaggie_continuation", "minervini_vcp", "leader_hold"],
         nullable=False,
@@ -414,7 +410,8 @@ class PicksSchema(pa.DataFrameModel):
     shares: Series[int] = pa.Field(ge=0, nullable=False)
     risk_per_share: Series[float] = pa.Field(ge=0.0, nullable=False)
     atr_zone: Series[str] = pa.Field(
-        isin=["in-zone", "extended", "chase, skip"], nullable=False,
+        isin=["in-zone", "extended", "chase, skip"],
+        nullable=False,
     )
     # Phase 7 revision iteration 1 Warning #5: column name aligned with the
     # value source (sizing.py emits `pivot_distance_atr_breakout` = (close - pivot)/atr;
@@ -515,9 +512,7 @@ def _assert_safe_snapshot_date(snapshot_date: str) -> None:
     construction. Mirrors _assert_safe_ticker's raise-on-bad-input shape.
     """
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", snapshot_date):
-        raise ValueError(
-            f"Unsafe snapshot_date for path construction: {snapshot_date!r}"
-        )
+        raise ValueError(f"Unsafe snapshot_date for path construction: {snapshot_date!r}")
 
 
 def _ohlcv_dir() -> Path:
@@ -722,14 +717,10 @@ def read_universe_latest() -> list[str]:
     """
     base = _universe_dir()
     if not base.exists():
-        raise FileNotFoundError(
-            f"read_universe_latest: universe dir does not exist: {base}"
-        )
+        raise FileNotFoundError(f"read_universe_latest: universe dir does not exist: {base}")
     candidates = sorted(base.glob("*.parquet"))
     if not candidates:
-        raise FileNotFoundError(
-            f"read_universe_latest: no universe snapshot in {base}"
-        )
+        raise FileNotFoundError(f"read_universe_latest: no universe snapshot in {base}")
     latest = candidates[-1]
     snapshot_date = latest.stem  # YYYY-MM-DD
     df = read_universe(snapshot_date)
@@ -1130,9 +1121,7 @@ def append_picks_rows(rows: list[dict[str, Any]], db_path: Path | None = None) -
     return n_inserted
 
 
-def read_picks_for_date(
-    snapshot_date: str, db_path: Path | None = None
-) -> pd.DataFrame:
+def read_picks_for_date(snapshot_date: str, db_path: Path | None = None) -> pd.DataFrame:
     """Read picks rows for a single snapshot_date, ordered by composite_score DESC.
 
     Returns an empty DataFrame (with the picks table columns) if no rows match.

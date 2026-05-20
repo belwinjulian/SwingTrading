@@ -32,10 +32,10 @@ LEADER_MIN_RS: Final[int] = 90
 DEFAULT_WEIGHTS: Final[dict[str, float]] = {
     "rs": 0.25,
     "trend": 0.20,
-    "pattern": 0.20,    # zeroed in Phase 4 (D-01); active in Phase 6
+    "pattern": 0.20,  # zeroed in Phase 4 (D-01); active in Phase 6
     "volume": 0.10,
-    "earnings": 0.15,   # zeroed in Phase 4 (D-01); active in Phase 6
-    "catalyst": 0.10,   # zeroed in Phase 4 (D-01); active in Phase 6
+    "earnings": 0.15,  # zeroed in Phase 4 (D-01); active in Phase 6
+    "catalyst": 0.10,  # zeroed in Phase 4 (D-01); active in Phase 6
 }
 
 # Phase 6 D-16: empty frozenset — pattern/earnings/catalyst components are now LIVE.
@@ -157,23 +157,15 @@ def score(
     if unknown:
         raise ValueError(f"Unknown weight keys: {sorted(unknown)}")
     if abs(sum(weights.values()) - 1.0) > 1e-6:
-        raise ValueError(
-            f"Weights must sum to 1.0; got {sum(weights.values())}"
-        )
+        raise ValueError(f"Weights must sum to 1.0; got {sum(weights.values())}")
 
     out = panel.copy()
 
     # Live components (D-02 + D-13)
-    out["rs_component"] = (
-        panel["rs_rating"].astype("Float64") / 99.0
-    ).fillna(0.0)
-    out["trend_component"] = (
-        panel["trend_template_score"].astype("Float64") / 8.0
-    ).fillna(0.0)
+    out["rs_component"] = (panel["rs_rating"].astype("Float64") / 99.0).fillna(0.0)
+    out["trend_component"] = (panel["trend_template_score"].astype("Float64") / 8.0).fillna(0.0)
     # D-02 volume formula: linear from 0.5->1.0, 2.0->0.0; NaN -> 0 (Pitfall 4)
-    out["volume_component"] = (
-        (1.0 - (panel["dryup_ratio"] - 0.5) / 1.5).clip(0.0, 1.0).fillna(0.0)
-    )
+    out["volume_component"] = (1.0 - (panel["dryup_ratio"] - 0.5) / 1.5).clip(0.0, 1.0).fillna(0.0)
     # Phase 6 D-16: full activation — three helpers replace the Phase 4 zero placeholders.
     out["pattern_component"] = score_pattern_component(panel)
     out["earnings_component"] = score_earnings_component(panel)
@@ -235,18 +227,11 @@ def tag_playbook(panel: pd.DataFrame) -> pd.DataFrame:
         & (pattern_bars < QULL_MAX_BARS)
         & (adr_pct >= QULL_MIN_ADR_PCT)
     )
-    mvp_mask = (
-        (pattern_type == "vcp")
-        & (
-            (pattern_bars >= MINERVINI_MIN_BARS)
-            | (final_contraction_pct <= MINERVINI_MAX_FINAL_CONTRACTION_PCT)
-        )
+    mvp_mask = (pattern_type == "vcp") & (
+        (pattern_bars >= MINERVINI_MIN_BARS)
+        | (final_contraction_pct <= MINERVINI_MAX_FINAL_CONTRACTION_PCT)
     )
-    leader_mask = (
-        ptt
-        & (rs_rating >= LEADER_MIN_RS)
-        & (pattern_type == "none")
-    )
+    leader_mask = ptt & (rs_rating >= LEADER_MIN_RS) & (pattern_type == "none")
 
     out["qullamaggie_score"] = qull_mask.astype("Int64")
     out["minervini_score"] = mvp_mask.astype("Int64")

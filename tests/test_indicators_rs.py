@@ -15,13 +15,18 @@ def _multi_ticker_panel(tickers: list[str], n: int = 260) -> pd.DataFrame:
         drift = 0.001 * (i + 1)
         close = 100.0 * np.cumprod(1.0 + np.full(n, drift))
         idx = pd.MultiIndex.from_product([[t], dates], names=["ticker", "date"])
-        frames.append(pd.DataFrame(
-            {
-                "open": close, "high": close * 1.01, "low": close * 0.99,
-                "close": close, "volume": np.full(n, 1_000_000, dtype="int64"),
-            },
-            index=idx,
-        ))
+        frames.append(
+            pd.DataFrame(
+                {
+                    "open": close,
+                    "high": close * 1.01,
+                    "low": close * 0.99,
+                    "close": close,
+                    "volume": np.full(n, 1_000_000, dtype="int64"),
+                },
+                index=idx,
+            )
+        )
     return pd.concat(frames).sort_index()
 
 
@@ -55,5 +60,6 @@ def test_rs_per_ticker_shift_isolation() -> None:
     # are all NaN (no prior history available within ticker AAA).
     out = rs_panel(panel)
     aaa = out.xs("AAA", level="ticker")
-    assert aaa["rs_raw"].iloc[:63].isna().all(), \
+    assert aaa["rs_raw"].iloc[:63].isna().all(), (
         "first 63 rows of AAA must be NaN — shift bled across tickers"
+    )

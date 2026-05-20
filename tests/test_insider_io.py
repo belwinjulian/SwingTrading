@@ -97,6 +97,7 @@ def test_form4_bulk_fetch_idempotent(
     db_path = str(tmp_path / "form4.sqlite")  # type: ignore[operator]
     monkeypatch.setenv("INSIDER_CACHE_PATH", db_path)
     from screener.config import get_settings
+
     get_settings.cache_clear()
 
     import screener.data.insider as ins_mod
@@ -109,9 +110,7 @@ def test_form4_bulk_fetch_idempotent(
 
     with patch.object(ins_mod.edgar, "get_filings", return_value=mock_filings):
         n2 = ins_mod.refresh_insider(date(2026, 5, 1))
-    assert n2 == 0, (
-        f"Expected 0 rows on idempotent second call (ON CONFLICT DO NOTHING), got {n2}"
-    )
+    assert n2 == 0, f"Expected 0 rows on idempotent second call (ON CONFLICT DO NOTHING), got {n2}"
 
 
 def test_form4_schema_validated_before_sqlite_insert(
@@ -131,16 +130,18 @@ def test_form4_schema_validated_before_sqlite_insert(
     persistence._ensure_insider_schema(db_path)
 
     # Build a DataFrame with an invalid 'type' field
-    bad_df = pd.DataFrame({
-        "filing_id": ["BAD-001"],
-        "ticker": ["AAPL"],
-        "insider": ["Bad Actor"],
-        "transaction_date": [pd.Timestamp("2026-04-01")],
-        "type": ["GIFT"],  # Invalid — InsiderSchema only allows BUY or SELL
-        "shares": [1000.0],
-        "value_usd": [175000.0],
-        "ingested_at": [pd.Timestamp.now()],
-    })
+    bad_df = pd.DataFrame(
+        {
+            "filing_id": ["BAD-001"],
+            "ticker": ["AAPL"],
+            "insider": ["Bad Actor"],
+            "transaction_date": [pd.Timestamp("2026-04-01")],
+            "type": ["GIFT"],  # Invalid — InsiderSchema only allows BUY or SELL
+            "shares": [1000.0],
+            "value_usd": [175000.0],
+            "ingested_at": [pd.Timestamp.now()],
+        }
+    )
 
     # Validation MUST raise SchemaError before any SQLite insert
     with pytest.raises(Exception):  # pa.errors.SchemaError is a subclass of Exception
@@ -149,6 +150,4 @@ def test_form4_schema_validated_before_sqlite_insert(
     # Confirm DB is still empty — schema rejection blocked the insert
     with sqlite3.connect(db_path) as conn:
         count = conn.execute("SELECT COUNT(*) FROM form4").fetchone()[0]
-    assert count == 0, (
-        f"Expected 0 rows in DB after schema rejection, got {count}"
-    )
+    assert count == 0, f"Expected 0 rows in DB after schema rejection, got {count}"

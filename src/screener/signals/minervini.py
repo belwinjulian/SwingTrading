@@ -80,9 +80,9 @@ def passes_trend_template(panel: pd.DataFrame) -> pd.DataFrame:
 
     # Sum bool conditions as Int64 -> 0-8 score.
     # Use pd.concat + sum to keep mypy happy with the Series[Int64] type.
-    score: pd.Series = pd.concat(
-        [bc.astype("Int64") for bc in bool_conds], axis=1
-    ).sum(axis=1).astype("Int64")
+    score: pd.Series = (
+        pd.concat([bc.astype("Int64") for bc in bool_conds], axis=1).sum(axis=1).astype("Int64")
+    )
 
     out["trend_template_score"] = score
     # passes iff all 8 are True; NaN-safe via the prior fillna chain.

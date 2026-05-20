@@ -55,9 +55,7 @@ def test_nvda_2024_split_pivot_continuity(nvda_2024_split_panel: pd.DataFrame) -
     ):
         assert col in result.columns
 
-    pivot_fired = result.loc[
-        result["vcp_passes"] | result["flag_passes"], "pivot_price"
-    ]
+    pivot_fired = result.loc[result["vcp_passes"] | result["flag_passes"], "pivot_price"]
     if len(pivot_fired) > 0:
         max_pivot = float(pivot_fired.max())
         min_pivot = float(pivot_fired.min())

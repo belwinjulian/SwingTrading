@@ -18,6 +18,7 @@ semantics ≤0.66 → in-zone, ≤1.0 → extended, >1.0 → chase, skip.
 Trail labels (D-08): _trail_rule_label() returns a display STRING (sizing
 does NOT compute trail values; the report renders the label per pick).
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -40,11 +41,11 @@ IN_ZONE_ATR: Final[float] = 0.66
 EXTENDED_ATR: Final[float] = 1.00
 
 # --- D-07 leader_hold swing-low lookback (reuses indicators.patterns conventions)
-LEADER_SWING_LOOKBACK_BARS: Final[int] = 20      # same as FLAG_MAX_BARS
+LEADER_SWING_LOOKBACK_BARS: Final[int] = 20  # same as FLAG_MAX_BARS
 LEADER_SWING_PIVOT_ORDER: Final[int] = FLAG_PIVOT_ORDER  # reuse Phase 6 constant
 
 # --- D-08 Qullamaggie trail tier boundaries (ADR%)
-QULL_TRAIL_FAST_ADR: Final[float] = 6.0    # >= 6.0 → 10d SMA
+QULL_TRAIL_FAST_ADR: Final[float] = 6.0  # >= 6.0 → 10d SMA
 QULL_TRAIL_MEDIUM_ADR: Final[float] = 4.0  # 4.0..6.0 → 20d SMA; else → 50d SMA
 
 # --- D-07 leader_hold stop bounds
@@ -56,6 +57,7 @@ MAX_POSITION_FRACTION: Final[float] = 0.25
 
 
 # --- ATR zone classifier (SIZ-05 / D-09) ---------------------------------
+
 
 def classify_atr_zone(pivot_distance_atr: float) -> str:
     """D-09 3-bucket classifier.
@@ -71,6 +73,7 @@ def classify_atr_zone(pivot_distance_atr: float) -> str:
 
 
 # --- Trail-rule label dispatch (SIZ-04 / D-08) ---------------------------
+
 
 def _trail_rule_label(row: pd.Series) -> str:
     """Return D-08 trail rule as a display string for the report.
@@ -96,6 +99,7 @@ def _trail_rule_label(row: pd.Series) -> str:
 
 
 # --- Per-playbook stop helpers (SIZ-03 / D-07) ---------------------------
+
 
 def _stop_qullamaggie(row: pd.Series, ticker_history: pd.DataFrame) -> float:
     """D-07: entry-day low = the D-0 'low' bar (same bar that triggered breakout).
@@ -175,6 +179,7 @@ STOP_HELPERS: Final[dict[str, Callable[[pd.Series, pd.DataFrame], float]]] = {
 
 
 # --- Internal helpers for compute_sizing ---------------------------------
+
 
 def _compute_pivot_distance_atr_breakout(
     close: float, atr: float, pattern_diagnostics: str
@@ -311,12 +316,8 @@ def compute_sizing(
         if rejection != "" or risk_per_share <= 0:
             shares = 0
         else:
-            raw_shares = int(np.floor(
-                (account_equity * risk_pct * regime_score) / risk_per_share
-            ))
-            cap_shares = int(np.floor(
-                account_equity * MAX_POSITION_FRACTION / close_price
-            ))
+            raw_shares = int(np.floor((account_equity * risk_pct * regime_score) / risk_per_share))
+            cap_shares = int(np.floor(account_equity * MAX_POSITION_FRACTION / close_price))
             shares = max(0, min(raw_shares, cap_shares))
 
         # --- pivot_distance_atr_breakout + ATR zone (D-09 / SIZ-05) ---

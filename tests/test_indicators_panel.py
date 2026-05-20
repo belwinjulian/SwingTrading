@@ -11,21 +11,33 @@ from screener.indicators import build_panel
 from screener.persistence import write_ohlcv_atomic, write_universe_atomic
 
 REQUIRED_NEW_COLS = {
-    "sma_10", "sma_20", "sma_50", "sma_150", "sma_200",
-    "atr_14", "adr_pct", "obv", "dryup_ratio", "rs_raw", "rs_rating",
-    "high_52w", "low_52w",
+    "sma_10",
+    "sma_20",
+    "sma_50",
+    "sma_150",
+    "sma_200",
+    "atr_14",
+    "adr_pct",
+    "obv",
+    "dryup_ratio",
+    "rs_raw",
+    "rs_rating",
+    "high_52w",
+    "low_52w",
 }
 
 
 def _make_universe_df(tickers: list[str]) -> pd.DataFrame:
     """Build a UniverseSchema-compliant DataFrame (all required columns)."""
-    return pd.DataFrame({
-        "ticker": tickers,
-        "ticker_raw": tickers,
-        "name": [f"{t} Co" for t in tickers],
-        "sector": ["Information Technology"] * len(tickers),
-        "weight_pct": [0.1] * len(tickers),
-    })
+    return pd.DataFrame(
+        {
+            "ticker": tickers,
+            "ticker_raw": tickers,
+            "name": [f"{t} Co" for t in tickers],
+            "sector": ["Information Technology"] * len(tickers),
+            "weight_pct": [0.1] * len(tickers),
+        }
+    )
 
 
 def _setup_persistence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

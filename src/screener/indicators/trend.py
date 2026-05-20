@@ -59,12 +59,7 @@ def high_52w_panel(panel: pd.DataFrame, length: int = 252) -> pd.DataFrame:
     (Close >= 0.75 * MAX(High, 252)) per CLAUDE.md "Signal Formulas".
     """
     out = panel.copy()
-    out["high_52w"] = (
-        panel.groupby(level="ticker")["high"]
-        .rolling(length)
-        .max()
-        .droplevel(0)
-    )
+    out["high_52w"] = panel.groupby(level="ticker")["high"].rolling(length).max().droplevel(0)
     return out
 
 
@@ -75,10 +70,5 @@ def low_52w_panel(panel: pd.DataFrame, length: int = 252) -> pd.DataFrame:
     (Close >= 1.30 * MIN(Low, 252)) per CLAUDE.md "Signal Formulas".
     """
     out = panel.copy()
-    out["low_52w"] = (
-        panel.groupby(level="ticker")["low"]
-        .rolling(length)
-        .min()
-        .droplevel(0)
-    )
+    out["low_52w"] = panel.groupby(level="ticker")["low"].rolling(length).min().droplevel(0)
     return out

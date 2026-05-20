@@ -101,9 +101,7 @@ def test_cluster_buy_three_insiders_outside_window(tmp_path: pytest.TempPathFact
     ]
     _seed_db(db_path, rows)
 
-    result = read_insider_cluster_buy(
-        window_days=30, cluster_size=2, dt=5, db_path=db_path
-    )
+    result = read_insider_cluster_buy(window_days=30, cluster_size=2, dt=5, db_path=db_path)
     assert "AAPL" not in result, (
         f"Expected AAPL NOT in cluster-buy result (3 insiders each 12d apart, "
         f"no 5-day window contains 2+), got: {result}"
@@ -122,6 +120,5 @@ def test_cluster_buy_sqlite_julianday_or_python_fallback(form4_cluster_db_path: 
         window_days=60, cluster_size=2, dt=5, db_path=form4_cluster_db_path
     )
     assert "AAPL" in result, (
-        f"Expected AAPL in cluster-buy result regardless of SQL vs Python path, "
-        f"got: {result}"
+        f"Expected AAPL in cluster-buy result regardless of SQL vs Python path, got: {result}"
     )

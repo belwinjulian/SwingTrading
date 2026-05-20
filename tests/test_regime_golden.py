@@ -181,9 +181,7 @@ def _scan_for_correction(
     """Walk dates in [window_start, window_end] and return True on first Correction."""
     _setup_macro(tmp_path, monkeypatch, spy_df, vix_df)
     candidate_dates = [
-        d
-        for d in spy_df.index
-        if pd.Timestamp(window_start) <= d <= pd.Timestamp(window_end)
+        d for d in spy_df.index if pd.Timestamp(window_start) <= d <= pd.Timestamp(window_end)
     ]
     for d in candidate_dates:
         panel = _trivial_panel(d)
