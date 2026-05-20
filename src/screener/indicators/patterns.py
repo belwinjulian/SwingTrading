@@ -509,12 +509,12 @@ def detect_all_patterns(panel: pd.DataFrame) -> pd.DataFrame:
         last_dt = g.index.get_level_values("date")[-1]
         key = (ticker, last_dt)
         if winning["type"] == "vcp":
-            out.at[key, "vcp_passes"] = True
+            out.loc[key, "vcp_passes"] = True
         else:
-            out.at[key, "flag_passes"] = True
-        out.at[key, "pivot_price"] = winning["pivot_price"]
-        out.at[key, "breakout_strength"] = winning["breakout_strength"]
-        diag_series.at[key] = encode_pattern_diagnostics(winning)
+            out.loc[key, "flag_passes"] = True
+        out.loc[key, "pivot_price"] = winning["pivot_price"]
+        out.loc[key, "breakout_strength"] = winning["breakout_strength"]
+        diag_series.at[key] = encode_pattern_diagnostics(winning)  # noqa: PD008
     out["pattern_diagnostics"] = diag_series
     out["post_gap_continuation"] = (
         post_gap_continuation_panel(panel).fillna(False).astype(bool)

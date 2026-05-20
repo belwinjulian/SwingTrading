@@ -157,7 +157,7 @@ def fetch_eps_history(ticker: str) -> pd.DataFrame:
             df = pd.DataFrame(
                 {
                     "fiscal_quarter_end": pd.to_datetime(series.index),
-                    "eps_actual": series.astype(float).values,
+                    "eps_actual": series.astype(float).to_numpy(),
                 }
             ).sort_values("fiscal_quarter_end").reset_index(drop=True)
             # YoY growth = current / 4-quarters-ago - 1

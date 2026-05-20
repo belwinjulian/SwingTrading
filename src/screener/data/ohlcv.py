@@ -207,8 +207,12 @@ def fetch_splits(ticker: str) -> pd.DataFrame:
     # tickers may have only dividends. Normalize to {ratio, dividend}.
     df = pd.DataFrame(
         {
-            "ratio": actions.get("Stock Splits", pd.Series(0.0, index=actions.index)).astype(float).values,
-            "dividend": actions.get("Dividends", pd.Series(0.0, index=actions.index)).astype(float).values,
+            "ratio": actions.get(
+                "Stock Splits", pd.Series(0.0, index=actions.index)
+            ).astype(float).to_numpy(),
+            "dividend": actions.get(
+                "Dividends", pd.Series(0.0, index=actions.index)
+            ).astype(float).to_numpy(),
         },
         index=pd.DatetimeIndex(actions.index, name="date").tz_localize(None)
         if actions.index.tz is not None
@@ -256,7 +260,9 @@ def run_with_breaker(tickers: list[str], today: date) -> tuple[int, int, list[st
                 # Pacing: pause inside the success branch only (we already
                 # paid the retry budget on failure).
                 time.sleep(
-                    random.uniform(settings.OHLCV_FETCH_SLEEP_MIN_S, settings.OHLCV_FETCH_SLEEP_MAX_S)
+                    random.uniform(
+                        settings.OHLCV_FETCH_SLEEP_MIN_S, settings.OHLCV_FETCH_SLEEP_MAX_S
+                    )
                 )
                 yf_ok += 1
                 log.info("fetch_success", ticker=ticker, source="yfinance", n_bars=len(df))

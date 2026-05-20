@@ -332,7 +332,8 @@ def run_pipeline(
     # The failure path is owned by refresh.yml's `if: failure()` step which
     # runs `python -m screener.publishers.run_log failure` — D-05 / D-06.
     import time as _time
-    from datetime import UTC as _UTC, datetime as _datetime
+    from datetime import UTC as _UTC
+    from datetime import datetime as _datetime
 
     from screener.publishers.run_log import append_record
 
@@ -585,7 +586,7 @@ def run_pipeline(
             "fetch_success_rate": float(len(today_panel) / _ticker_universe_size),
             "regime_state": regime_state_value,
             "picks_count": _picks_count,
-            "n_429_responses": 0,  # v1 placeholder per RESEARCH.md Open Question 2 (RESOLVED); real counter deferred to v1.x — TypedDict + JSONL schema keep the field name stable
+            "n_429_responses": 0,
             "error_reason": None,
         }
     )

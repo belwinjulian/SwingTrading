@@ -266,7 +266,7 @@ class RankingSnapshotSchema(pa.DataFrameModel):
     crossed_52w_high_within_60d: Series[bool] = pa.Field(nullable=False)
     insider_cluster_buy: Series[bool] = pa.Field(nullable=False)
     earnings_in_3d_warn: Series[bool] = pa.Field(nullable=False)
-    eps_knowable_from: Series[str] = pa.Field(nullable=True)  # ISO YYYY-MM-DD; empty when fundamentals row missing (W11)
+    eps_knowable_from: Series[str] = pa.Field(nullable=True)
 
     # Phase 7 extension (CONTEXT.md D-04 / D-09 / SIZ-01..05) — sizing columns
     # populated by sizing.compute_sizing() in Plan 07-02 and projected to the
@@ -939,7 +939,7 @@ def write_fundamentals_atomic(df: pd.DataFrame, ticker: str) -> Path:
     return target
 
 
-def read_fundamentals(as_of_date: "str | pd.Timestamp") -> pd.DataFrame:
+def read_fundamentals(as_of_date: str | pd.Timestamp) -> pd.DataFrame:
     """Read fundamentals filtered to rows knowable as of ``as_of_date`` (D-13b).
 
     Signals MUST go through this read path (architecture test enforces D-23).
@@ -1009,7 +1009,7 @@ _FORM4_IDX: Final[str] = (
 )
 
 
-def _ensure_insider_schema(db_path: "Path | None" = None) -> Path:
+def _ensure_insider_schema(db_path: Path | None = None) -> Path:
     """Idempotent form4 table + index setup. Returns the resolved db path."""
     path = Path(db_path) if db_path is not None else _insider_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1071,7 +1071,7 @@ def _journal_db_path() -> Path:
     return Path(getattr(s, "JOURNAL_DB_PATH", "data/journal.sqlite"))
 
 
-def _ensure_picks_schema(db_path: "Path | None" = None) -> Path:
+def _ensure_picks_schema(db_path: Path | None = None) -> Path:
     """Idempotent picks table + indexes + immutability trigger.
 
     All four DDL statements (table, 2 indexes, trigger) run inside ONE
@@ -1086,7 +1086,7 @@ def _ensure_picks_schema(db_path: "Path | None" = None) -> Path:
     return path
 
 
-def append_picks_rows(rows: list[dict], db_path: "Path | None" = None) -> int:
+def append_picks_rows(rows: list[dict[str, Any]], db_path: Path | None = None) -> int:
     """Idempotent append — INSERT OR IGNORE on UNIQUE(ticker, snapshot_date).
 
     Caller MUST pandera-validate as PicksSchema BEFORE calling (Pattern B —
@@ -1131,7 +1131,7 @@ def append_picks_rows(rows: list[dict], db_path: "Path | None" = None) -> int:
 
 
 def read_picks_for_date(
-    snapshot_date: str, db_path: "Path | None" = None
+    snapshot_date: str, db_path: Path | None = None
 ) -> pd.DataFrame:
     """Read picks rows for a single snapshot_date, ordered by composite_score DESC.
 
@@ -1147,7 +1147,7 @@ def read_picks_for_date(
         )
 
 
-def append_form4_rows(db_path: "Path | None", rows: list[dict]) -> int:
+def append_form4_rows(db_path: Path | None, rows: list[dict[str, Any]]) -> int:
     """Idempotent append — ON CONFLICT(filing_id) DO NOTHING per D-10.
 
     ``rows`` is a list of dicts with keys: filing_id, ticker, insider,
@@ -1179,8 +1179,8 @@ def read_insider_cluster_buy(
     window_days: int = 30,
     cluster_size: int = 2,
     dt: int = 5,
-    db_path: "Path | None" = None,
-) -> "set[str]":
+    db_path: Path | None = None,
+) -> set[str]:
     """Return tickers where >= cluster_size distinct insiders BUY within any
     dt-day rolling window in the last window_days (CAT-03 / D-10).
 

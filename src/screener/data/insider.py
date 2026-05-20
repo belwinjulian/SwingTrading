@@ -36,7 +36,6 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from pathlib import Path
 
 import edgar
 import pandas as pd
@@ -50,7 +49,6 @@ from tenacity import (
 )
 
 from screener import persistence
-from screener.config import get_settings
 
 log = structlog.get_logger(__name__)
 # tenacity's before_sleep_log requires a stdlib logger — structlog's

@@ -140,7 +140,7 @@ def get_cached_session() -> requests_cache.CachedSession:
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=2, max=60),
     retry=retry_if_exception_type(
-        (requests.HTTPError, requests.ConnectionError, requests.Timeout, ConnectionError, TimeoutError)
+        (requests.HTTPError, requests.ConnectionError, requests.Timeout, ConnectionError, TimeoutError)  # noqa: E501
     ),
     before_sleep=before_sleep_log(_stdlib_log, logging.WARNING),
     reraise=True,
@@ -227,11 +227,11 @@ def build_universe_dataframe(parsed: pd.DataFrame) -> pd.DataFrame:
     """Map the iShares-shape DataFrame to the UniverseSchema-shape DataFrame."""
     out = pd.DataFrame(
         {
-            "ticker_raw": parsed["Ticker"].astype(str).values,
-            "ticker": [normalize_ticker(t) for t in parsed["Ticker"].astype(str).values],
-            "name": parsed["Name"].astype(str).values,
-            "sector": parsed["Sector"].astype(str).values,
-            "weight_pct": parsed["Weight (%)"].astype(float).values,
+            "ticker_raw": parsed["Ticker"].astype(str).to_numpy(),
+            "ticker": [normalize_ticker(t) for t in parsed["Ticker"].astype(str).to_numpy()],
+            "name": parsed["Name"].astype(str).to_numpy(),
+            "sector": parsed["Sector"].astype(str).to_numpy(),
+            "weight_pct": parsed["Weight (%)"].astype(float).to_numpy(),
         }
     )
     return out
