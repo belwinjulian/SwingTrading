@@ -879,25 +879,39 @@ def append_record(record: dict) -> None:
 | A8 | `bash -e` (`set -e`) chain in step 7 aborts on first non-zero exit, marking the job FAILED so `if: failure()` fires | §Implementation Approach | HIGH — central to the design. CONFIRMED: a non-zero exit from any step (including a `run:` chain with `set -e`) marks the step failed, which marks the job failed, which makes `success()` false and `failure()` true. `[VERIFIED: docs.github.com/en/actions/.../workflow-syntax-for-github-actions]` |
 | A9 | The `picks_count` for the success record is `(composite_score_raw >= JOURNAL_THRESHOLD).sum()` — same threshold the journal uses | §Integration Points | LOW — Phase 7 establishes JOURNAL_THRESHOLD as the actionable cutoff; reusing it keeps the run-log semantics consistent with what the report shows. |
 
-## Open Questions for the Planner
+## Open Questions (RESOLVED)
+
+> All questions in this section were resolved by the planner during plan creation. Each item below begins with `RESOLVED:` stating the adopted answer, followed by the original analysis for traceability.
 
 1. **CONTEXT.md D-09 conflict: heartbeat permissions.** D-09 says "CI and heartbeat stay `contents: read`" — but heartbeat MUST commit. Plan should USE `contents: write` for heartbeat.yml and surface this in the SUMMARY as a CONTEXT.md correction. (Pitfall #8)
+
+   **RESOLVED:** heartbeat.yml uses `permissions: contents: write`; deviation documented in `08-04-PLAN.md` `must_haves.truths` and will be re-surfaced in `08-04-SUMMARY.md` for human ratification. D-09 is treated as a slip (empty/tag commits don't count toward GitHub's 60-day idle rule, so a real-file commit — which requires write — is the only mitigation that works).
 
 2. **`n_429_responses` plumbing — placeholder vs real count.** OPS-05 SC requires the field; CONTEXT D-05 example shows `n_429_responses: 3` (non-zero). The current codebase doesn't have a counter. Options:
    - (a) **Placeholder** = 0 in v1 — minimal scope; ship Phase 8 and add the counter in v1.x.
    - (b) **Plumb the count** via a shared counter in `data/ohlcv.py` (structlog `fetch_429` event) — adds touch points in data/ which Phase 8 ideally doesn't touch.
    - **Recommendation:** (a). Phase 8 scope creep risk is real; v1.x can add the proper count once the rate-limit-burst pattern is observable.
 
+   **RESOLVED:** v1 ships `n_429_responses=0` placeholder per option (a); real counter deferred to v1.x. The field name is preserved in the OPS-05 schema, the `RunLogRecord` TypedDict, and the integration tests, so the observability surface remains correct and v1.x can add the real counter without touching the JSONL consumers. The `0` literal in `publishers/pipeline.py` carries an inline comment pointing back to this resolution.
+
 3. **Are `splits.parquet` files actually being written?** The success commit's `file_pattern` includes `data/ohlcv/**/splits.parquet` (per CONTEXT.md "auto-commit scope"). Phase 2 DAT-08 says yes; but planner should verify via `ls data/ohlcv/*/splits.parquet | head` before assuming. If empty, drop from `file_pattern`.
 
+   **RESOLVED:** Keep `data/ohlcv/**/splits.parquet` in the success-path `file_pattern`. Phase 2 DAT-08 produces these files; on any given run where no splits exist, `stefanzweifel/git-auto-commit-action` safely no-ops on the unmatched glob (`skip_dirty_check: false` default — the missing/empty match contributes nothing to the staged diff). No code change needed.
+
 4. **Should the auto-commit step push to a branch or directly to main?** Default for `stefanzweifel/git-auto-commit-action@v5` is the current branch (which on a `schedule` trigger is the default branch = `main`). No PR flow. This is appropriate for a nightly artifact-only commit; CI on `main` only runs `push: branches: [main]` workflows which DO NOT include refresh.yml (no recursion risk). Confirm with planner.
+
+   **RESOLVED:** Push directly to `main` via the default `stefanzweifel/git-auto-commit-action@v5.2.0` behavior. No PR flow in v1. Recursion is prevented by Phase 8's `on: schedule + workflow_dispatch` (no `push:` trigger on refresh.yml or heartbeat.yml). `T-08-commit-loop` regression-guarded by `test_refresh_no_github_event_interpolation_in_run_blocks` siblings + the `grep -c "push:"` assertions in Plans 08-04 / 08-06.
 
 5. **Branch-protection interaction.** From STATE.md Phase 1 todos: "Apply branch protection on `main` via `gh api`..." — if branch protection requires status checks on every push to main, the auto-commit will FAIL because the bot's push won't pass CI. Mitigations:
    - (a) Exempt `github-actions[bot]` from branch protection.
    - (b) Have the workflow open a PR instead of pushing directly.
    - **Recommendation:** Defer to user. The Phase 1 todo about branch protection is still pending (per STATE.md). If branch protection IS applied, the auto-commit path needs PR-creation instead. This is a checkpoint:human-verify task for the plan.
 
+   **RESOLVED:** Deferred to Plan 08-06 Task 3 (`checkpoint:human-verify`). The checkpoint script explicitly instructs the user to either (a) exempt `github-actions[bot]` from branch protection via the repo Settings -> Branches "Allow specified actors to bypass" UI, OR (b) defer the PR-based commit flow to a v1.x phase. The decision lives with the human at verification time because the branch-protection state isn't observable from the planner's vantage point.
+
 6. **Cache eviction policy for the 10GB limit.** Russell 1000 OHLCV at ~50KB/ticker × 1000 = ~50MB per cache, well under 10GB. But the cache is keyed daily; over a week we accumulate 5 daily caches (~250MB) plus 1 weekly fallback (~50MB). GitHub auto-evicts least-recently-used. Worth a comment in the workflow YAML but no plan task needed.
+
+   **RESOLVED:** No code change needed. GitHub `actions/cache@v4` 7-day idle eviction is acceptable given the daily key + weekly fallback key (`year-Wxx`) restore-keys chain in `refresh.yml`. Worst case: cold-cache full refresh (~90 min) on the first run after a long idle, well within the 120-minute `timeout-minutes` headroom (D-07). Inline comment in `refresh.yml` documents the design intent.
 
 ## Environment Availability
 

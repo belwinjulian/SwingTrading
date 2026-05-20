@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase_complete
-stopped_at: Phase 8 context gathered (2026-05-19)
-last_updated: "2026-05-19T23:35:00.000Z"
+status: executing
+stopped_at: context exhaustion at 75% (2026-05-19)
+last_updated: "2026-05-20T02:00:01.836Z"
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 36
+  total_plans: 42
   completed_plans: 36
-  percent: 88
+  percent: 86
 ---
 
 # Project State
@@ -38,7 +38,7 @@ Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING (
 - **Milestone:** v1 (Personal-trading-ready EOD screener)
 - **Phase:** 6 (executing — Waves 1+2 complete; Wave 3 CLI wire-up next)
 - **Plan:** 30 / 31 executed (Plans 06-01..06-04 closed; 06-05 pending)
-- **Status:** Executing Phase 06 — Wave 3 CLI wire-up next (06-05)
+- **Status:** Ready to execute
 - **Resume file:** None
 - **Progress:** [██████████████░] 97%
 
@@ -98,7 +98,7 @@ Phase: 06 (pattern-detection-full-signal-stack-playbook-tagging) — EXECUTING (
 | 5 | Backtest Harness & No-Look-Ahead Gate | ✓ Complete (2026-05-16; 6/6 plans; 5/5 SCs; 3 human-UAT items) | FND-04, BCK-01..07 |
 | 6 | Pattern Detection, Full Signal Stack & Playbook Tagging | Not started | DAT-05, PAT-01..06, SIG-02, SIG-03, CMP-01..05, CAT-01..04 |
 | 7 | Sizing Finalization & Paper-Trade Journal | Planned (5/5 plans, 4 waves; ready to execute once Phase 6 closes) | SIZ-01..05, OUT-04..06 |
-| 8 | GitHub Actions Cron & Operations | Not started | OPS-01..05 |
+| 8 | GitHub Actions Cron & Operations | Planned (2026-05-19; 6/6 plans, 4 waves; ready to execute) | OPS-01..05 |
 
 ## Accumulated Context
 

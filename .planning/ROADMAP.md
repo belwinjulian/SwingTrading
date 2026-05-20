@@ -297,7 +297,30 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 
 **Estimated Complexity:** S
 
-**Plans:** TBD
+**Plans:** 6 plans in 4 waves
+
+Plans:
+
+**Wave 0 — Foundation** *(no dependencies)*
+- [ ] 08-01-PLAN.md — Test scaffolding (4 new test files with 28 named pytest.skip skeletons) + src/screener/publishers/run_log.py module signature (TypedDict + _RUNS_PATH + stubs) — D-06 / D-24 9-subcommand CLI surface stays LOCKED (OPS-05)
+
+**Wave 1 — Independent parallelizable** *(blocked on 08-01)*
+- [ ] 08-02-PLAN.md — .gitignore carve-outs (data/runs.jsonl, data/heartbeat.txt, reports/*.md) + fill 4 gitignore test bodies (OPS-02, OPS-03, OPS-05)
+- [ ] 08-03-PLAN.md — run_log.py append_record() + _cli_failure_entry() real bodies (fsync per Pitfall #5; json.dumps sort_keys; structlog event) + fill 5 unit test bodies (OPS-05)
+
+**Wave 2 — Heartbeat workflow + pipeline integration** *(blocked on 08-01 + 08-02 (carve-out) + 08-03 (run_log))*
+- [ ] 08-04-PLAN.md — .github/workflows/heartbeat.yml (cron 0 9 * * 1; permissions: contents: write — DEVIATES FROM CONTEXT D-09 per Pitfall #8 / Open Question A) + fill 7 heartbeat static test bodies incl. T-08-script-injection + T-08-secrets regression guards (OPS-03)
+- [ ] 08-05-PLAN.md — publishers/pipeline.run_pipeline() captures _t_start at top + appends success record at bottom (no try/finally per D-05/D-06) + fill 2 integration test bodies (OPS-05)
+
+**Wave 3 — Refresh workflow + phase gate** *(blocked on 08-01..08-05)*
+- [ ] 08-06-PLAN.md — .github/workflows/refresh.yml (cron 30 22 * * 1-5; workflow_dispatch; cache D-02/D-03; two-step success/failure commit pattern D-05; $GITHUB_STEP_SUMMARY for OPS-05 SC#5) + fill 10 refresh static test bodies + checkpoint:human-verify (GitHub Secrets config + manual workflow_dispatch) (OPS-01, OPS-02, OPS-04, OPS-05)
+
+Cross-cutting constraints (truths shared by ≥ 2 plans):
+- All 4 third-party actions pinned by 40-char commit SHA (T-08-supply-chain): actions/checkout@11bd7190... v4.2.2, astral-sh/setup-uv@d0cc045d... v6.8.0, actions/cache@00578520... v4.3.0 (refresh only), stefanzweifel/git-auto-commit-action@b863ae19... v5.2.0
+- Heartbeat job uses permissions: contents: write — DEVIATES FROM CONTEXT D-09 (which says contents: read for heartbeat). Required correction per Pitfall #8 / Open Question A: heartbeat cannot commit data/heartbeat.txt without write permission. Documented in 08-04 must_haves.truths AND 08-04-SUMMARY.md for human ratification.
+- No 10th typer subcommand (D-06 + D-24 9-subcommand surface lock from Phase 6) — run_log writes happen via module-internal append_record (success path) + python -m screener.publishers.run_log failure (failure path, from workflow YAML)
+- T-08 threat-model mitigations: NO ${{ github.event.* }} interpolation in run blocks, NO set -x, all secrets injected at job env level (auto-masked), workflow-level permissions scoped per workflow
+- FND-04 (tests/test_backtest_no_lookahead.py) re-runs in every plan verify — no signals/ or backtest/ touched in Phase 8
 
 ## Progress
 
@@ -310,7 +333,7 @@ Cross-cutting constraints (truths shared by ≥ 2 plans):
 | 5. Backtest Harness & No-Look-Ahead Gate | 6/6 | Complete (human ratify pending) | 2026-05-16 |
 | 6. Pattern Detection, Full Signal Stack & Playbook Tagging | 2/5 | Executing (Waves 0–1 patterns ✓) | - |
 | 7. Sizing Finalization & Paper-Trade Journal | 0/5 | Planned | - |
-| 8. GitHub Actions Cron & Operations | 0/? | Not started | - |
+| 8. GitHub Actions Cron & Operations | 0/6 | Planned (6 plans, 4 waves; checkpoint:human-verify gates phase completion) | - |
 
 ## Coverage Report
 
