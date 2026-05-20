@@ -5,6 +5,12 @@ verified live 2026-05-02 (HTTP/2 200, 1010 lines, 9 metadata + blank +
 header + 1005 Equity rows + 5 cash/derivative + trailer; UTF-8 with BOM)
 and the BRKB/BFB/BFA allowlist (D-03 amended).
 
+iShares bot-detection note: the AJAX URL returns HTML (status 200, fake
+content-type text/csv) when the request comes from a cloud IP.  If this
+happens, refresh_universe() falls back to the most recent cached parquet
+and logs a warning rather than failing the nightly pipeline.  The Russell
+1000 changes infrequently enough that a week-old snapshot is acceptable.
+
 Layered-DAG contract: this module imports only stdlib, third-party, and
 screener.persistence + screener.config. It does NOT import any other
 screener.* layer. tests/test_architecture.py enforces this.
@@ -14,6 +20,7 @@ from __future__ import annotations
 
 import io
 import logging
+import shutil
 from datetime import date, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -161,6 +168,17 @@ def fetch_ishares_iwb_csv(session: requests.Session | None = None) -> bytes:
     log.info("fetch_start", source="ishares", url=ISHARES_IWB_URL)
     resp = s.get(ISHARES_IWB_URL, headers=ISHARES_HEADERS, timeout=30, allow_redirects=True)
     resp.raise_for_status()
+    # iShares returns HTML with a fake text/csv Content-Type when blocking bots.
+    if (
+        resp.content[:9].lower().lstrip(b"\xef\xbb\xbf")
+        in (
+            b"<!doctyp",
+            b"<html",
+            b"<!doctype",
+        )
+        or b"<html" in resp.content[:200].lower()
+    ):
+        raise ValueError("iShares returned HTML instead of CSV (bot-detection active on this IP)")
     return resp.content
 
 
@@ -264,11 +282,30 @@ def refresh_universe(force: bool = False, today: date | None = None) -> Path | N
         log.info("snapshot_idempotent_skip", path=str(target), iso_monday=monday.isoformat())
         return None
 
-    session = get_cached_session()
-    content = fetch_ishares_iwb_csv(session=session)
-    parsed = parse_ishares_iwb_csv(content)
-    sanity_check(parsed)
-    universe_df = build_universe_dataframe(parsed)
+    try:
+        session = get_cached_session()
+        content = fetch_ishares_iwb_csv(session=session)
+        parsed = parse_ishares_iwb_csv(content)
+        sanity_check(parsed)
+        universe_df = build_universe_dataframe(parsed)
+    except Exception as exc:
+        # iShares bot-blocking or transient network error: fall back to latest
+        # cached parquet so the nightly pipeline can continue with a stale
+        # but valid universe.
+        cache_dir = Path(settings.UNIVERSE_CACHE_DIR)
+        cached = sorted(cache_dir.glob("*.parquet"))
+        if not cached:
+            raise
+        latest = cached[-1]
+        log.warning(
+            "universe_fetch_failed_using_cache",
+            error=str(exc),
+            fallback=str(latest),
+            target=str(target),
+        )
+        shutil.copy2(latest, target)
+        return target
+
     written = write_universe_atomic(universe_df, monday.isoformat())
     log.info(
         "snapshot_written",

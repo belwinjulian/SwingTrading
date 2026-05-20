@@ -37,6 +37,7 @@ htmlcov/
 /data/*
 !/data/universe/
 !/data/universe/.gitkeep
+!/data/universe/*.parquet
 !/data/ohlcv/
 /data/ohlcv/**/prices.parquet
 !/data/ohlcv/**/splits.parquet
