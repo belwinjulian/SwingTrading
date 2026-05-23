@@ -210,7 +210,14 @@ def score() -> None:
     except Exception as e:
         # T-3-02 mitigation carry-forward: log only error_type, never the
         # exception string (may contain FRED API key URL fragments etc.).
-        log.error("score_failed", error_type=type(e).__name__)
+        # For KeyError specifically, also log e.args -- the args tuple is
+        # the missing key (Timestamp / column name), which is not sensitive
+        # and is essential for diagnosing opaque pipeline failures (see
+        # .planning/debug/nightly-refresh-score-keyerror.md).
+        if isinstance(e, KeyError):
+            log.error("score_failed", error_type=type(e).__name__, error_args=e.args)
+        else:
+            log.error("score_failed", error_type=type(e).__name__)
         raise typer.Exit(code=1) from e
 
 
@@ -225,7 +232,12 @@ def report() -> None:
     except typer.Exit:
         raise  # Pitfall 7
     except Exception as e:
-        log.error("report_failed", error_type=type(e).__name__)
+        # T-3-02 carry-forward; KeyError args surfaced for diagnosability
+        # (see score command above; identical rationale).
+        if isinstance(e, KeyError):
+            log.error("report_failed", error_type=type(e).__name__, error_args=e.args)
+        else:
+            log.error("report_failed", error_type=type(e).__name__)
         raise typer.Exit(code=1) from e
 
 
@@ -268,7 +280,11 @@ def journal() -> None:
         raise
     except Exception as e:
         # T-3-02 carry-forward: log only error_type, never str(e).
-        log.error("journal_failed", error_type=type(e).__name__)
+        # KeyError args surfaced for diagnosability (see score command).
+        if isinstance(e, KeyError):
+            log.error("journal_failed", error_type=type(e).__name__, error_args=e.args)
+        else:
+            log.error("journal_failed", error_type=type(e).__name__)
         raise typer.Exit(code=1) from e
 
 

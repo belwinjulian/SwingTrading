@@ -366,6 +366,39 @@ def run_pipeline(
     # 1. Build the indicator panel for the snapshot date.
     panel = build_panel(snapshot_date)
 
+    # 1a. Clamp snap_ts to the latest trading day <= requested date.
+    # The nightly GH Actions cron is queue-delayed and can push the `score`
+    # step past midnight UTC; `date.today()` then returns a non-trading day
+    # which has no bar in the panel and `panel.xs(snap_ts, ...)` would raise
+    # KeyError (see .planning/debug/nightly-refresh-score-keyerror.md). This
+    # also handles weekend / holiday manual runs gracefully. Mirrors the
+    # defensive guard pattern already used by `_build_pattern_audit_df`
+    # (lines ~220-223 above).
+    panel_dates = panel.index.get_level_values("date")
+    available = panel_dates[panel_dates <= snap_ts]
+    if len(available) == 0:
+        log.error(
+            "no_panel_data_for_snapshot",
+            requested=snap_ts.date().isoformat(),
+            latest_panel_date=(
+                panel_dates.max().date().isoformat() if len(panel_dates) > 0 else None
+            ),
+        )
+        raise typer.Exit(code=1)
+    effective_ts = pd.Timestamp(available.max())
+    if effective_ts != snap_ts:
+        log.warning(
+            "snap_ts_clamped",
+            requested=snap_ts.date().isoformat(),
+            used=effective_ts.date().isoformat(),
+            reason="requested_date_not_in_panel",
+        )
+        snap_ts = effective_ts
+        # Keep snapshot_date string in lockstep so snapshot/report/journal
+        # artifacts are written under the effective trading day, not the
+        # requested non-trading day.
+        snapshot_date = effective_ts.date().isoformat()
+
     # 2. Compute Trend Template gate + score columns.
     panel = passes_trend_template(panel)
 
