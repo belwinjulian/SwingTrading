@@ -8,3 +8,4 @@
 {"duration_seconds": 0.0, "error_reason": "nightly pipeline step failed (see preceding logs)", "fetch_success_rate": 0.0, "n_429_responses": 0, "picks_count": null, "regime_state": null, "start_time": "2026-05-21T23:33:58Z", "status": "failed"}
 {"duration_seconds": 0.0, "error_reason": "nightly pipeline step failed (see preceding logs)", "fetch_success_rate": 0.0, "n_429_responses": 0, "picks_count": null, "regime_state": null, "start_time": "2026-05-22T23:37:58Z", "status": "failed"}
 {"duration_seconds": 0.0, "error_reason": "nightly pipeline step failed (see preceding logs)", "fetch_success_rate": 0.0, "n_429_responses": 0, "picks_count": null, "regime_state": null, "start_time": "2026-05-25T23:37:49Z", "status": "failed"}
+{"duration_seconds": 0.0, "error_reason": "nightly pipeline step failed (see preceding logs)", "fetch_success_rate": 0.0, "n_429_responses": 0, "picks_count": null, "regime_state": null, "start_time": "2026-05-26T23:38:10Z", "status": "failed"}
