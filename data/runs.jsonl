@@ -11,3 +11,4 @@
 {"duration_seconds": 0.0, "error_reason": "nightly pipeline step failed (see preceding logs)", "fetch_success_rate": 0.0, "n_429_responses": 0, "picks_count": null, "regime_state": null, "start_time": "2026-05-26T23:38:10Z", "status": "failed"}
 {"duration_seconds": 302.22, "error_reason": null, "fetch_success_rate": 1.0, "n_429_responses": 0, "picks_count": 363, "regime_state": "Uptrend Under Pressure", "start_time": "2026-05-28T00:10:53+00:00", "status": "success"}
 {"duration_seconds": 301.63, "error_reason": null, "fetch_success_rate": 1.0, "n_429_responses": 0, "picks_count": 363, "regime_state": "Uptrend Under Pressure", "start_time": "2026-05-28T00:15:57+00:00", "status": "success"}
+{"duration_seconds": 0.0, "error_reason": "nightly pipeline step failed (see preceding logs)", "fetch_success_rate": 0.0, "n_429_responses": 0, "picks_count": null, "regime_state": null, "start_time": "2026-05-28T23:49:07Z", "status": "failed"}
