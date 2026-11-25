@@ -199,3 +199,5 @@
 {"duration_seconds": 303.26, "error_reason": null, "fetch_success_rate": 1.0, "n_429_responses": 0, "picks_count": 299, "regime_state": "Correction", "start_time": "2026-11-21T03:59:23+00:00", "status": "success"}
 {"duration_seconds": 353.85, "error_reason": null, "fetch_success_rate": 1.0, "n_429_responses": 0, "picks_count": 317, "regime_state": "Correction", "start_time": "2026-11-24T06:42:37+00:00", "status": "success"}
 {"duration_seconds": 352.92, "error_reason": null, "fetch_success_rate": 1.0, "n_429_responses": 0, "picks_count": 317, "regime_state": "Correction", "start_time": "2026-11-24T06:48:34+00:00", "status": "success"}
+{"duration_seconds": 346.02, "error_reason": null, "fetch_success_rate": 1.0, "n_429_responses": 0, "picks_count": 340, "regime_state": "Correction", "start_time": "2026-11-25T05:27:05+00:00", "status": "success"}
+{"duration_seconds": 352.24, "error_reason": null, "fetch_success_rate": 1.0, "n_429_responses": 0, "picks_count": 340, "regime_state": "Correction", "start_time": "2026-11-25T05:32:53+00:00", "status": "success"}
